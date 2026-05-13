@@ -1,0 +1,43 @@
+# Build outputs
+bin/
+obj/
+artifacts/
+
+# User-specific IDE files
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.rsuser
+*.DotSettings.user
+
+# Rider/JetBrains local caches
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries/
+
+# ASP.NET local settings and secrets
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+# Logs and diagnostics
+*.log
+logs/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Tool caches
+.cache/
+node_modules/
+playwright-report/
+test-results/
