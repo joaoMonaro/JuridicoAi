@@ -10,15 +10,18 @@ public sealed class PeticaoService
     private const string ResponsesEndpoint = "https://api.openai.com/v1/responses";
 
     private readonly HttpClient _httpClient;
+    private readonly IJurisprudenciaProvider _jurisprudenciaProvider;
     private readonly IConfiguration _configuration;
     private readonly ILogger<PeticaoService> _logger;
 
     public PeticaoService(
         HttpClient httpClient,
+        IJurisprudenciaProvider jurisprudenciaProvider,
         IConfiguration configuration,
         ILogger<PeticaoService> logger)
     {
         _httpClient = httpClient;
+        _jurisprudenciaProvider = jurisprudenciaProvider;
         _configuration = configuration;
         _logger = logger;
     }
@@ -27,7 +30,11 @@ public sealed class PeticaoService
         GerarPeticaoRequest request,
         CancellationToken cancellationToken)
     {
-        var validacao = ValidarJurisprudencias(request.Jurisprudencias);
+        var coletaJurisprudencias = await ObterJurisprudenciasAsync(request, cancellationToken);
+        var validacao = ValidarJurisprudencias(
+            coletaJurisprudencias.Jurisprudencias,
+            coletaJurisprudencias.Alertas);
+
         var prompt = MontarPrompt(request.DescricaoCaso, validacao.JurisprudenciasValidas, validacao.Alertas);
         var peticao = await EnviarParaOpenAIAsync(prompt, cancellationToken);
 
@@ -44,6 +51,86 @@ public sealed class PeticaoService
                 })
                 .ToList()
         };
+    }
+
+    private async Task<JurisprudenciasColetadas> ObterJurisprudenciasAsync(
+        GerarPeticaoRequest request,
+        CancellationToken cancellationToken)
+    {
+        var alertas = new List<string>();
+        var jurisprudencias = new List<JurisprudenciaResultado>();
+
+        if (request.Jurisprudencias is { Count: > 0 })
+        {
+            jurisprudencias.AddRange(request.Jurisprudencias);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.TermoPesquisaJurisprudencia))
+        {
+            return new JurisprudenciasColetadas(RemoverJurisprudenciasDuplicadas(jurisprudencias), alertas);
+        }
+
+        var quantidadeMaxima = NormalizarQuantidadeMaxima(request.QuantidadeMaximaJurisprudencias);
+
+        try
+        {
+            var jurisprudenciasPesquisadas = await _jurisprudenciaProvider.PesquisarAsync(
+                request.TermoPesquisaJurisprudencia,
+                quantidadeMaxima,
+                cancellationToken);
+
+            jurisprudencias.AddRange(jurisprudenciasPesquisadas);
+
+            if (jurisprudenciasPesquisadas.Count == 0)
+            {
+                alertas.Add(
+                    $"A pesquisa de jurisprudência no {_jurisprudenciaProvider.Tribunal} não retornou resultados para o termo informado.");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Falha ao pesquisar jurisprudencias para gerar peticao. Tribunal: {Tribunal}. Termo: {Termo}",
+                _jurisprudenciaProvider.Tribunal,
+                request.TermoPesquisaJurisprudencia);
+
+            throw new PeticaoGenerationException(
+                $"Não foi possível pesquisar jurisprudências no {_jurisprudenciaProvider.Tribunal}.",
+                ex);
+        }
+
+        return new JurisprudenciasColetadas(RemoverJurisprudenciasDuplicadas(jurisprudencias), alertas);
+    }
+
+    private static int NormalizarQuantidadeMaxima(int? quantidadeMaxima)
+    {
+        return quantidadeMaxima is > 0 and <= 50
+            ? quantidadeMaxima.Value
+            : 10;
+    }
+
+    private static IReadOnlyList<JurisprudenciaResultado> RemoverJurisprudenciasDuplicadas(
+        IEnumerable<JurisprudenciaResultado> jurisprudencias)
+    {
+        var resultado = new List<JurisprudenciaResultado>();
+        var chaves = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var jurisprudencia in jurisprudencias)
+        {
+            var chave = $"{jurisprudencia.Tribunal}|{jurisprudencia.NumeroProcesso}|{jurisprudencia.Link}";
+
+            if (chaves.Add(chave))
+            {
+                resultado.Add(jurisprudencia);
+            }
+        }
+
+        return resultado;
     }
 
     private async Task<string> EnviarParaOpenAIAsync(string prompt, CancellationToken cancellationToken)
@@ -141,9 +228,10 @@ public sealed class PeticaoService
     }
 
     private static ValidacaoJurisprudencias ValidarJurisprudencias(
-        IReadOnlyList<JurisprudenciaResultado>? jurisprudencias)
+        IReadOnlyList<JurisprudenciaResultado>? jurisprudencias,
+        IReadOnlyList<string>? alertasIniciais = null)
     {
-        var alertas = new List<string>();
+        var alertas = alertasIniciais is null ? [] : alertasIniciais.ToList();
         var jurisprudenciasValidas = new List<JurisprudenciaResultado>();
 
         if (jurisprudencias is null || jurisprudencias.Count == 0)
@@ -254,5 +342,9 @@ public sealed class PeticaoService
 
     private sealed record ValidacaoJurisprudencias(
         IReadOnlyList<JurisprudenciaResultado> JurisprudenciasValidas,
+        IReadOnlyList<string> Alertas);
+
+    private sealed record JurisprudenciasColetadas(
+        IReadOnlyList<JurisprudenciaResultado> Jurisprudencias,
         IReadOnlyList<string> Alertas);
 }

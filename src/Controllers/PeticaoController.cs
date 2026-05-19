@@ -20,7 +20,8 @@ public class PeticaoController : ControllerBase
     }
 
     /// <summary>
-    /// Gera um rascunho técnico de petição inicial usando apenas as jurisprudências enviadas na requisição.
+    /// Gera um rascunho técnico de petição inicial usando jurisprudências enviadas na requisição
+    /// e, opcionalmente, jurisprudências pesquisadas no TJSP.
     /// </summary>
     /// <remarks>
     /// Exemplo de request:
@@ -28,6 +29,8 @@ public class PeticaoController : ControllerBase
     ///     POST /peticoes/gerar
     ///     {
     ///       "descricaoCaso": "Meu nome foi negativado por uma dívida que eu não reconheço.",
+    ///       "termoPesquisaJurisprudencia": "negativação indevida dívida não reconhecida dano moral",
+    ///       "quantidadeMaximaJurisprudencias": 10,
     ///       "jurisprudencias": [
     ///         {
     ///           "tribunal": "TJSP",
