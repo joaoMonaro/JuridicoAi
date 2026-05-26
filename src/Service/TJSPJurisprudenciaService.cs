@@ -59,7 +59,9 @@ public sealed class TJSPJurisprudenciaService : IJurisprudenciaProvider
             page.SetDefaultTimeout(TimeoutMs);
             page.SetDefaultNavigationTimeout(TimeoutMs);
 
+            await Task.Delay(1000);
             await AbrirPortalAsync(page, cancellationToken);
+            await Task.Delay(3000);
             await ExecutarPesquisaAsync(page, termo, cancellationToken);
 
             var resultados = await ExtrairResultadosAsync(page, quantidadeMaxima, cancellationToken);
