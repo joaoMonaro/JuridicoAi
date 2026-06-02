@@ -1,4 +1,4 @@
-namespace JuridicoAI.Models;
+namespace JuridicoAI.Application.DTOs;
 
 /// <summary>
 /// Resultado da geração da petição.

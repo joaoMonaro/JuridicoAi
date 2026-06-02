@@ -1,9 +1,10 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using JuridicoAI.Models;
+using JuridicoAI.Application.DTOs;
+using JuridicoAI.Domain.Entities;
 
-namespace JuridicoAI.Service;
+namespace JuridicoAI.Application.Services;
 
 public sealed class PeticaoService
 {

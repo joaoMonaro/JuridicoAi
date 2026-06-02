@@ -1,4 +1,6 @@
-namespace JuridicoAI.Models;
+using JuridicoAI.Domain.Entities;
+
+namespace JuridicoAI.Application.DTOs;
 
 /// <summary>
 /// Dados necessários para gerar uma petição inicial com base em jurisprudências já coletadas

@@ -1,20 +1,21 @@
 using System.Net;
 using System.Text.RegularExpressions;
-using JuridicoAI.Models;
+using JuridicoAI.Application.Services;
+using JuridicoAI.Domain.Entities;
 using Microsoft.Playwright;
 
-namespace JuridicoAI.Service;
+namespace JuridicoAI.Infrastructure.Repositories;
 
-public sealed class TJSPJurisprudenciaService : IJurisprudenciaProvider
+public sealed class TJSPJurisprudenciaRepository : IJurisprudenciaProvider
 {
     private const string TribunalNome = "TJSP";
     private const string ConsultaCompletaUrl = "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do";
     private const string BaseUrl = "https://esaj.tjsp.jus.br";
     private const float TimeoutMs = 30000;
 
-    private readonly ILogger<TJSPJurisprudenciaService> _logger;
+    private readonly ILogger<TJSPJurisprudenciaRepository> _logger;
 
-    public TJSPJurisprudenciaService(ILogger<TJSPJurisprudenciaService> logger)
+    public TJSPJurisprudenciaRepository(ILogger<TJSPJurisprudenciaRepository> logger)
     {
         _logger = logger;
     }

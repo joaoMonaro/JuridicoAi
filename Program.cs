@@ -1,15 +1,14 @@
-using JuridicoAI.Service;
+using JuridicoAI.Application.Services;
+using JuridicoAI.Infrastructure.Repositories;
 using Microsoft.OpenApi;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient<OpenAIService>();
 builder.Services.AddHttpClient<PeticaoService>();
-builder.Services.AddScoped<PlaywrightService>();
-builder.Services.AddScoped<TJSPJurisprudenciaService>();
+builder.Services.AddScoped<TJSPJurisprudenciaRepository>();
 builder.Services.AddScoped<IJurisprudenciaProvider>(provider =>
-    provider.GetRequiredService<TJSPJurisprudenciaService>());
+    provider.GetRequiredService<TJSPJurisprudenciaRepository>());
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();

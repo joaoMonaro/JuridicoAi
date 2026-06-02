@@ -1,4 +1,4 @@
-namespace JuridicoAI.Models;
+namespace JuridicoAI.Domain.Entities;
 
 public sealed class JurisprudenciaResultado
 {

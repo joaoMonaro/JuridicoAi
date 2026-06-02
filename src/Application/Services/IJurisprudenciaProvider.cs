@@ -1,6 +1,6 @@
-using JuridicoAI.Models;
+using JuridicoAI.Domain.Entities;
 
-namespace JuridicoAI.Service;
+namespace JuridicoAI.Application.Services;
 
 public interface IJurisprudenciaProvider
 {

@@ -1,4 +1,4 @@
-namespace JuridicoAI.Service;
+namespace JuridicoAI.Application.Services;
 
 public sealed class PeticaoGenerationException : Exception
 {
