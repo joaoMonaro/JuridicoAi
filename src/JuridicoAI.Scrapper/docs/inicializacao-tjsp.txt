@@ -1,0 +1,4 @@
+dotnet run --project src/JuridicoAI.Scrapper/JuridicoAI.Scrapper.csproj -- \
+  --termo "uso indevido" \
+  --max 1 \
+  --output resultado-tjsp.json
