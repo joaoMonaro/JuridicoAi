@@ -1,0 +1,379 @@
+DOCUMENTACAO DO FLUXO DE CONSULTA DE JURISPRUDENCIA TJSP - CJSG
+
+1. Tela inicial da consulta
+
+A tela de Consulta Completa da jurisprudencia do TJSP e carregada por:
+
+GET https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do
+
+Essa pagina carrega o formulario principal e os scripts JS usados na consulta.
+
+Formulario principal:
+
+method="POST"
+action="/cjsg/resultadoCompleta.do"
+
+Campos importantes do formulario:
+
+- conversationId
+- dados.buscaInteiroTeor
+- dados.pesquisarComSinonimos
+- dados.buscaEmenta
+- dados.nuProcOrigem
+- dados.nuRegistro
+- dados.dtJulgamentoInicio
+- dados.dtJulgamentoFim
+- dados.dtPublicacaoInicio
+- dados.dtPublicacaoFim
+- dados.origensSelecionadas
+- tipoDecisaoSelecionados
+- dados.ordenarPor
+- recaptcha_response_token
+- uuidCaptcha
+
+2. Captcha e controle de acesso
+
+A pagina usa reCAPTCHA v3.
+
+Site key encontrada no HTML:
+
+6LcXJIAbAAAAAOwprTGEEYwRSe-HMYD-Ys0pSR6f
+
+No HTML aparecem os campos:
+
+<script src="https://www.google.com/recaptcha/api.js?render=6LcXJIAbAAAAAOwprTGEEYwRSe-HMYD-Ys0pSR6f"></script>
+<input type="hidden" name="recaptcha_response_token" id="id_recaptcha_response_token">
+<input id="uuidCaptcha" type="hidden" name="uuidCaptcha" value="sajcaptcha_...">
+
+O JS executa:
+
+grecaptcha.execute(siteKey, { action: 'consulta' })
+
+O token gerado e colocado no campo:
+
+recaptcha_response_token
+
+A pagina tambem chama o endpoint de controle de captcha:
+
+POST https://esaj.tjsp.jus.br/cjsg/captchaControleAcesso.do
+
+Payload:
+
+uuidCaptcha=sajcaptcha_...&conversationId=
+
+Resposta tipica:
+
+{
+  "uuidCaptcha": "sajcaptcha_..."
+}
+
+Esse uuidCaptcha atualizado deve ser usado no submit da pesquisa.
+
+3. Submit da busca
+
+A busca principal e feita por:
+
+POST https://esaj.tjsp.jus.br/cjsg/resultadoCompleta.do
+Content-Type: application/x-www-form-urlencoded
+
+Exemplo de payload capturado no HAR:
+
+conversationId=
+&dados.buscaInteiroTeor=uso+indevido
+&dados.pesquisarComSinonimos=S
+&dados.pesquisarComSinonimos=S
+&dados.buscaEmenta=
+&dados.nuProcOrigem=
+&dados.nuRegistro=
+&agenteSelectedEntitiesList=
+&contadoragente=0
+&contadorMaioragente=0
+&codigoCr=
+&codigoTr=
+&nmAgente=
+&juizProlatorSelectedEntitiesList=
+&contadorjuizProlator=0
+&contadorMaiorjuizProlator=0
+&codigoJuizCr=
+&codigoJuizTr=
+&nmJuiz=
+&classesTreeSelection.values=
+&classesTreeSelection.text=
+&assuntosTreeSelection.values=
+&assuntosTreeSelection.text=
+&comarcaSelectedEntitiesList=
+&contadorcomarca=0
+&contadorMaiorcomarca=0
+&cdComarca=
+&nmComarca=
+&secoesTreeSelection.values=
+&secoesTreeSelection.text=
+&dados.dtJulgamentoInicio=
+&dados.dtJulgamentoFim=
+&dados.dtPublicacaoInicio=
+&dados.dtPublicacaoFim=
+&dados.origensSelecionadas=T
+&tipoDecisaoSelecionados=A
+&dados.ordenarPor=dtPublicacao
+&recaptcha_response_token=TOKEN_RECAPTCHA
+&uuidCaptcha=sajcaptcha_...
+
+No HAR analisado, a request util foi:
+
+#0 POST https://esaj.tjsp.jus.br/cjsg/resultadoCompleta.do
+Status: 200
+Content-Type: text/html; charset=UTF-8
+
+4. Resposta da primeira pagina
+
+A resposta de resultadoCompleta.do ja vem com a primeira pagina dos resultados renderizada no HTML.
+
+No arquivo extraido do HAR:
+
+src/JuridicoAI.Scrapper/contexto/har_entry0_resultadoCompleta.html
+
+O bloco de resultado inicia perto de:
+
+<!-- Resultado consulta -->
+<div id="tabs">
+
+Aba de acordaos:
+
+<span id="nomeAba-A">Acórdãos(573113)</span>
+<input id="totalResultadoAba-A" type="hidden" value="573113" />
+
+Paginacao:
+
+Resultados <strong>1 a 20</strong> de 573113
+
+Container dos resultados:
+
+<div id="divDadosResultado-A">
+
+Cada resultado comeca em:
+
+<tr class="fundocinza1">
+
+5. Estrutura de cada resultado
+
+O link principal contem o numero do processo e ids para baixar o inteiro teor:
+
+<a class="esajLinkLogin downloadEmenta"
+   title="Visualizar Inteiro Teor"
+   cdAcordao="20611872"
+   cdForo="0">
+  1500406-42.2025.8.26.0560
+</a>
+
+Campos extraiveis dentro de cada item:
+
+- Processo
+- cdAcordao
+- cdForo
+- Classe/Assunto
+- Relator(a)
+- Comarca
+- Orgao julgador
+- Data do julgamento
+- Data de publicacao
+- Ementa
+- Ementa sem formatacao
+- Ocorrencias encontradas
+
+Exemplo real do primeiro resultado capturado:
+
+Processo: 1500406-42.2025.8.26.0560
+cdAcordao: 20611872
+cdForo: 0
+Classe/Assunto: Apelacao Criminal / Trafico de Drogas e Condutas Afins
+Relator(a): Ana Lucia Fernandes Queiroga
+Comarca: Votuporanga
+Orgao julgador: 9a Camara de Direito Criminal
+Data do julgamento: 11/06/2026
+Data de publicacao: 11/06/2026
+
+A ementa completa aparece em dois lugares.
+
+Versao expandida dentro do item:
+
+<div align="justify" style="display: none;">
+  <strong>Ementa: </strong>...
+</div>
+
+Versao sem formatacao:
+
+<div id="dadosSemFormatacao_20611872" style="display: none;">
+  <div id="textAreaDados_20611872" class="mensagemSemFormatacao">
+    ...
+  </div>
+</div>
+
+Para scraping, a versao dadosSemFormatacao_{cdAcordao} costuma ser melhor porque traz texto completo e a referencia final do TJSP.
+
+6. Download do inteiro teor
+
+O JS do TJSP monta a URL assim:
+
+var url = window.saj.env.root + "/getArquivo.do?cdAcordao=" + cdAcordao + "&cdForo=" + cdForo;
+
+URL final:
+
+GET https://esaj.tjsp.jus.br/cjsg/getArquivo.do?cdAcordao=20611872&cdForo=0
+
+Esse endpoint abre o PDF/inteiro teor do acordao.
+
+7. Paginacao
+
+A primeira pagina vem no POST /resultadoCompleta.do.
+
+As paginas seguintes sao carregadas por AJAX:
+
+GET https://esaj.tjsp.jus.br/cjsg/trocaDePagina.do?tipoDeDecisao=A&pagina=2
+
+Parametros:
+
+- tipoDeDecisao=A
+- pagina=2
+
+Tipos de decisao observados:
+
+- A = Acordaos
+- H = Homologacoes de acordo
+- D = Decisoes monocraticas
+
+O JS responsavel esta em filtrosLaterais.js:
+
+var trocarDePagina = function(valor){
+  var tipoDeDecisao = valor.charAt(0);
+  var pagina = valor.slice(1);
+  var url = window.saj.env.root + "/trocaDePagina.do";
+  var params = {tipoDeDecisao: tipoDeDecisao, pagina: pagina};
+
+  $.ajax({
+    url: url,
+    data: params,
+    type: 'GET',
+    cache: true,
+    success:function(html) {
+      mostraResultados(html,tipoDeDecisao);
+    }
+  });
+};
+
+O retorno de trocaDePagina.do e HTML parcial.
+
+O JS divide a resposta por:
+
+#%#quebra_resposta#%#
+
+Quando existem 3 partes:
+
+resp[0] = HTML dos resultados
+resp[1] = HTML de termos relacionados/adicionar pesquisa
+resp[2] = HTML da paginacao
+
+8. Filtros laterais
+
+Depois da primeira busca, os filtros laterais usam AJAX.
+
+Montar filtros:
+
+POST /cjsg/montaFiltro.do
+
+Refinar resultados:
+
+POST /cjsg/montaResultados.do
+
+Payload base:
+
+tipoDecisao=A
+
+Com filtros:
+
+tipoDecisao=A
+&classe=...
+&relator=...
+&comarca=...
+&orgaoJulgador=...
+
+O retorno tambem e HTML parcial separado por:
+
+#%#quebra_resposta#%#
+
+9. Fluxo resumido para implementar
+
+1. Fazer GET /cjsg/consultaCompleta.do.
+2. Guardar cookies da sessao.
+3. Extrair uuidCaptcha inicial.
+4. Gerar recaptcha_response_token via browser/ambiente capaz de executar reCAPTCHA.
+5. Fazer POST /cjsg/captchaControleAcesso.do com uuidCaptcha.
+6. Atualizar uuidCaptcha com a resposta.
+7. Fazer POST /cjsg/resultadoCompleta.do com os campos da busca.
+8. Parsear #divDadosResultado-A da primeira resposta.
+9. Extrair os 20 resultados da pagina.
+10. Para pagina 2 em diante, chamar GET /cjsg/trocaDePagina.do?tipoDeDecisao=A&pagina=N.
+11. Parsear o HTML parcial retornado.
+12. Para PDF/inteiro teor, chamar GET /cjsg/getArquivo.do?cdAcordao=X&cdForo=Y.
+
+10. Pontos criticos
+
+- Cookies precisam ser mantidos entre todas as chamadas.
+- recaptcha_response_token expira.
+- uuidCaptcha muda.
+- O resultado depende da sessao.
+- Reusar curl antigo tende a retornar so o formulario vazio.
+- A primeira pagina vem no POST resultadoCompleta.do.
+- As proximas paginas vem no GET trocaDePagina.do.
+- O endpoint nao retorna JSON de jurisprudencia; retorna HTML.
+
+11. Seletores uteis
+
+Total:
+
+#totalResultadoAba-A[value]
+
+Container:
+
+#divDadosResultado-A
+
+Item:
+
+#divDadosResultado-A tr.fundocinza1
+
+Processo:
+
+a.esajLinkLogin.downloadEmenta
+
+cdAcordao:
+
+a.esajLinkLogin.downloadEmenta[cdAcordao]
+
+cdForo:
+
+a.esajLinkLogin.downloadEmenta[cdForo]
+
+Ementa sem formatacao:
+
+div[id^="dadosSemFormatacao_"] .mensagemSemFormatacao
+
+Campos metadata:
+
+tr.ementaClass2 strong
+
+12. Conclusao
+
+A jurisprudencia nao vem de uma API JSON.
+
+Ela vem como HTML renderizado pelo servidor.
+
+A primeira leva de resultados esta na resposta de:
+
+POST /cjsg/resultadoCompleta.do
+
+As paginas seguintes vem de:
+
+GET /cjsg/trocaDePagina.do
+
+O PDF/inteiro teor vem de:
+
+GET /cjsg/getArquivo.do?cdAcordao={id}&cdForo={foro}
