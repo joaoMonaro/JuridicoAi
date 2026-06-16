@@ -41,18 +41,20 @@ internal sealed class ScraperCliRunner
         {
             _output.WriteLine(json);
         }
-        else
-        {
-            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(request.OutputPath));
-            if (!string.IsNullOrWhiteSpace(outputDirectory))
-            {
-                Directory.CreateDirectory(outputDirectory);
-            }
+        //--
+        // else //MOCK DE DADOS automatico
+        // {
+            // var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(request.OutputPath));
+            // if (!string.IsNullOrWhiteSpace(outputDirectory))
+            // {
+            //     Directory.CreateDirectory(outputDirectory);
+            // }
+            //
+            // await File.WriteAllTextAsync(request.OutputPath, json, cancellationToken);
+            // _error.WriteLine($"Resultado salvo em: {request.OutputPath}");
+        // }
 
-            await File.WriteAllTextAsync(request.OutputPath, json, cancellationToken);
-            _error.WriteLine($"Resultado salvo em: {request.OutputPath}");
-        }
-
+        //TODO: NORMALIZAR OS DADOS DO TJ
         await _repository.SaveAsync(request, resultado, json, cancellationToken);
         _error.WriteLine("Resultado gravado no MongoDB.");
 
