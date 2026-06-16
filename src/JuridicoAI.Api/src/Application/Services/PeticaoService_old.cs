@@ -6,20 +6,20 @@ using JuridicoAI.Domain.Entities;
 
 namespace JuridicoAI.Application.Services;
 
-public sealed class PeticaoService
+public sealed class PeticaoService_old
 {
     private const string ResponsesEndpoint = "https://api.openai.com/v1/responses";
 
     private readonly HttpClient _httpClient;
     private readonly IJurisprudenciaProvider _jurisprudenciaProvider;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<PeticaoService> _logger;
+    private readonly ILogger<PeticaoService_old> _logger;
 
-    public PeticaoService(
+    public PeticaoService_old(
         HttpClient httpClient,
         IJurisprudenciaProvider jurisprudenciaProvider,
         IConfiguration configuration,
-        ILogger<PeticaoService> logger)
+        ILogger<PeticaoService_old> logger)
     {
         _httpClient = httpClient;
         _jurisprudenciaProvider = jurisprudenciaProvider;
@@ -27,19 +27,19 @@ public sealed class PeticaoService
         _logger = logger;
     }
 
-    public async Task<GerarPeticaoResponse> GerarAsync(
-        GerarPeticaoRequest request,
+    public async Task<GerarPeticaoResponse_old> GerarAsync(
+        GerarPeticaoRequest_old requestOld,
         CancellationToken cancellationToken)
     {
-        var coletaJurisprudencias = await ObterJurisprudenciasAsync(request, cancellationToken);
+        var coletaJurisprudencias = await ObterJurisprudenciasAsync(requestOld, cancellationToken);
         var validacao = ValidarJurisprudencias(
             coletaJurisprudencias.Jurisprudencias,
             coletaJurisprudencias.Alertas);
 
-        var prompt = MontarPrompt(request.DescricaoCaso, validacao.JurisprudenciasValidas, validacao.Alertas);
+        var prompt = MontarPrompt(requestOld.DescricaoCaso, validacao.JurisprudenciasValidas, validacao.Alertas);
         var peticao = await EnviarParaOpenAIAsync(prompt, cancellationToken);
 
-        return new GerarPeticaoResponse
+        return new GerarPeticaoResponse_old
         {
             Peticao = peticao,
             Alertas = validacao.Alertas,
@@ -55,28 +55,28 @@ public sealed class PeticaoService
     }
 
     private async Task<JurisprudenciasColetadas> ObterJurisprudenciasAsync(
-        GerarPeticaoRequest request,
+        GerarPeticaoRequest_old requestOld,
         CancellationToken cancellationToken)
     {
         var alertas = new List<string>();
         var jurisprudencias = new List<JurisprudenciaResultado>();
 
-        if (request.Jurisprudencias is { Count: > 0 })
+        if (requestOld.Jurisprudencias is { Count: > 0 })
         {
-            jurisprudencias.AddRange(request.Jurisprudencias);
+            jurisprudencias.AddRange(requestOld.Jurisprudencias);
         }
 
-        if (string.IsNullOrWhiteSpace(request.TermoPesquisaJurisprudencia))
+        if (string.IsNullOrWhiteSpace(requestOld.TermoPesquisaJurisprudencia))
         {
             return new JurisprudenciasColetadas(RemoverJurisprudenciasDuplicadas(jurisprudencias), alertas);
         }
 
-        var quantidadeMaxima = NormalizarQuantidadeMaxima(request.QuantidadeMaximaJurisprudencias);
+        var quantidadeMaxima = NormalizarQuantidadeMaxima(requestOld.QuantidadeMaximaJurisprudencias);
 
         try
         {
             var jurisprudenciasPesquisadas = await _jurisprudenciaProvider.PesquisarAsync(
-                request.TermoPesquisaJurisprudencia,
+                requestOld.TermoPesquisaJurisprudencia,
                 quantidadeMaxima,
                 cancellationToken);
 
@@ -98,7 +98,7 @@ public sealed class PeticaoService
                 ex,
                 "Falha ao pesquisar jurisprudencias para gerar peticao. Tribunal: {Tribunal}. Termo: {Termo}",
                 _jurisprudenciaProvider.Tribunal,
-                request.TermoPesquisaJurisprudencia);
+                requestOld.TermoPesquisaJurisprudencia);
 
             throw new PeticaoGenerationException(
                 $"Não foi possível pesquisar jurisprudências no {_jurisprudenciaProvider.Tribunal}.",

@@ -6,41 +6,37 @@ namespace JuridicoAI.Controllers;
 
 [ApiController]
 [Route("peticoes")]
-public class PeticaoController : ControllerBase
+public class PeticaoController_old : ControllerBase
 {
-    private readonly PeticaoService _peticaoService;
-    private readonly ILogger<PeticaoController> _logger;
+    private readonly PeticaoService_old _peticaoServiceOld;
+    private readonly ILogger<PeticaoController_old> _logger;
 
-    public PeticaoController(
-        PeticaoService peticaoService,
-        ILogger<PeticaoController> logger)
+    public PeticaoController_old(
+        PeticaoService_old peticaoServiceOld,
+        ILogger<PeticaoController_old> logger)
     {
-        _peticaoService = peticaoService;
+        _peticaoServiceOld = peticaoServiceOld;
         _logger = logger;
     }
 
     [HttpPost("gerar")]
-    [ProducesResponseType(typeof(GerarPeticaoResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GerarPeticaoResponse_old), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status502BadGateway)]
-    public async Task<ActionResult<GerarPeticaoResponse>> Gerar(
-        [FromBody] GerarPeticaoRequest request,
+    public async Task<ActionResult<GerarPeticaoResponse_old>> Gerar(
+        [FromBody] GerarPeticaoRequest_old requestOld,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.DescricaoCaso))
+        if (string.IsNullOrWhiteSpace(requestOld.DescricaoCaso))
         {
-            ModelState.AddModelError(nameof(request.DescricaoCaso), "Informe a descrição do caso.");
+            ModelState.AddModelError(nameof(requestOld.DescricaoCaso), "Informe a descrição do caso.");
             return ValidationProblem(ModelState);
         }
 
         try
         {
-            var resultado = await _peticaoService.GerarAsync(request, cancellationToken);
+            var resultado = await _peticaoServiceOld.GerarAsync(requestOld, cancellationToken);
             return Ok(resultado);
-        }
-        catch (OperationCanceledException)
-        {
-            throw;
         }
         catch (PeticaoGenerationException ex)
         {

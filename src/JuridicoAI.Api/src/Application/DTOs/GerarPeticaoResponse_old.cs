@@ -3,7 +3,7 @@ namespace JuridicoAI.Application.DTOs;
 /// <summary>
 /// Resultado da geração da petição.
 /// </summary>
-public sealed class GerarPeticaoResponse
+public sealed class GerarPeticaoResponse_old
 {
     public string Peticao { get; init; } = string.Empty;
     public IReadOnlyList<string> Alertas { get; init; } = [];

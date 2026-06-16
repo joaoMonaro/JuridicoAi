@@ -5,10 +5,11 @@ using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient<PeticaoService>();
+builder.Services.AddHttpClient<PeticaoService_old>();
+builder.Services.AddScoped<MongoJurisprudenciaRepository>();
 builder.Services.AddScoped<TJSPJurisprudenciaRepository>();
 builder.Services.AddScoped<IJurisprudenciaProvider>(provider =>
-    provider.GetRequiredService<TJSPJurisprudenciaRepository>());
+    provider.GetRequiredService<MongoJurisprudenciaRepository>());
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
