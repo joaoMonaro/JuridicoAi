@@ -1,6 +1,4 @@
-@JuridicoAI_HostAddress = http://localhost:5299
+@JuridicoAI.Api_HostAddress = http://localhost:5299
 
-GET {{JuridicoAI_HostAddress}}/weatherforecast/
+GET {{JuridicoAI.Api_HostAddress}}/
 Accept: application/json
-
-###
