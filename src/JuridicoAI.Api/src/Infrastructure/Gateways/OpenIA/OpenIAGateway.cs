@@ -5,23 +5,24 @@ using System.Text.Json.Serialization;
 
 namespace JuridicoAI.Api.Infrastructure.Gateways.OpenIA;
 
-public class OpenIAGateway(HttpClient httpClient)
+public class OpenIAGateway(HttpClient httpClient, IConfiguration configuration)
 {
-    private const string ApiKey = "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";
-    private const string Model = "gpt-4.1";
-
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private readonly string _apiKey = configuration["OpenAI:ApiKey"]
+        ?? throw new InvalidOperationException("OpenAI:ApiKey nao configurada.");
+
+    private readonly string _model = configuration["OpenAI:Model"] ?? "gpt-4.1";
 
     public async Task<string> GerarTextoAsync(string prompt, CancellationToken cancellationToken = default)
     {
-        var requestBody = new OpenIAResponseRequest(Model, prompt);
+        var requestBody = new OpenIAResponseRequest(_model, prompt);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "responses")
         {
             Content = JsonContent.Create(requestBody, options: JsonOptions)
         };
 
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", ApiKey);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
         var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
