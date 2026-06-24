@@ -2,3 +2,12 @@
 
 GET {{JuridicoAI.Api_HostAddress}}/
 Accept: application/json
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/peticoes/gerar
+Content-Type: application/json
+
+{
+  "fatoSimples": "divida inexistente ou nao comprovada; cobranca e negativacao; falha do fornecedor; pedido de retirada da negativacao e dano moral."
+}
