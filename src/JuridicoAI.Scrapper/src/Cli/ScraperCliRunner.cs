@@ -14,18 +14,15 @@ internal sealed class ScraperCliRunner
     };
 
     private readonly TjspScraperService _scraper;
-    private readonly MongoScraperResultRepository _repository;
     private readonly TextWriter _output;
     private readonly TextWriter _error;
 
     public ScraperCliRunner(
         TjspScraperService scraper,
-        MongoScraperResultRepository repository,
         TextWriter output,
         TextWriter error)
     {
         _scraper = scraper;
-        _repository = repository;
         _output = output;
         _error = error;
     }
@@ -41,22 +38,14 @@ internal sealed class ScraperCliRunner
         {
             _output.WriteLine(json);
         }
-        //--
-        // else //MOCK DE DADOS automatico
-        // {
-            // var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(request.OutputPath));
-            // if (!string.IsNullOrWhiteSpace(outputDirectory))
-            // {
-            //     Directory.CreateDirectory(outputDirectory);
-            // }
-            //
-            // await File.WriteAllTextAsync(request.OutputPath, json, cancellationToken);
-            // _error.WriteLine($"Resultado salvo em: {request.OutputPath}");
-        // }
-
-        //TODO: NORMALIZAR OS DADOS DO TJ
-        await _repository.SaveAsync(request, resultado, json, cancellationToken);
-        _error.WriteLine("Resultado gravado no MongoDB.");
+        else
+        {
+            var outputPath = Path.GetFullPath(request.OutputPath);
+            var outputDirectory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrWhiteSpace(outputDirectory)) Directory.CreateDirectory(outputDirectory);
+            await File.WriteAllTextAsync(outputPath, json, cancellationToken);
+            _error.WriteLine($"Resultado salvo em: {outputPath}");
+        }
 
         _error.WriteLine($"Total informado pelo TJSP: {resultado.TotalEncontrado}. Itens retornados: {resultado.QuantidadeRetornada}.");
     }

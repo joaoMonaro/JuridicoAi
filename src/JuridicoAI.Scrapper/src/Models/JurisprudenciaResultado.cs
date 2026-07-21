@@ -15,4 +15,5 @@ public sealed class JurisprudenciaResultado
     public string? DataJulgamento { get; init; }
     public string? DataPublicacao { get; init; }
     public string? Ocorrencias { get; init; }
+    public string? ConteudoBruto { get; init; }
 }

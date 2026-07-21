@@ -105,7 +105,8 @@ public sealed class TjspResultadoParser
             OrgaoJulgador = ObterValor(campos, "orgao julgador", "órgão julgador"),
             DataJulgamento = ObterValor(campos, "data do julgamento", "data de julgamento"),
             DataPublicacao = ObterValor(campos, "data de publicacao", "data de publicação"),
-            Ocorrencias = ObterOcorrencias(html)
+            Ocorrencias = ObterOcorrencias(html),
+            ConteudoBruto = html
         };
     }
 

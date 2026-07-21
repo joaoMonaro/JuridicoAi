@@ -11,3 +11,25 @@ Content-Type: application/json
 {
   "fatoSimples": "divida inexistente ou nao comprovada; cobranca e negativacao; falha do fornecedor; pedido de retirada da negativacao e dano moral."
 }
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias/ingest
+Content-Type: application/json
+
+{
+  "termo": "negativação indevida dano moral",
+  "maxResultados": 30
+}
+
+###
+
+GET {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias?tema=negativacao_indevida&danoMoral=true&resultado=provavelmente_favoravel_consumidor
+
+###
+
+GET {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias/raw?limite=20
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias/reprocess?limite=500

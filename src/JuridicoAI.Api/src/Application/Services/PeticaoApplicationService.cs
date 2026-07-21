@@ -5,11 +5,11 @@ namespace JuridicoAI.Api.Application.Services;
 
 public class PeticaoApplicationService(
     OpenIAGateway openIAGateway,
-    TjspSearchResultRepository tjspSearchResultRepository)
+    JurisprudenciaRepository jurisprudenciaRepository)
 {
     public async Task<string> GerarAsync(string fatoSimples, CancellationToken cancellationToken = default)
     {
-        var ementas = await tjspSearchResultRepository.ObterEmentasAsync(cancellationToken);
+        var ementas = await jurisprudenciaRepository.ObterEmentasAsync(cancellationToken);
         var contextoEmentas = ementas.Count == 0
             ? "[nenhuma ementa fornecida]"
             : string.Join(Environment.NewLine, ementas.Select(ementa => $"- {ementa}"));
