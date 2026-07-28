@@ -31,17 +31,38 @@ Chromium.
 
 O Compose cria apenas o MongoDB e mantém os dados no volume `mongo_data`.
 
+Crie o arquivo local `.env` a partir do modelo versionado:
+
 ```bash
-export MONGO_ROOT_USERNAME="juridico"
-export MONGO_ROOT_PASSWORD="troque-esta-senha"
+cp .env.example .env
+```
+
+Edite o `.env` e defina:
+
+```dotenv
+COMPOSE_PROJECT_NAME=juridicoai
+MONGO_ROOT_USERNAME=juridico
+MONGO_ROOT_PASSWORD=defina-uma-senha-local
+```
+
+Se `COMPOSE_PROJECT_NAME` estiver exportado globalmente no terminal, ele tem
+prioridade sobre o valor do `.env`. Remova-o antes de iniciar o projeto:
+
+```bash
+unset COMPOSE_PROJECT_NAME
+```
+
+Em seguida, inicie o MongoDB:
+
+```bash
 docker compose up -d
 ```
 
-Exemplo de conexão da API:
+O nome `COMPOSE_PROJECT_NAME=juridicoai` isola os containers, redes e volumes
+deste repositório dos demais projetos Compose da máquina.
 
-```bash
-export Mongo__ConnectionString="mongodb://juridico:troque-esta-senha@localhost:27017/?authSource=admin"
-```
+Evite `docker compose down -v` quando quiser preservar os dados. A opção `-v`
+remove também o volume do MongoDB.
 
 ## Configurações da API
 
@@ -60,23 +81,64 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `OpenAI:ApiKey` | sem padrão | chave obrigatória para `/peticoes/gerar` |
 | `OpenAI:Model` | `gpt-4.1` | modelo enviado à Responses API |
 
-Exemplo:
-
-```bash
-export Mongo__ConnectionString="mongodb://localhost:27017/"
-export OpenAI__ApiKey="sua-chave"
-export OpenAI__Model="gpt-4.1"
-export Scraper__TimeoutSeconds="120"
-export Scraper__MaxResults="30"
-```
-
 Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
-o projeto da API possui `UserSecretsId` e aceita:
+o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
+Manager do .NET quando o ambiente é `Development`.
+
+Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 
 ```bash
-dotnet user-secrets --project src/JuridicoAI.Api set "OpenAI:ApiKey" "sua-chave"
-dotnet user-secrets --project src/JuridicoAI.Api set "Mongo:ConnectionString" "sua-conexao"
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Mongo:ConnectionString" \
+  "mongodb://juridico:defina-uma-senha-local@localhost:27017/?authSource=admin"
 ```
+
+Para habilitar a geração de petições, configure a chave da OpenAI:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "OpenAI:ApiKey" \
+  "sua-chave-da-openai"
+```
+
+O modelo é opcional:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "OpenAI:Model" \
+  "gpt-4.1"
+```
+
+Também é possível sobrescrever configurações operacionais:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Scraper:TimeoutSeconds" "180"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Scraper:MaxResults" "50"
+```
+
+Para listar o que está configurado:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api list
+```
+
+Esse comando mostra os valores completos. Não compartilhe sua saída. Os
+user-secrets ficam fora do repositório, mas não são criptografados e devem ser
+usados somente em desenvolvimento.
+
+Variáveis exportadas no terminal têm prioridade sobre user-secrets. A conversão
+de nomes usa dois sublinhados:
+
+```text
+Mongo:ConnectionString -> Mongo__ConnectionString
+OpenAI:ApiKey           -> OpenAI__ApiKey
+```
+
+Se a senha do MongoDB possuir caracteres reservados de URL, como `@`, `:`, `/`,
+`?` ou `#`, codifique esses caracteres na connection string.
 
 ## Executar a API
 
@@ -100,3 +162,24 @@ dotnet run --project src/JuridicoAI.Scrapper/JuridicoAI.Scrapper.csproj -- \
 ```
 
 Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
+
+## Configuração mínima por funcionalidade
+
+| Funcionalidade | Requisitos |
+|---|---|
+| Scraper pela CLI | .NET, Chromium e acesso ao TJSP |
+| Ingestão pela API | MongoDB, Chromium e acesso ao TJSP |
+| Consulta de jurisprudências | MongoDB |
+| Reprocessamento | MongoDB |
+| Geração de petições | MongoDB, `OpenAI:ApiKey` e acesso à OpenAI |
+
+## Sequência recomendada
+
+1. Execute `cp .env.example .env` e altere a senha.
+2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
+3. Inicie o MongoDB com `docker compose up -d`.
+4. Configure `Mongo:ConnectionString` nos user-secrets.
+5. Configure `OpenAI:ApiKey` se for gerar petições.
+6. Execute `dotnet restore` e `dotnet build`.
+7. Instale o Chromium do Playwright, se necessário.
+8. Inicie a API e valide `GET http://localhost:5299/`.
