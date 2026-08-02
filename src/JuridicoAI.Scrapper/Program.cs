@@ -25,14 +25,7 @@ try
 {
     var request = parseResult.Request!;
     var scraper = new TjspScraperService(new TjspBrowserSessionProvider(), new TjspResultadoParser());
-    var repository = new MongoScraperResultRepository(
-        Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING") ??
-        MongoScraperResultRepository.DefaultConnectionString,
-        Environment.GetEnvironmentVariable("MONGO_DATABASE") ??
-        MongoScraperResultRepository.DefaultDatabaseName,
-        Environment.GetEnvironmentVariable("MONGO_COLLECTION") ??
-        MongoScraperResultRepository.DefaultCollectionName);
-    var runner = new ScraperCliRunner(scraper, repository, Console.Out, Console.Error);
+    var runner = new ScraperCliRunner(scraper, Console.Out, Console.Error);
     await runner.RunAsync(request, cts.Token);
     return 0;
 }

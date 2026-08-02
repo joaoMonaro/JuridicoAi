@@ -1,4 +1,4 @@
 dotnet run --project src/JuridicoAI.Scrapper/JuridicoAI.Scrapper.csproj -- \
-  --termo "uso indevido" \
+  --termo "dívida inexistente ou não comprovada" \
   --max 1 \
   --output resultado-tjsp.json
