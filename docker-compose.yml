@@ -11,5 +11,24 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  postgres:
+    image: postgres:17
+    container_name: JuridicoPostgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?configure POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?configure POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?configure POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   mongo_data:
+  postgres_data:

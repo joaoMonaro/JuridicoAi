@@ -1,4 +1,5 @@
 using JuridicoAI.Api.Application.Services;
+using JuridicoAI.Api.Infrastructure.Database;
 using JuridicoAI.Api.Infrastructure.Gateways.OpenIA;
 using JuridicoAI.Api.Infrastructure.Repositories;
 using JuridicoAI.Api.Infrastructure.Settings;
@@ -8,7 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 const string CorsPolicy = "LocalFrontend";
 
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mongo"));
+builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
+builder.Services.AddSingleton<PostgresConnectionFactory>();
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
