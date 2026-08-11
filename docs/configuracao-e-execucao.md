@@ -4,6 +4,7 @@
 
 - SDK do .NET 10;
 - MongoDB 7 ou compatível;
+- PostgreSQL 17 ou compatível;
 - Chromium/Chrome, necessário para a sessão automatizada do TJSP;
 - chave da API da OpenAI, necessária somente para gerar petições;
 - acesso de rede ao TJSP e à OpenAI.
@@ -27,9 +28,9 @@ pwsh src/JuridicoAI.Scrapper/bin/Debug/net10.0/playwright.ps1 install chromium
 Em Linux, o ambiente também precisa das bibliotecas de sistema exigidas pelo
 Chromium.
 
-## MongoDB com Docker Compose
+## Bancos com Docker Compose
 
-O Compose cria apenas o MongoDB e mantém os dados no volume `mongo_data`.
+O Compose cria MongoDB e PostgreSQL e mantém os dados nos volumes `mongo_data` e `postgres_data`.
 
 Crie o arquivo local `.env` a partir do modelo versionado:
 
@@ -72,6 +73,10 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | Chave | Padrão | Finalidade |
 |---|---:|---|
 | `Mongo:ConnectionString` | vazio | conexão obrigatória para operações com MongoDB |
+| `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
+| `Postgres:RunMigrations` | `true` | aplica migrations pendentes ao iniciar |
+| `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
+| `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
 | `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
 | `Mongo:RawCollectionName` | `jurisprudencias_raw` | dados coletados |
 | `Mongo:JurisprudenciasCollectionName` | `jurisprudencias` | dados processados |
@@ -172,12 +177,13 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 | Consulta de jurisprudências | MongoDB |
 | Reprocessamento | MongoDB |
 | Geração de petições | MongoDB, `OpenAI:ApiKey` e acesso à OpenAI |
+| Fundação do caso | PostgreSQL e diretório de storage gravável |
 
 ## Sequência recomendada
 
 1. Execute `cp .env.example .env` e altere a senha.
 2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
-3. Inicie o MongoDB com `docker compose up -d`.
+3. Inicie os bancos com `docker compose up -d`.
 4. Configure `Mongo:ConnectionString` nos user-secrets.
 5. Configure `OpenAI:ApiKey` se for gerar petições.
 6. Execute `dotnet restore` e `dotnet build`.

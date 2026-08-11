@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "JuridicoAI.Api", "JuridicoA
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Juridico.Scrapper", "Juridico.Scrapper", "{78708544-D35E-44AC-9587-088FAC3EEC81}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JuridicoAI.Api.Tests", "tests\JuridicoAI.Api.Tests\JuridicoAI.Api.Tests.csproj", "{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +49,18 @@ Global
 		{7A184B82-7D4C-492E-BDB0-9A45B72FAD64}.Release|x64.Build.0 = Release|Any CPU
 		{7A184B82-7D4C-492E-BDB0-9A45B72FAD64}.Release|x86.ActiveCfg = Release|Any CPU
 		{7A184B82-7D4C-492E-BDB0-9A45B72FAD64}.Release|x86.Build.0 = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|x64.Build.0 = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Debug|x86.Build.0 = Debug|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|x64.ActiveCfg = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|x64.Build.0 = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|x86.ActiveCfg = Release|Any CPU
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -52,5 +68,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{93F8E0B6-882E-439D-A00F-EF16BA29DF96} = {8EB14AFC-DC5E-438E-B2B7-10FABE89C913}
 		{7A184B82-7D4C-492E-BDB0-9A45B72FAD64} = {78708544-D35E-44AC-9587-088FAC3EEC81}
+		{9F968CED-1B0C-4CA1-AE67-FCC3D805EB1F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

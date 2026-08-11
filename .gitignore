@@ -37,11 +37,12 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# Tool caches
+# Tool caches and local document storage
 .cache/
 node_modules/
 playwright-report/
 test-results/
+src/JuridicoAI.Api/data/
 
 #ARQUIVOS TESTE
 resultado-tjsp.json
