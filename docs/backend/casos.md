@@ -6,11 +6,18 @@ nem processa o conteúdo dos arquivos com IA.
 
 ## Persistência e inicialização
 
-Os dados são persistidos no PostgreSQL. Na inicialização, a API aplica em uma
-transação as migrations SQL embutidas ainda ausentes de `schema_migrations`.
-Se `Postgres:ConnectionString` estiver vazio, a API continua disponível para
-os fluxos antigos, registra um aviso e não aplica migrations; os endpoints de
-casos dependem de uma conexão configurada.
+Os dados são persistidos no PostgreSQL por meio do Entity Framework Core e do
+provedor `Npgsql.EntityFrameworkCore.PostgreSQL`. O `JuridicoAiDbContext`
+expõe os conjuntos de casos, envolvidos, contextos e documentos. Os nomes de
+tabelas e colunas, tamanhos, conversões de enums, índices, relacionamentos e
+checks são definidos explicitamente pela Fluent API em
+`Infrastructure/Database/EntityConfigurations.cs`.
+
+Na inicialização, a API executa `Database.MigrateAsync()` e registra as
+migrations aplicadas na tabela padrão `__EFMigrationsHistory`. Se
+`Postgres:ConnectionString` estiver vazio, a API continua disponível para os
+fluxos que não dependem de PostgreSQL, registra um aviso e não aplica
+migrations. Os endpoints de casos continuam exigindo uma conexão configurada.
 
 Configuração por variável de ambiente:
 
@@ -19,8 +26,44 @@ export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;
 ```
 
 `Postgres:RunMigrations` permite desabilitar a execução automática. A migration
-`001_fundacao_caso.sql` cria `casos`, `envolvidos_caso`, `contextos_caso` e
+inicial do EF Core cria `casos`, `envolvidos_caso`, `contextos_caso` e
 `documentos_caso`, com chaves estrangeiras, checks e índices por `caso_id`.
+
+### Compatibilidade com o banco anterior
+
+Se o banco já tiver sido criado pela antiga `001_fundacao_caso.sql` e essa
+versão estiver registrada em `schema_migrations`, a inicialização importa esse
+estado para `__EFMigrationsHistory`. A migration inicial do EF é então marcada
+como aplicada sem recriar tabelas ou apagar dados. A tabela antiga pode
+permanecer no banco como registro histórico, mas migrations novas passam a ser
+controladas exclusivamente pelo EF Core.
+
+### Criar uma nova migration
+
+Instale a ferramenta `dotnet-ef` em versão compatível com o EF Core do projeto.
+Depois de alterar as entidades ou configurações Fluent, execute na raiz:
+
+```bash
+dotnet ef migrations add NomeDaAlteracao \
+  --project src/JuridicoAI.Api/JuridicoAI.Api.csproj \
+  --startup-project src/JuridicoAI.Api/JuridicoAI.Api.csproj \
+  --output-dir src/Infrastructure/Database/Migrations \
+  --namespace JuridicoAI.Api.Infrastructure.Database.Migrations
+```
+
+Revise os métodos `Up` e `Down` gerados antes de aplicar a migration,
+principalmente em alterações que removem ou transformam dados. Em
+desenvolvimento, ela será aplicada na próxima inicialização quando
+`Postgres:RunMigrations=true`. Também pode ser aplicada explicitamente:
+
+```bash
+dotnet ef database update \
+  --project src/JuridicoAI.Api/JuridicoAI.Api.csproj \
+  --startup-project src/JuridicoAI.Api/JuridicoAI.Api.csproj
+```
+
+Em produção, prefira executar a atualização como etapa única do deploy e
+desabilitar a execução concorrente pelas réplicas da aplicação.
 
 ## Casos
 

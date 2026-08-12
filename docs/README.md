@@ -14,7 +14,7 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 - [Fundação do caso](backend/casos.md)
 - [Ingestão e reprocessamento de jurisprudências](backend/ingestao-jurisprudencias.md)
 - [Normalização e classificação](backend/classificacao.md)
-- [Persistência no MongoDB](backend/persistencia.md)
+- [Persistência de jurisprudências no MongoDB](backend/persistencia.md)
 - [Geração de petições com OpenAI](backend/geracao-peticoes.md)
 
 ## Scraper

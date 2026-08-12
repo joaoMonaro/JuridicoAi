@@ -12,7 +12,8 @@ JuridicoAI.Api
     |                          +--> Playwright (sessão e reCAPTCHA)
     |                          +--> HttpClient (busca e paginação)
     |
-    |---- persistência ------------------------------> MongoDB
+    |---- jurisprudências ---------------------------> MongoDB
+    |---- casos (EF Core) ----------------------------> PostgreSQL
     |
     +---- geração de petição ------------------------> OpenAI Responses API
                          ^
@@ -35,7 +36,7 @@ src/
 │       ├── Application/       DTOs e casos de uso
 │       ├── Controllers/       endpoints HTTP
 │       ├── Domain/            entidades persistidas
-│       └── Infrastructure/    MongoDB, OpenAI e configurações
+│       └── Infrastructure/    EF Core/PostgreSQL, MongoDB, OpenAI e configurações
 └── JuridicoAI.Scrapper/
     ├── Program.cs
     └── src/
@@ -83,3 +84,8 @@ uma sessão Playwright e um `HttpClient` próprios para cada pesquisa.
 
 Os índices do MongoDB são criados sob demanda no início das operações de
 ingestão e reprocessamento, não durante a inicialização da API.
+
+A fundação do caso usa um `DbContext` scoped e repositórios implementados com
+Entity Framework Core. O modelo relacional é configurado explicitamente pela
+Fluent API. Na inicialização, o serviço de migrations cria um escopo próprio e
+executa `Database.MigrateAsync()` quando `Postgres:RunMigrations` está ativo.

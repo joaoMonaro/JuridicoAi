@@ -44,6 +44,9 @@ Edite o `.env` e defina:
 COMPOSE_PROJECT_NAME=juridicoai
 MONGO_ROOT_USERNAME=juridico
 MONGO_ROOT_PASSWORD=defina-uma-senha-local
+POSTGRES_DB=juridicoai
+POSTGRES_USER=juridico
+POSTGRES_PASSWORD=defina-uma-senha-local
 ```
 
 Se `COMPOSE_PROJECT_NAME` estiver exportado globalmente no terminal, ele tem
@@ -53,7 +56,7 @@ prioridade sobre o valor do `.env`. Remova-o antes de iniciar o projeto:
 unset COMPOSE_PROJECT_NAME
 ```
 
-Em seguida, inicie o MongoDB:
+Em seguida, inicie os bancos:
 
 ```bash
 docker compose up -d
@@ -63,7 +66,7 @@ O nome `COMPOSE_PROJECT_NAME=juridicoai` isola os containers, redes e volumes
 deste repositório dos demais projetos Compose da máquina.
 
 Evite `docker compose down -v` quando quiser preservar os dados. A opção `-v`
-remove também o volume do MongoDB.
+remove também os volumes do MongoDB e do PostgreSQL.
 
 ## Configurações da API
 
@@ -74,7 +77,7 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 |---|---:|---|
 | `Mongo:ConnectionString` | vazio | conexão obrigatória para operações com MongoDB |
 | `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
-| `Postgres:RunMigrations` | `true` | aplica migrations pendentes ao iniciar |
+| `Postgres:RunMigrations` | `true` | aplica migrations pendentes do EF Core ao iniciar |
 | `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
 | `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
 | `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
@@ -96,6 +99,10 @@ Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Mongo:ConnectionString" \
   "mongodb://juridico:defina-uma-senha-local@localhost:27017/?authSource=admin"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Postgres:ConnectionString" \
+  "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=defina-uma-senha-local"
 ```
 
 Para habilitar a geração de petições, configure a chave da OpenAI:
@@ -139,6 +146,7 @@ de nomes usa dois sublinhados:
 
 ```text
 Mongo:ConnectionString -> Mongo__ConnectionString
+Postgres:ConnectionString -> Postgres__ConnectionString
 OpenAI:ApiKey           -> OpenAI__ApiKey
 ```
 
@@ -184,8 +192,11 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 1. Execute `cp .env.example .env` e altere a senha.
 2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
 3. Inicie os bancos com `docker compose up -d`.
-4. Configure `Mongo:ConnectionString` nos user-secrets.
+4. Configure `Mongo:ConnectionString` e `Postgres:ConnectionString` nos
+   user-secrets.
 5. Configure `OpenAI:ApiKey` se for gerar petições.
 6. Execute `dotnet restore` e `dotnet build`.
 7. Instale o Chromium do Playwright, se necessário.
-8. Inicie a API e valide `GET http://localhost:5299/`.
+8. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
+   começar a atender requisições.
+9. Valide `GET http://localhost:5299/`.

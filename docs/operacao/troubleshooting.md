@@ -31,6 +31,27 @@ O padrão de `Mongo:ServerSelectionTimeoutSeconds` é 10 segundos. Verifique:
 Aumentar o timeout pode ajudar em redes lentas, mas não corrige conexão
 inválida.
 
+## Falha ao aplicar migrations do PostgreSQL
+
+As migrations da fundação do caso são gerenciadas pelo Entity Framework Core
+e aplicadas na inicialização quando `Postgres:RunMigrations=true`. Verifique:
+
+- se `Postgres:ConnectionString` aponta para o banco e a porta corretos;
+- credenciais e disponibilidade do PostgreSQL;
+- permissão do usuário para criar ou alterar tabelas e índices;
+- os logs de `DatabaseMigrationService` e do EF Core;
+- o conteúdo de `__EFMigrationsHistory`.
+
+Em um banco criado pelo mecanismo antigo, confirme que `schema_migrations`
+contém `001_fundacao_caso.sql`. Essa entrada permite que a API reconheça o
+schema existente e registre a migration inicial no histórico do EF sem recriar
+as tabelas.
+
+Não apague entradas de `__EFMigrationsHistory` nem execute novamente a
+migration inicial manualmente em um banco com dados. Antes de corrigir uma
+divergência de schema, faça backup e compare a estrutura real com a migration
+em `Infrastructure/Database/Migrations`.
+
 ## Chromium ou Playwright não encontrado
 
 O scraper tenta localizar instalações conhecidas do Chromium/Chrome. Quando
