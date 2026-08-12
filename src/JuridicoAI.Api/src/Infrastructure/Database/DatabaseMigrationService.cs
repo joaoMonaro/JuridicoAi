@@ -1,5 +1,6 @@
-using System.Reflection;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace JuridicoAI.Api.Infrastructure.Database;
 
@@ -8,93 +9,54 @@ public sealed class DatabaseMigrationService(
     IConfiguration configuration,
     ILogger<DatabaseMigrationService> logger) : IHostedService
 {
+    private const string InitialMigration = "20260812002119_InitialCreate";
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         if (!configuration.GetValue("Postgres:RunMigrations", true)) return;
         if (string.IsNullOrWhiteSpace(configuration["Postgres:ConnectionString"]))
         {
-            logger.LogWarning("PostgreSQL nao configurado; migrations da Fundacao do Caso nao foram executadas.");
+            logger.LogWarning("PostgreSQL nao configurado; migrations do EF Core nao foram executadas.");
             return;
         }
 
-        var factory = services.GetRequiredService<PostgresConnectionFactory>();
-        await using var connection = await factory.OpenConnectionAsync(cancellationToken);
-        await EnsureHistoryTableAsync(connection, cancellationToken);
-
-        var assembly = typeof(DatabaseMigrationService).Assembly;
-        var resources = assembly.GetManifestResourceNames()
-            .Where(name => name.Contains(".Database.Migrations.", StringComparison.Ordinal)
-                           && name.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
-            .OrderBy(name => name, StringComparer.Ordinal)
-            .ToArray();
-
-        foreach (var resource in resources)
-        {
-            var version = resource[(resource.LastIndexOf(".Migrations.", StringComparison.Ordinal) + 12)..];
-            if (await IsAppliedAsync(connection, version, cancellationToken)) continue;
-            await ApplyAsync(connection, assembly, resource, version, cancellationToken);
-            logger.LogInformation("Migration PostgreSQL {Migration} aplicada.", version);
-        }
+        await using var scope = services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+        await ImportLegacyHistoryAsync(context, cancellationToken);
+        await context.Database.MigrateAsync(cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private static async Task EnsureHistoryTableAsync(
-        NpgsqlConnection connection, CancellationToken cancellationToken)
+    private async Task ImportLegacyHistoryAsync(
+        JuridicoAiDbContext context, CancellationToken cancellationToken)
     {
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            CREATE TABLE IF NOT EXISTS schema_migrations (
-                version varchar(255) PRIMARY KEY,
-                applied_at timestamptz NOT NULL
-            )
-            """;
-        await command.ExecuteNonQueryAsync(cancellationToken);
-    }
-
-    private static async Task<bool> IsAppliedAsync(
-        NpgsqlConnection connection, string version, CancellationToken cancellationToken)
-    {
-        await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = @version)";
-        command.Parameters.AddWithValue("version", version);
-        return (bool)(await command.ExecuteScalarAsync(cancellationToken) ?? false);
-    }
-
-    private static async Task ApplyAsync(
-        NpgsqlConnection connection,
-        Assembly assembly,
-        string resource,
-        string version,
-        CancellationToken cancellationToken)
-    {
-        await using var stream = assembly.GetManifestResourceStream(resource)
-            ?? throw new InvalidOperationException($"Migration embutida nao encontrada: {resource}");
-        using var reader = new StreamReader(stream);
-        var sql = await reader.ReadToEndAsync(cancellationToken);
-        await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+        await context.Database.OpenConnectionAsync(cancellationToken);
         try
         {
-            await using (var migration = connection.CreateCommand())
-            {
-                migration.Transaction = transaction;
-                migration.CommandText = sql;
-                await migration.ExecuteNonQueryAsync(cancellationToken);
-            }
-            await using (var history = connection.CreateCommand())
-            {
-                history.Transaction = transaction;
-                history.CommandText = "INSERT INTO schema_migrations (version, applied_at) VALUES (@version, @applied_at)";
-                history.Parameters.AddWithValue("version", version);
-                history.Parameters.AddWithValue("applied_at", DateTime.UtcNow);
-                await history.ExecuteNonQueryAsync(cancellationToken);
-            }
-            await transaction.CommitAsync(cancellationToken);
+            await using var command = context.Database.GetDbConnection().CreateCommand();
+            command.CommandText = """
+                SELECT to_regclass('public.casos') IS NOT NULL
+                   AND to_regclass('public.schema_migrations') IS NOT NULL
+                """;
+            if (await command.ExecuteScalarAsync(cancellationToken) is not true) return;
+
+            command.CommandText =
+                "SELECT EXISTS (SELECT 1 FROM schema_migrations WHERE version = '001_fundacao_caso.sql')";
+            if (await command.ExecuteScalarAsync(cancellationToken) is not true) return;
+
+            var historyRepository = context.GetService<IHistoryRepository>();
+            await context.Database.ExecuteSqlRawAsync(historyRepository.GetCreateIfNotExistsScript(), cancellationToken);
+            await context.Database.ExecuteSqlInterpolatedAsync($"""
+                INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+                VALUES ({InitialMigration}, {ProductInfo.GetVersion()})
+                ON CONFLICT ("MigrationId") DO NOTHING
+                """, cancellationToken);
+            logger.LogInformation("Historico da migration SQL legada importado para o EF Core.");
         }
-        catch
+        finally
         {
-            await transaction.RollbackAsync(CancellationToken.None);
-            throw;
+            await context.Database.CloseConnectionAsync();
         }
     }
 }

@@ -8,6 +8,7 @@ using JuridicoAI.Api.Infrastructure.Repositories;
 using JuridicoAI.Api.Infrastructure.Settings;
 using JuridicoAI.Api.Infrastructure.Storage;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,8 @@ builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mong
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
-builder.Services.AddSingleton<PostgresConnectionFactory>();
+builder.Services.AddDbContext<JuridicoAiDbContext>(options =>
+    options.UseNpgsql(builder.Configuration["Postgres:ConnectionString"]));
 builder.Services.AddHostedService<DatabaseMigrationService>();
 var maxFileSize = builder.Configuration.GetValue<long?>("DocumentStorage:MaxFileSizeBytes") ?? 20 * 1024 * 1024;
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxFileSize + 1024 * 1024);
