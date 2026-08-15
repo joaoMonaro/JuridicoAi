@@ -15,6 +15,19 @@ OpenAPI/Swagger no estado atual.
 | `GET` | `/api/jurisprudencias/raw` | consulta dados brutos |
 | `POST` | `/api/jurisprudencias/reprocess` | reprocessa dados brutos existentes |
 | `POST` | `/peticoes/gerar` | gera uma petição com ementas e OpenAI |
+| `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
+| `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
+| `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
+| `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
+| `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
+| `POST` | `/templates-peca` | cria um template de Peça |
+| `GET` | `/templates-peca` | lista templates de Peça |
+| `GET` | `/templates-peca/{id}` | obtém um template de Peça |
+| `PATCH` | `/templates-peca/{id}` | atualiza um template de Peça |
+| `DELETE` | `/templates-peca/{id}` | exclui logicamente um template de Peça |
+
+Os contratos, exemplos, regras de cópia de template e controle de concorrência
+estão documentados em [Peças e templates](pecas.md).
 
 ## Ingerir jurisprudências
 

@@ -12,6 +12,7 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 
 - [API HTTP](backend/api.md)
 - [Fundação do caso](backend/casos.md)
+- [Peças e templates](backend/pecas.md)
 - [Ingestão e reprocessamento de jurisprudências](backend/ingestao-jurisprudencias.md)
 - [Normalização e classificação](backend/classificacao.md)
 - [Persistência de jurisprudências no MongoDB](backend/persistencia.md)
@@ -34,10 +35,10 @@ O projeto contém:
 - uma API ASP.NET Core em .NET 10;
 - um scraper do portal e-SAJ/TJSP, também em .NET 10;
 - persistência em MongoDB e PostgreSQL;
-- casos, envolvidos, contextos e documentos;
+- casos, envolvidos, contextos, documentos, peças e templates de peças;
 - geração de texto por meio da Responses API da OpenAI;
 - classificação local de jurisprudências por regras;
-- testes unitários da fundação do caso.
+- testes unitários da fundação do caso e de peças.
 
 Não há, no estado atual do repositório, autenticação/autorização,
 OpenAPI/Swagger, observabilidade distribuída ou contêiner da aplicação.

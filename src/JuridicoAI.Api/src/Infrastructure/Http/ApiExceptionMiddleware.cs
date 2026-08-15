@@ -9,7 +9,11 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
     public async Task InvokeAsync(HttpContext context)
     {
         try { await next(context); }
-        catch (ApiException ex) { await WriteProblemAsync(context, ex.StatusCode, ex.Message); }
+        catch (ApiException ex)
+        {
+            await WriteProblemAsync(context, ex.StatusCode, ex.Message,
+                ex is ConflitoDeVersaoException conflito ? conflito.Code : null);
+        }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
             await WriteProblemAsync(context, ex.StatusCode, "O arquivo excede o limite permitido.");
@@ -21,16 +25,18 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         }
     }
 
-    private static Task WriteProblemAsync(HttpContext context, int statusCode, string detail)
+    private static Task WriteProblemAsync(HttpContext context, int statusCode, string detail, string? code = null)
     {
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
-        return context.Response.WriteAsJsonAsync(new ProblemDetails
+        var problem = new ProblemDetails
         {
             Status = statusCode,
             Title = ReasonPhrases.GetReasonPhrase(statusCode),
             Detail = detail,
             Instance = context.Request.Path
-        });
+        };
+        if (code is not null) problem.Extensions["code"] = code;
+        return context.Response.WriteAsJsonAsync(problem);
     }
 }

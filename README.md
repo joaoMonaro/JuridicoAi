@@ -24,7 +24,11 @@ caso no PostgreSQL.
 Os exemplos de ingestao, consulta e reprocessamento estao em
 `src/JuridicoAI.Api/JuridicoAI.http`.
 
-Os dados de casos, envolvidos, contextos e metadados de documentos são
-persistidos no PostgreSQL por meio do Entity Framework Core. As migrations
+Os dados de casos, envolvidos, contextos, metadados de documentos, Peças e
+templates de Peça são persistidos no PostgreSQL por meio do Entity Framework
+Core. As migrations
 pendentes são aplicadas na inicialização da API quando
 `Postgres:RunMigrations` está habilitado.
+
+A documentação dos endpoints de Peças, templates e concorrência otimista está
+em [`docs/backend/pecas.md`](docs/backend/pecas.md).

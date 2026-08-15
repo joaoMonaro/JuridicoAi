@@ -13,7 +13,7 @@ JuridicoAI.Api
     |                          +--> HttpClient (busca e paginação)
     |
     |---- jurisprudências ---------------------------> MongoDB
-    |---- casos (EF Core) ----------------------------> PostgreSQL
+    |---- casos, peças e templates (EF Core) ---------> PostgreSQL
     |
     +---- geração de petição ------------------------> OpenAI Responses API
                          ^
@@ -89,3 +89,21 @@ A fundação do caso usa um `DbContext` scoped e repositórios implementados com
 Entity Framework Core. O modelo relacional é configurado explicitamente pela
 Fluent API. Na inicialização, o serviço de migrations cria um escopo próprio e
 executa `Database.MigrateAsync()` quando `Postgres:RunMigrations` está ativo.
+
+## Fluxo de Peças
+
+```text
+POST /casos/{casoId}/pecas
+    -> valida Caso e template opcional
+    -> copia conteúdo e configurações do template ou aplica defaults
+    -> grava documento contínuo em JSONB com status Rascunho e versão 1
+
+PATCH /pecas/{pecaId}
+    -> valida JSONs e versão recebida
+    -> UPDATE condicionado por id + versão + ausência de soft delete
+    -> incrementa versão atomicamente ou retorna HTTP 409
+```
+
+Templates são origens copiáveis, não vínculos dinâmicos. Alterações posteriores
+no template não propagam para Peças existentes. A listagem por Caso projeta
+somente metadados para não carregar documentos TipTap potencialmente grandes.

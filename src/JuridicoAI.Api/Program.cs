@@ -45,9 +45,12 @@ builder.Services.AddScoped<JurisprudenciaNormalizerService>();
 builder.Services.AddScoped<JurisprudenciaClassifierService>();
 builder.Services.AddScoped<JurisprudenciaIngestionService>();
 builder.Services.AddScoped<CasoApplicationService>();
+builder.Services.AddScoped<PecaApplicationService>();
+builder.Services.AddScoped<TemplatePecaApplicationService>();
 builder.Services.AddScoped<JurisprudenciaRawRepository>();
 builder.Services.AddScoped<JurisprudenciaRepository>();
 builder.Services.AddScoped<ICasoRepository, CasoRepository>();
+builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddHttpClient<OpenIAGateway>(client =>
 {

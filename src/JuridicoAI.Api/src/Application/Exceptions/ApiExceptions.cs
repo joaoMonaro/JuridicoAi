@@ -24,3 +24,9 @@ public sealed class TipoArquivoNaoSuportadoException(string message) : ApiExcept
 {
     public override int StatusCode => StatusCodes.Status415UnsupportedMediaType;
 }
+
+public sealed class ConflitoDeVersaoException(string message) : ApiException(message)
+{
+    public override int StatusCode => StatusCodes.Status409Conflict;
+    public string Code => "PECA_VERSION_CONFLICT";
+}

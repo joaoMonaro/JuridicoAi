@@ -1,17 +1,18 @@
 # Fundação do caso
 
-O agregado `Caso` organiza dados básicos, envolvidos, contextos textuais e
-metadados de documentos. Esta etapa não integra o caso à geração de petições
-nem processa o conteúdo dos arquivos com IA.
+O agregado `Caso` organiza dados básicos, envolvidos, contextos textuais,
+metadados de documentos e Peças jurídicas. A fundação não processa o conteúdo
+dos arquivos com IA. Peças e seus templates são descritos separadamente em
+[Peças e templates](pecas.md).
 
 ## Persistência e inicialização
 
 Os dados são persistidos no PostgreSQL por meio do Entity Framework Core e do
 provedor `Npgsql.EntityFrameworkCore.PostgreSQL`. O `JuridicoAiDbContext`
-expõe os conjuntos de casos, envolvidos, contextos e documentos. Os nomes de
-tabelas e colunas, tamanhos, conversões de enums, índices, relacionamentos e
-checks são definidos explicitamente pela Fluent API em
-`Infrastructure/Database/EntityConfigurations.cs`.
+expõe os conjuntos de casos, envolvidos, contextos, documentos, Peças e
+templates de Peça. Nomes de tabelas e colunas, tamanhos, conversões de enums,
+índices, relacionamentos e checks são definidos explicitamente pela Fluent API
+em `Infrastructure/Database/EntityConfigurations.cs`.
 
 Na inicialização, a API executa `Database.MigrateAsync()` e registra as
 migrations aplicadas na tabela padrão `__EFMigrationsHistory`. Se
@@ -27,7 +28,8 @@ export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;
 
 `Postgres:RunMigrations` permite desabilitar a execução automática. A migration
 inicial do EF Core cria `casos`, `envolvidos_caso`, `contextos_caso` e
-`documentos_caso`, com chaves estrangeiras, checks e índices por `caso_id`.
+`documentos_caso`. A migration `AddPecas` acrescenta `pecas` e
+`templates_peca`, com chaves estrangeiras, checks e índices de listagem.
 
 ### Compatibilidade com o banco anterior
 
