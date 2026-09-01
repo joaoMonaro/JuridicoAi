@@ -1,5 +1,9 @@
 # Fundação do caso
 
+Todos os endpoints deste documento exigem `Authorization: Bearer`. O Caso
+pertence à Organization do token e registra o User que criou e atualizou o
+registro. Identificadores de outra Organization são tratados como inexistentes.
+
 O agregado `Caso` organiza dados básicos, envolvidos, contextos textuais,
 metadados de documentos e Peças jurídicas. A fundação não processa o conteúdo
 dos arquivos com IA. Peças e seus templates são descritos separadamente em

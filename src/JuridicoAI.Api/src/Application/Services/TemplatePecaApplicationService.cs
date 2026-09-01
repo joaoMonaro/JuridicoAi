@@ -5,7 +5,7 @@ using JuridicoAI.Api.Domain.Entities;
 
 namespace JuridicoAI.Api.Application.Services;
 
-public sealed class TemplatePecaApplicationService(IPecaRepository repository)
+public sealed class TemplatePecaApplicationService(IPecaRepository repository, IAuthContext auth)
 {
     public async Task<TemplatePeca> CriarAsync(CriarTemplatePecaRequest request, CancellationToken ct)
     {
@@ -19,6 +19,9 @@ public sealed class TemplatePecaApplicationService(IPecaRepository repository)
         return await repository.CriarTemplateAsync(new TemplatePeca
         {
             Id = Guid.NewGuid(),
+            OrganizationId = auth.OrganizationId,
+            CreatedById = auth.UserId,
+            UpdatedById = auth.UserId,
             Nome = request.Nome.Trim(),
             ConteudoJson = request.ConteudoJson is { } conteudo ? PecaApplicationService.Documento(conteudo) : PecaDefaults.NovoConteudo(),
             PageConfig = request.PageConfig is { } pagina ? PecaApplicationService.Documento(pagina) : PecaDefaults.NovaPagina(),
@@ -30,10 +33,10 @@ public sealed class TemplatePecaApplicationService(IPecaRepository repository)
         }, ct);
     }
 
-    public Task<IReadOnlyList<TemplatePeca>> ListarAsync(CancellationToken ct) => repository.ListarTemplatesAsync(ct);
+    public Task<IReadOnlyList<TemplatePeca>> ListarAsync(CancellationToken ct) => repository.ListarTemplatesAsync(auth.OrganizationId, ct);
 
     public async Task<TemplatePeca> ObterAsync(Guid id, CancellationToken ct) =>
-        await repository.ObterTemplateAsync(id, ct)
+        await repository.ObterTemplateAsync(id, auth.OrganizationId, ct)
         ?? throw new RecursoNaoEncontradoException($"Template de peca '{id}' nao encontrado.");
 
     public async Task<TemplatePeca> AtualizarAsync(Guid id, AtualizarTemplatePecaRequest request, CancellationToken ct)
@@ -55,6 +58,7 @@ public sealed class TemplatePecaApplicationService(IPecaRepository repository)
         if (request.FooterJson is { } footer) item.FooterJson = PecaApplicationService.Documento(footer);
         if (request.Styles is { } styles) item.Styles = PecaApplicationService.Documento(styles);
         item.DataAtualizacao = DateTime.UtcNow;
+        item.UpdatedById = auth.UserId;
         if (!await repository.AtualizarTemplateAsync(item, ct))
             throw new RecursoNaoEncontradoException($"Template de peca '{id}' nao encontrado.");
         return item;
@@ -62,7 +66,7 @@ public sealed class TemplatePecaApplicationService(IPecaRepository repository)
 
     public async Task ExcluirAsync(Guid id, CancellationToken ct)
     {
-        if (!await repository.ExcluirTemplateAsync(id, DateTime.UtcNow, ct))
+        if (!await repository.ExcluirTemplateAsync(id, auth.OrganizationId, auth.UserId, DateTime.UtcNow, ct))
             throw new RecursoNaoEncontradoException($"Template de peca '{id}' nao encontrado.");
     }
 }

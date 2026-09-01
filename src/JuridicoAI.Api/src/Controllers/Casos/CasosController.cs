@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JuridicoAI.Api.Controllers.Casos;
 
 [ApiController]
+[Microsoft.AspNetCore.Authorization.Authorize]
 [Route("casos")]
 public sealed class CasosController(CasoApplicationService service) : ControllerBase
 {

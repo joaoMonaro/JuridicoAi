@@ -5,6 +5,7 @@
 ```text
 Cliente HTTP
     |
+    |---- JWT/AuthContext ----> Session, User, Membership, Organization
     v
 JuridicoAI.Api
     |---- ingestão ------> JuridicoAI.Scrapper ------> e-SAJ/TJSP
@@ -13,7 +14,7 @@ JuridicoAI.Api
     |                          +--> HttpClient (busca e paginação)
     |
     |---- jurisprudências ---------------------------> MongoDB
-    |---- casos, peças e templates (EF Core) ---------> PostgreSQL
+    |---- identidade, casos e peças (EF Core) --------> PostgreSQL
     |
     +---- geração de petição ------------------------> OpenAI Responses API
                          ^
@@ -89,6 +90,10 @@ A fundação do caso usa um `DbContext` scoped e repositórios implementados com
 Entity Framework Core. O modelo relacional é configurado explicitamente pela
 Fluent API. Na inicialização, o serviço de migrations cria um escopo próprio e
 executa `Database.MigrateAsync()` quando `Postgres:RunMigrations` está ativo.
+
+Casos, Peças e Templates são dados privados filtrados por `organizationId`.
+Jurisprudências permanecem globais e compartilhadas. O middleware JWT valida a
+Session antes de construir o `AuthContext` usado pelos serviços e repositórios.
 
 ## Fluxo de Peças
 

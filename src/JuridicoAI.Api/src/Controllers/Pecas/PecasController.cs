@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JuridicoAI.Api.Controllers.Pecas;
 
 [ApiController]
+[Microsoft.AspNetCore.Authorization.Authorize]
 public sealed class PecasController(PecaApplicationService service) : ControllerBase
 {
     [HttpPost("casos/{casoId:guid}/pecas")]

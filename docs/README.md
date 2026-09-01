@@ -7,10 +7,12 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 
 - [Arquitetura e fluxos](arquitetura.md)
 - [Configuração e execução](configuracao-e-execucao.md)
+- [User Secrets no desenvolvimento](user-secrets.md)
 
 ## Backend
 
 - [API HTTP](backend/api.md)
+- [Autenticação e multitenancy](backend/autenticacao-e-multitenancy.md)
 - [Fundação do caso](backend/casos.md)
 - [Peças e templates](backend/pecas.md)
 - [Ingestão e reprocessamento de jurisprudências](backend/ingestao-jurisprudencias.md)
@@ -40,6 +42,6 @@ O projeto contém:
 - classificação local de jurisprudências por regras;
 - testes unitários da fundação do caso e de peças.
 
-Não há, no estado atual do repositório, autenticação/autorização,
-OpenAPI/Swagger, observabilidade distribuída ou contêiner da aplicação.
+Não há, no estado atual do repositório, cadastro público, OpenAPI/Swagger,
+observabilidade distribuída ou contêiner da aplicação.
 O `docker-compose.yml` provisiona MongoDB e PostgreSQL.

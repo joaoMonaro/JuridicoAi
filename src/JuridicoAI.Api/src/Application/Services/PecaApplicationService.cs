@@ -6,23 +6,26 @@ using JuridicoAI.Api.Domain.Entities;
 
 namespace JuridicoAI.Api.Application.Services;
 
-public sealed class PecaApplicationService(IPecaRepository repository)
+public sealed class PecaApplicationService(IPecaRepository repository, IAuthContext auth)
 {
     public async Task<Peca> CriarAsync(Guid casoId, CriarPecaRequest request, CancellationToken ct)
     {
         ValidarNome(request.Titulo, "titulo");
-        if (!await repository.CasoExisteAsync(casoId, ct))
+        if (!await repository.CasoExisteAsync(casoId, auth.OrganizationId, ct))
             throw new RecursoNaoEncontradoException($"Caso '{casoId}' nao encontrado.");
 
         TemplatePeca? template = null;
         if (request.TemplateId is { } templateId)
-            template = await repository.ObterTemplateAsync(templateId, ct)
+            template = await repository.ObterTemplateAsync(templateId, auth.OrganizationId, ct)
                 ?? throw new RecursoNaoEncontradoException($"Template de peca '{templateId}' nao encontrado.");
 
         var agora = DateTime.UtcNow;
         return await repository.CriarPecaAsync(new Peca
         {
             Id = Guid.NewGuid(),
+            OrganizationId = auth.OrganizationId,
+            CreatedById = auth.UserId,
+            UpdatedById = auth.UserId,
             CasoId = casoId,
             Titulo = request.Titulo.Trim(),
             TemplateId = template?.Id,
@@ -40,13 +43,13 @@ public sealed class PecaApplicationService(IPecaRepository repository)
 
     public async Task<IReadOnlyList<PecaListaDto>> ListarAsync(Guid casoId, CancellationToken ct)
     {
-        if (!await repository.CasoExisteAsync(casoId, ct))
+        if (!await repository.CasoExisteAsync(casoId, auth.OrganizationId, ct))
             throw new RecursoNaoEncontradoException($"Caso '{casoId}' nao encontrado.");
-        return await repository.ListarPecasAsync(casoId, ct);
+        return await repository.ListarPecasAsync(casoId, auth.OrganizationId, ct);
     }
 
     public async Task<Peca> ObterAsync(Guid id, CancellationToken ct) =>
-        await repository.ObterPecaAsync(id, ct)
+        await repository.ObterPecaAsync(id, auth.OrganizationId, ct)
         ?? throw new RecursoNaoEncontradoException($"Peca '{id}' nao encontrada.");
 
     public async Task<PecaAtualizadaDto> AtualizarAsync(Guid id, AtualizarPecaRequest request, CancellationToken ct)
@@ -72,6 +75,7 @@ public sealed class PecaApplicationService(IPecaRepository repository)
         if (request.Styles is { } styles) peca.Styles = Documento(styles);
         if (request.Status is { } novoStatus) peca.Status = novoStatus;
         peca.DataAtualizacao = DateTime.UtcNow;
+        peca.UpdatedById = auth.UserId;
         if (!await repository.AtualizarPecaAsync(peca, request.Versao, ct))
             throw new ConflitoDeVersaoException("A peca foi alterada por outra requisicao.");
         return new PecaAtualizadaDto(peca.Id, request.Versao + 1, peca.DataAtualizacao);
@@ -81,7 +85,7 @@ public sealed class PecaApplicationService(IPecaRepository repository)
     {
         if (versao < 1) throw new RequisicaoInvalidaException("A versao deve ser maior que zero.");
         await ObterAsync(id, ct);
-        if (!await repository.ExcluirPecaAsync(id, versao, DateTime.UtcNow, ct))
+        if (!await repository.ExcluirPecaAsync(id, auth.OrganizationId, auth.UserId, versao, DateTime.UtcNow, ct))
             throw new ConflitoDeVersaoException("A peca foi alterada por outra requisicao.");
     }
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JuridicoAI.Api.Controllers.Pecas;
 
 [ApiController]
+[Microsoft.AspNetCore.Authorization.Authorize]
 [Route("templates-peca")]
 public sealed class TemplatesPecaController(TemplatePecaApplicationService service) : ControllerBase
 {

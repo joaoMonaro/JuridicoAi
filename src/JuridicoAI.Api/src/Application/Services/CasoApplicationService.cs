@@ -10,6 +10,7 @@ namespace JuridicoAI.Api.Application.Services;
 public sealed class CasoApplicationService(
     ICasoRepository repository,
     IFileStorage fileStorage,
+    IAuthContext auth,
     IOptions<DocumentStorageSettings> storageOptions,
     ILogger<CasoApplicationService> logger)
 {
@@ -18,10 +19,10 @@ public sealed class CasoApplicationService(
     public Task<IReadOnlyList<Caso>> ListarCasosAsync(
         CasoStatus? status,
         CancellationToken cancellationToken) =>
-        repository.ListarCasosAsync(status, cancellationToken);
+        repository.ListarCasosAsync(auth.OrganizationId, status, cancellationToken);
 
     public async Task<Caso> ObterCasoAsync(Guid id, CancellationToken cancellationToken) =>
-        await repository.ObterCasoAsync(id, cancellationToken)
+        await repository.ObterCasoAsync(id, auth.OrganizationId, cancellationToken)
         ?? throw NaoEncontrado("Caso", id);
 
     public async Task<Caso> CriarCasoAsync(CriarCasoRequest request, CancellationToken cancellationToken)
@@ -33,6 +34,9 @@ public sealed class CasoApplicationService(
         return await repository.CriarCasoAsync(new Caso
         {
             Id = Guid.NewGuid(),
+            OrganizationId = auth.OrganizationId,
+            CreatedById = auth.UserId,
+            UpdatedById = auth.UserId,
             Titulo = request.Titulo.Trim(),
             Descricao = NormalizarOpcional(request.Descricao),
             Status = CasoStatus.Ativo,
@@ -53,6 +57,7 @@ public sealed class CasoApplicationService(
         existente.Titulo = request.Titulo.Trim();
         existente.Descricao = NormalizarOpcional(request.Descricao);
         existente.Status = request.Status!.Value;
+        existente.UpdatedById = auth.UserId;
         existente.DataAtualizacao = DateTime.UtcNow;
         if (!await repository.AtualizarCasoAsync(existente, cancellationToken))
             throw NaoEncontrado("Caso", id);
@@ -61,7 +66,7 @@ public sealed class CasoApplicationService(
 
     public async Task ArquivarCasoAsync(Guid id, CancellationToken cancellationToken)
     {
-        if (!await repository.ArquivarCasoAsync(id, DateTime.UtcNow, cancellationToken))
+        if (!await repository.ArquivarCasoAsync(id, auth.OrganizationId, auth.UserId, DateTime.UtcNow, cancellationToken))
             throw NaoEncontrado("Caso", id);
     }
 
@@ -93,14 +98,14 @@ public sealed class CasoApplicationService(
         Guid casoId, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ListarEnvolvidosAsync(casoId, cancellationToken);
+        return await repository.ListarEnvolvidosAsync(casoId, auth.OrganizationId, cancellationToken);
     }
 
     public async Task<EnvolvidoCaso> ObterEnvolvidoAsync(
         Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ObterEnvolvidoAsync(casoId, id, cancellationToken)
+        return await repository.ObterEnvolvidoAsync(casoId, id, auth.OrganizationId, cancellationToken)
             ?? throw NaoEncontrado("Envolvido", id);
     }
 
@@ -125,7 +130,7 @@ public sealed class CasoApplicationService(
     public async Task RemoverEnvolvidoAsync(Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        if (!await repository.RemoverEnvolvidoAsync(casoId, id, cancellationToken))
+        if (!await repository.RemoverEnvolvidoAsync(casoId, id, auth.OrganizationId, cancellationToken))
             throw NaoEncontrado("Envolvido", id);
     }
 
@@ -153,14 +158,14 @@ public sealed class CasoApplicationService(
         Guid casoId, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ListarContextosAsync(casoId, cancellationToken);
+        return await repository.ListarContextosAsync(casoId, auth.OrganizationId, cancellationToken);
     }
 
     public async Task<ContextoCaso> ObterContextoAsync(
         Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ObterContextoAsync(casoId, id, cancellationToken)
+        return await repository.ObterContextoAsync(casoId, id, auth.OrganizationId, cancellationToken)
             ?? throw NaoEncontrado("Contexto", id);
     }
 
@@ -183,7 +188,7 @@ public sealed class CasoApplicationService(
     public async Task RemoverContextoAsync(Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        if (!await repository.RemoverContextoAsync(casoId, id, cancellationToken))
+        if (!await repository.RemoverContextoAsync(casoId, id, auth.OrganizationId, cancellationToken))
             throw NaoEncontrado("Contexto", id);
     }
 
@@ -238,14 +243,14 @@ public sealed class CasoApplicationService(
         Guid casoId, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ListarDocumentosAsync(casoId, cancellationToken);
+        return await repository.ListarDocumentosAsync(casoId, auth.OrganizationId, cancellationToken);
     }
 
     public async Task<DocumentoCaso> ObterDocumentoAsync(
         Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         await GarantirCasoAsync(casoId, cancellationToken);
-        return await repository.ObterDocumentoAsync(casoId, id, cancellationToken)
+        return await repository.ObterDocumentoAsync(casoId, id, auth.OrganizationId, cancellationToken)
             ?? throw NaoEncontrado("Documento", id);
     }
 
@@ -260,7 +265,7 @@ public sealed class CasoApplicationService(
     public async Task RemoverDocumentoAsync(Guid casoId, Guid id, CancellationToken cancellationToken)
     {
         var documento = await ObterDocumentoAsync(casoId, id, cancellationToken);
-        if (!await repository.RemoverDocumentoAsync(casoId, id, cancellationToken))
+        if (!await repository.RemoverDocumentoAsync(casoId, id, auth.OrganizationId, cancellationToken))
             throw NaoEncontrado("Documento", id);
         try
         {
@@ -276,9 +281,9 @@ public sealed class CasoApplicationService(
         Guid casoId, CancellationToken cancellationToken)
     {
         var caso = await ObterCasoAsync(casoId, cancellationToken);
-        var envolvidosTask = repository.ListarEnvolvidosAsync(casoId, cancellationToken);
-        var contextosTask = repository.ListarContextosAsync(casoId, cancellationToken);
-        var documentosTask = repository.ListarDocumentosAsync(casoId, cancellationToken);
+        var envolvidosTask = repository.ListarEnvolvidosAsync(casoId, auth.OrganizationId, cancellationToken);
+        var contextosTask = repository.ListarContextosAsync(casoId, auth.OrganizationId, cancellationToken);
+        var documentosTask = repository.ListarDocumentosAsync(casoId, auth.OrganizationId, cancellationToken);
         await Task.WhenAll(envolvidosTask, contextosTask, documentosTask);
         return new CasoContextoCompletoDto(
             caso,
@@ -289,7 +294,7 @@ public sealed class CasoApplicationService(
 
     private async Task GarantirCasoAsync(Guid casoId, CancellationToken cancellationToken)
     {
-        if (await repository.ObterCasoAsync(casoId, cancellationToken) is null)
+        if (await repository.ObterCasoAsync(casoId, auth.OrganizationId, cancellationToken) is null)
             throw NaoEncontrado("Caso", casoId);
     }
 

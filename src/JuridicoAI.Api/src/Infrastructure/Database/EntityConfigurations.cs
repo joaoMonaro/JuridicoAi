@@ -18,12 +18,19 @@ internal sealed class CasoConfiguration : IEntityTypeConfiguration<Caso>
         });
         builder.HasKey(x => x.Id).HasName("casos_pkey");
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.CreatedById).HasColumnName("created_by_id");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
         builder.Property(x => x.Titulo).HasColumnName("titulo").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Descricao).HasColumnName("descricao").HasMaxLength(4000);
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).HasConversion<string>();
         builder.Property(x => x.DataCriacao).HasColumnName("data_criacao");
         builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
         builder.HasIndex(x => x.Status).HasDatabaseName("ix_casos_status");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.Status }).HasDatabaseName("ix_casos_organization_status");
     }
 }
 
@@ -128,6 +135,9 @@ internal sealed class PecaConfiguration : IEntityTypeConfiguration<Peca>
         });
         builder.HasKey(x => x.Id).HasName("pecas_pkey");
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.CreatedById).HasColumnName("created_by_id");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
         builder.Property(x => x.CasoId).HasColumnName("caso_id");
         builder.Property(x => x.Titulo).HasColumnName("titulo").HasMaxLength(200).IsRequired();
         builder.Property(x => x.ConteudoJson).HasColumnName("conteudo_json").HasColumnType("jsonb").IsRequired();
@@ -145,8 +155,11 @@ internal sealed class PecaConfiguration : IEntityTypeConfiguration<Peca>
             .HasConstraintName("pecas_caso_id_fkey");
         builder.HasOne<TemplatePeca>().WithMany().HasForeignKey(x => x.TemplateId).OnDelete(DeleteBehavior.Restrict)
             .HasConstraintName("pecas_template_id_fkey");
-        builder.HasIndex(x => new { x.CasoId, x.DataExclusao, x.DataAtualizacao }).HasDatabaseName("ix_pecas_caso_listagem");
+        builder.HasIndex(x => new { x.OrganizationId, x.CasoId, x.DataExclusao, x.DataAtualizacao }).HasDatabaseName("ix_pecas_caso_listagem");
         builder.HasIndex(x => x.TemplateId).HasDatabaseName("ix_pecas_template_id");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -158,6 +171,9 @@ internal sealed class TemplatePecaConfiguration : IEntityTypeConfiguration<Templ
             table.HasCheckConstraint("ck_templates_peca_nome", "length(btrim(nome)) > 0"));
         builder.HasKey(x => x.Id).HasName("templates_peca_pkey");
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.CreatedById).HasColumnName("created_by_id");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
         builder.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(200).IsRequired();
         builder.Property(x => x.ConteudoJson).HasColumnName("conteudo_json").HasColumnType("jsonb").IsRequired();
         builder.Property(x => x.PageConfig).HasColumnName("page_config").HasColumnType("jsonb").IsRequired();
@@ -167,6 +183,70 @@ internal sealed class TemplatePecaConfiguration : IEntityTypeConfiguration<Templ
         builder.Property(x => x.DataCriacao).HasColumnName("data_criacao");
         builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
         builder.Property(x => x.DataExclusao).HasColumnName("data_exclusao");
-        builder.HasIndex(x => new { x.DataExclusao, x.Nome }).HasDatabaseName("ix_templates_peca_listagem");
+        builder.HasIndex(x => new { x.OrganizationId, x.DataExclusao, x.Nome }).HasDatabaseName("ix_templates_peca_listagem");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.CreatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
+{
+    public void Configure(EntityTypeBuilder<Organization> builder)
+    {
+        builder.ToTable("organizations", t => t.HasCheckConstraint("ck_organizations_nome", "length(btrim(nome)) > 0"));
+        builder.HasKey(x => x.Id); builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).HasConversion<string>();
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao"); builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+    }
+}
+
+internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
+{
+    public void Configure(EntityTypeBuilder<User> builder)
+    {
+        builder.ToTable("users"); builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(320).IsRequired();
+        builder.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(500).IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(20).HasConversion<string>();
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao"); builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+        builder.HasIndex(x => x.Email).IsUnique().HasDatabaseName("uq_users_email");
+    }
+}
+
+internal sealed class MembershipConfiguration : IEntityTypeConfiguration<Membership>
+{
+    public void Configure(EntityTypeBuilder<Membership> builder)
+    {
+        builder.ToTable("memberships"); builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id"); builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.Role).HasColumnName("role").HasMaxLength(20).HasConversion<string>();
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao"); builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.UserId }).IsUnique().HasDatabaseName("uq_memberships_organization_user");
+        builder.HasIndex(x => x.UserId).HasDatabaseName("ix_memberships_user_id");
+    }
+}
+
+internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
+{
+    public void Configure(EntityTypeBuilder<Session> builder)
+    {
+        builder.ToTable("sessions"); builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever(); builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.RefreshTokenHash).HasColumnName("refresh_token_hash").HasMaxLength(64).IsRequired();
+        builder.Property(x => x.ExpiraEm).HasColumnName("expira_em"); builder.Property(x => x.RevogadaEm).HasColumnName("revogada_em");
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao"); builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+        builder.Property(x => x.UltimoUsoEm).HasColumnName("ultimo_uso_em");
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => x.RefreshTokenHash).IsUnique().HasDatabaseName("uq_sessions_refresh_token_hash");
+        builder.HasIndex(x => new { x.UserId, x.OrganizationId }).HasDatabaseName("ix_sessions_user_organization");
     }
 }

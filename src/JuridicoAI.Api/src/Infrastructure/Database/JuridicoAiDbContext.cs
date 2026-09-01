@@ -12,6 +12,10 @@ public sealed class JuridicoAiDbContext(DbContextOptions<JuridicoAiDbContext> op
     public DbSet<DocumentoCaso> DocumentosCaso => Set<DocumentoCaso>();
     public DbSet<Peca> Pecas => Set<Peca>();
     public DbSet<TemplatePeca> TemplatesPeca => Set<TemplatePeca>();
+    public DbSet<Organization> Organizations => Set<Organization>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<Session> Sessions => Set<Session>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JuridicoAiDbContext).Assembly);

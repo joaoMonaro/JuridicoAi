@@ -145,13 +145,30 @@ public sealed class CasoApplicationServiceTests
         Assert.Single(storage.Deleted);
     }
 
+    [Fact]
+    public async Task Organization_NaoListaLeOuAlteraCasoDeOutraOrganization()
+    {
+        var repository = new InMemoryCasoRepository();
+        var storage = new InMemoryFileStorage();
+        var settings = Options.Create(new DocumentStorageSettings { MaxFileSizeBytes = 1024 });
+        var authA = new TestAuthContext();
+        var authB = new TestAuthContext();
+        var serviceA = new CasoApplicationService(repository, storage, authA, settings, NullLogger<CasoApplicationService>.Instance);
+        var serviceB = new CasoApplicationService(repository, storage, authB, settings, NullLogger<CasoApplicationService>.Instance);
+        var casoB = await serviceB.CriarCasoAsync(new CriarCasoRequest("B", null), default);
+
+        Assert.Empty(await serviceA.ListarCasosAsync(null, default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() => serviceA.ObterCasoAsync(casoB.Id, default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() => serviceA.ArquivarCasoAsync(casoB.Id, default));
+    }
+
     private static (CasoApplicationService Service, InMemoryCasoRepository Repository, InMemoryFileStorage Storage)
         CreateService(long maxFileSize = 1024)
     {
         var repository = new InMemoryCasoRepository();
         var storage = new InMemoryFileStorage();
         var settings = Options.Create(new DocumentStorageSettings { MaxFileSizeBytes = maxFileSize });
-        var service = new CasoApplicationService(repository, storage, settings,
+        var service = new CasoApplicationService(repository, storage, new TestAuthContext(), settings,
             NullLogger<CasoApplicationService>.Instance);
         return (service, repository, storage);
     }
@@ -187,35 +204,35 @@ public sealed class CasoApplicationServiceTests
         public bool FailDocumentCreate { get; set; }
 
         public Task<Caso> CriarCasoAsync(Caso caso, CancellationToken ct) { _casos.Add(caso.Id, caso); return Task.FromResult(caso); }
-        public Task<IReadOnlyList<Caso>> ListarCasosAsync(CasoStatus? status, CancellationToken ct) => Result(_casos.Values.Where(x => status is null || x.Status == status));
-        public Task<Caso?> ObterCasoAsync(Guid id, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(id));
+        public Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid org, CasoStatus? status, CancellationToken ct) => Result(_casos.Values.Where(x => x.OrganizationId == org && (status is null || x.Status == status)));
+        public Task<Caso?> ObterCasoAsync(Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(id) is { } x && x.OrganizationId == org ? x : null);
         public Task<bool> AtualizarCasoAsync(Caso caso, CancellationToken ct) => Task.FromResult(_casos.ContainsKey(caso.Id));
-        public Task<bool> ArquivarCasoAsync(Guid id, DateTime updatedAt, CancellationToken ct)
+        public Task<bool> ArquivarCasoAsync(Guid id, Guid org, Guid user, DateTime updatedAt, CancellationToken ct)
         {
-            if (!_casos.TryGetValue(id, out var caso)) return Task.FromResult(false);
+            if (!_casos.TryGetValue(id, out var caso) || caso.OrganizationId != org) return Task.FromResult(false);
             caso.Status = CasoStatus.Arquivado; caso.DataAtualizacao = updatedAt; return Task.FromResult(true);
         }
 
         public Task<EnvolvidoCaso> CriarEnvolvidoAsync(EnvolvidoCaso item, CancellationToken ct) { _envolvidos.Add(item.Id, item); return Task.FromResult(item); }
-        public Task<IReadOnlyList<EnvolvidoCaso>> ListarEnvolvidosAsync(Guid casoId, CancellationToken ct) => Result(_envolvidos.Values.Where(x => x.CasoId == casoId));
-        public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(_envolvidos.GetValueOrDefault(id) is { } x && x.CasoId == casoId ? x : null);
+        public Task<IReadOnlyList<EnvolvidoCaso>> ListarEnvolvidosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_envolvidos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
+        public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_envolvidos.GetValueOrDefault(id) is { } x && x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org ? x : null);
         public Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso item, CancellationToken ct) => Task.FromResult(_envolvidos.ContainsKey(item.Id));
-        public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(Remove(_envolvidos, casoId, id, x => x.CasoId));
+        public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(casoId)?.OrganizationId == org && Remove(_envolvidos, casoId, id, x => x.CasoId));
 
         public Task<ContextoCaso> CriarContextoAsync(ContextoCaso item, CancellationToken ct) { _contextos.Add(item.Id, item); return Task.FromResult(item); }
-        public Task<IReadOnlyList<ContextoCaso>> ListarContextosAsync(Guid casoId, CancellationToken ct) => Result(_contextos.Values.Where(x => x.CasoId == casoId));
-        public Task<ContextoCaso?> ObterContextoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(_contextos.GetValueOrDefault(id) is { } x && x.CasoId == casoId ? x : null);
+        public Task<IReadOnlyList<ContextoCaso>> ListarContextosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_contextos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
+        public Task<ContextoCaso?> ObterContextoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_contextos.GetValueOrDefault(id) is { } x && x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org ? x : null);
         public Task<bool> AtualizarContextoAsync(ContextoCaso item, CancellationToken ct) => Task.FromResult(_contextos.ContainsKey(item.Id));
-        public Task<bool> RemoverContextoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(Remove(_contextos, casoId, id, x => x.CasoId));
+        public Task<bool> RemoverContextoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(casoId)?.OrganizationId == org && Remove(_contextos, casoId, id, x => x.CasoId));
 
         public Task<DocumentoCaso> CriarDocumentoAsync(DocumentoCaso item, CancellationToken ct)
         {
             if (FailDocumentCreate) throw new InvalidOperationException("falha simulada");
             _documentos.Add(item.Id, item); return Task.FromResult(item);
         }
-        public Task<IReadOnlyList<DocumentoCaso>> ListarDocumentosAsync(Guid casoId, CancellationToken ct) => Result(_documentos.Values.Where(x => x.CasoId == casoId));
-        public Task<DocumentoCaso?> ObterDocumentoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(_documentos.GetValueOrDefault(id) is { } x && x.CasoId == casoId ? x : null);
-        public Task<bool> RemoverDocumentoAsync(Guid casoId, Guid id, CancellationToken ct) => Task.FromResult(Remove(_documentos, casoId, id, x => x.CasoId));
+        public Task<IReadOnlyList<DocumentoCaso>> ListarDocumentosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_documentos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
+        public Task<DocumentoCaso?> ObterDocumentoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_documentos.GetValueOrDefault(id) is { } x && x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org ? x : null);
+        public Task<bool> RemoverDocumentoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(casoId)?.OrganizationId == org && Remove(_documentos, casoId, id, x => x.CasoId));
 
         private static Task<IReadOnlyList<T>> Result<T>(IEnumerable<T> items) => Task.FromResult<IReadOnlyList<T>>(items.ToList());
         private static bool Remove<T>(Dictionary<Guid, T> items, Guid casoId, Guid id, Func<T, Guid> getCasoId) =>

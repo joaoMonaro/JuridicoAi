@@ -11,7 +11,10 @@ public enum PecaStatus
 public sealed class Peca
 {
     public Guid Id { get; init; }
+    public Guid OrganizationId { get; init; }
     public Guid CasoId { get; init; }
+    public Guid CreatedById { get; init; }
+    public Guid UpdatedById { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public JsonDocument ConteudoJson { get; set; } = null!;
     public Guid? TemplateId { get; init; }

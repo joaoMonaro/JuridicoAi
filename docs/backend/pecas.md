@@ -5,6 +5,9 @@ backend armazena o documento contínuo e suas configurações, mas não renderiz
 páginas, HTML, PDF ou DOCX. O JSON TipTap/ProseMirror é a fonte canônica para o
 futuro editor.
 
+Todos os endpoints de Peças e Templates exigem `Authorization: Bearer` e usam a
+Organization do token como fonte de autoridade.
+
 ## Modelo e persistência
 
 Peças e templates são persistidos no PostgreSQL por meio do Entity Framework
@@ -195,10 +198,10 @@ exclusão e nome para templates. Há também índice para `templateId`.
 
 ## Segurança e escopo atual
 
-A API ainda não possui autenticação, usuários, escritórios ou tenants. Por
-isso, Peças e templates seguem o modelo de segurança atual e não têm filtro de
-proprietário. Quando autenticação for adicionada, os acessos ao Caso e aos
-templates precisarão ser vinculados ao contexto autenticado.
+Peças e Templates possuem `organizationId`, `createdById` e `updatedById`.
+Consultas e updates incluem a Organization autenticada; Caso e Template de
+outra Organization não podem ser usados para criar uma Peça. O locking
+otimista inclui `organizationId` além de identificador e versão.
 
 Não fazem parte desta implementação editor visual, paginação, autosave no
 cliente, imagens, uploads, PDF, DOCX, histórico, colaboração em tempo real ou

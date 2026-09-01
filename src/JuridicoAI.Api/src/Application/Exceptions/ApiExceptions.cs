@@ -30,3 +30,14 @@ public sealed class ConflitoDeVersaoException(string message) : ApiException(mes
     public override int StatusCode => StatusCodes.Status409Conflict;
     public string Code => "PECA_VERSION_CONFLICT";
 }
+
+public sealed class NaoAutorizadoException(string message) : ApiException(message)
+{
+    public override int StatusCode => StatusCodes.Status401Unauthorized;
+}
+
+public sealed class ConflitoException(string message, string? code = null) : ApiException(message)
+{
+    public override int StatusCode => StatusCodes.Status409Conflict;
+    public string? Code { get; } = code;
+}

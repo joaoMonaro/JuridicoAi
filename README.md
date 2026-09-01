@@ -13,6 +13,7 @@ Configure os segredos por variaveis de ambiente (ou user-secrets em desenvolvime
 ```bash
 export Mongo__ConnectionString="mongodb://usuario:senha@localhost:27017/"
 export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=..."
+export Auth__JwtSecret="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
 export OpenAI__ApiKey="..."
 ```
 
@@ -32,3 +33,7 @@ pendentes são aplicadas na inicialização da API quando
 
 A documentação dos endpoints de Peças, templates e concorrência otimista está
 em [`docs/backend/pecas.md`](docs/backend/pecas.md).
+
+Autenticação JWT, refresh token, provisionamento e isolamento por Organization
+estão documentados em
+[`docs/backend/autenticacao-e-multitenancy.md`](docs/backend/autenticacao-e-multitenancy.md).

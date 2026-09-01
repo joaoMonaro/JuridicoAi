@@ -12,7 +12,7 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         catch (ApiException ex)
         {
             await WriteProblemAsync(context, ex.StatusCode, ex.Message,
-                ex is ConflitoDeVersaoException conflito ? conflito.Code : null);
+                ex switch { ConflitoDeVersaoException conflito => conflito.Code, ConflitoException conflito => conflito.Code, _ => null });
         }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
