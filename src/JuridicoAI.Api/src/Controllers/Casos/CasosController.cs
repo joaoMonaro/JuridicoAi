@@ -70,11 +70,11 @@ public sealed class CasosController(CasoApplicationService service) : Controller
 
     [HttpPost("{casoId:guid}/documentos")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<DocumentoCaso>> CriarDocumento(Guid casoId, [FromForm] IFormFile? arquivo, [FromForm] string? tipo, CancellationToken ct)
+    public async Task<ActionResult<DocumentoCaso>> CriarDocumento(Guid casoId, [FromForm] CriarDocumentoRequest request, CancellationToken ct)
     {
-        if (arquivo is null) throw new RequisicaoInvalidaException("O campo arquivo e obrigatorio.");
-        await using var stream = arquivo.OpenReadStream();
-        var item = await service.CriarDocumentoAsync(casoId, arquivo.FileName, arquivo.ContentType, arquivo.Length, tipo, stream, ct);
+        if (request.Arquivo is null) throw new RequisicaoInvalidaException("O campo arquivo e obrigatorio.");
+        await using var stream = request.Arquivo.OpenReadStream();
+        var item = await service.CriarDocumentoAsync(casoId, request.Arquivo.FileName, request.Arquivo.ContentType, request.Arquivo.Length, request.Tipo, stream, ct);
         return CreatedAtAction(nameof(ObterDocumento), new { casoId, id = item.Id }, item);
     }
 

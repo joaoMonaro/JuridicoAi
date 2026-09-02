@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using JuridicoAI.Api.Domain.Entities;
+using Microsoft.AspNetCore.Http;
 
 namespace JuridicoAI.Api.Application.DTOs;
 
@@ -33,6 +34,12 @@ public sealed record AtualizarContextoCasoRequest(
     [param: Required] TipoContextoCaso? Tipo,
     [param: StringLength(200)] string? Titulo,
     [param: Required, StringLength(50_000, MinimumLength = 1)] string Conteudo);
+
+public sealed class CriarDocumentoRequest
+{
+    public IFormFile? Arquivo { get; init; }
+    public string? Tipo { get; init; }
+}
 
 public sealed record CasoContextoCompletoDto(
     Caso Caso,
