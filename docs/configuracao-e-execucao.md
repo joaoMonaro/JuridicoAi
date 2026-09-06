@@ -4,6 +4,7 @@
 
 - SDK do .NET 10;
 - MongoDB 7 ou compatível;
+- PostgreSQL 17 ou compatível;
 - Chromium/Chrome, necessário para a sessão automatizada do TJSP;
 - chave da API da OpenAI, necessária somente para gerar petições;
 - acesso de rede ao TJSP e à OpenAI.
@@ -27,9 +28,9 @@ pwsh src/JuridicoAI.Scrapper/bin/Debug/net10.0/playwright.ps1 install chromium
 Em Linux, o ambiente também precisa das bibliotecas de sistema exigidas pelo
 Chromium.
 
-## MongoDB com Docker Compose
+## Bancos com Docker Compose
 
-O Compose cria apenas o MongoDB e mantém os dados no volume `mongo_data`.
+O Compose cria MongoDB e PostgreSQL e mantém os dados nos volumes `mongo_data` e `postgres_data`.
 
 Crie o arquivo local `.env` a partir do modelo versionado:
 
@@ -43,6 +44,9 @@ Edite o `.env` e defina:
 COMPOSE_PROJECT_NAME=juridicoai
 MONGO_ROOT_USERNAME=juridico
 MONGO_ROOT_PASSWORD=defina-uma-senha-local
+POSTGRES_DB=juridicoai
+POSTGRES_USER=juridico
+POSTGRES_PASSWORD=defina-uma-senha-local
 ```
 
 Se `COMPOSE_PROJECT_NAME` estiver exportado globalmente no terminal, ele tem
@@ -52,7 +56,7 @@ prioridade sobre o valor do `.env`. Remova-o antes de iniciar o projeto:
 unset COMPOSE_PROJECT_NAME
 ```
 
-Em seguida, inicie o MongoDB:
+Em seguida, inicie os bancos:
 
 ```bash
 docker compose up -d
@@ -62,7 +66,7 @@ O nome `COMPOSE_PROJECT_NAME=juridicoai` isola os containers, redes e volumes
 deste repositório dos demais projetos Compose da máquina.
 
 Evite `docker compose down -v` quando quiser preservar os dados. A opção `-v`
-remove também o volume do MongoDB.
+remove também os volumes do MongoDB e do PostgreSQL.
 
 ## Configurações da API
 
@@ -72,6 +76,10 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | Chave | Padrão | Finalidade |
 |---|---:|---|
 | `Mongo:ConnectionString` | vazio | conexão obrigatória para operações com MongoDB |
+| `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
+| `Postgres:RunMigrations` | `true` | aplica migrations pendentes do EF Core ao iniciar |
+| `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
+| `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
 | `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
 | `Mongo:RawCollectionName` | `jurisprudencias_raw` | dados coletados |
 | `Mongo:JurisprudenciasCollectionName` | `jurisprudencias` | dados processados |
@@ -91,6 +99,10 @@ Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Mongo:ConnectionString" \
   "mongodb://juridico:defina-uma-senha-local@localhost:27017/?authSource=admin"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Postgres:ConnectionString" \
+  "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=defina-uma-senha-local"
 ```
 
 Para habilitar a geração de petições, configure a chave da OpenAI:
@@ -134,6 +146,7 @@ de nomes usa dois sublinhados:
 
 ```text
 Mongo:ConnectionString -> Mongo__ConnectionString
+Postgres:ConnectionString -> Postgres__ConnectionString
 OpenAI:ApiKey           -> OpenAI__ApiKey
 ```
 
@@ -172,14 +185,18 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 | Consulta de jurisprudências | MongoDB |
 | Reprocessamento | MongoDB |
 | Geração de petições | MongoDB, `OpenAI:ApiKey` e acesso à OpenAI |
+| Fundação do caso | PostgreSQL e diretório de storage gravável |
 
 ## Sequência recomendada
 
 1. Execute `cp .env.example .env` e altere a senha.
 2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
-3. Inicie o MongoDB com `docker compose up -d`.
-4. Configure `Mongo:ConnectionString` nos user-secrets.
+3. Inicie os bancos com `docker compose up -d`.
+4. Configure `Mongo:ConnectionString` e `Postgres:ConnectionString` nos
+   user-secrets.
 5. Configure `OpenAI:ApiKey` se for gerar petições.
 6. Execute `dotnet restore` e `dotnet build`.
 7. Instale o Chromium do Playwright, se necessário.
-8. Inicie a API e valide `GET http://localhost:5299/`.
+8. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
+   começar a atender requisições.
+9. Valide `GET http://localhost:5299/`.

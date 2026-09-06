@@ -1,8 +1,24 @@
+using System.Text.Json.Serialization;
+using System.Text;
+using JuridicoAI.Api.Application.Abstractions;
+using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Services;
+using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Database;
 using JuridicoAI.Api.Infrastructure.Gateways.OpenIA;
+using JuridicoAI.Api.Infrastructure.Http;
+using JuridicoAI.Api.Infrastructure.Auth;
 using JuridicoAI.Api.Infrastructure.Repositories;
 using JuridicoAI.Api.Infrastructure.Settings;
+using JuridicoAI.Api.Infrastructure.Storage;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +27,38 @@ const string CorsPolicy = "LocalFrontend";
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mongo"));
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
-builder.Services.AddSingleton<PostgresConnectionFactory>();
-builder.Services.AddControllers();
+builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
+builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
+    .Validate(x => x.JwtSecret.Length >= 32, "Auth:JwtSecret deve possuir ao menos 32 caracteres.")
+    .Validate(x => x.AccessTokenTtlMinutes > 0 && x.RefreshTokenTtlDays > 0, "TTLs de autenticacao invalidos.")
+    .ValidateOnStart();
+builder.Services.AddDbContext<JuridicoAiDbContext>(options =>
+    options.UseNpgsql(builder.Configuration["Postgres:ConnectionString"]));
+builder.Services.AddHostedService<DatabaseMigrationService>();
+var maxFileSize = builder.Configuration.GetValue<long?>("DocumentStorage:MaxFileSizeBytes") ?? 20 * 1024 * 1024;
+builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxFileSize + 1024 * 1024);
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "JuridicoAI API",
+        Version = "v1"
+    });
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        Description = "Informe o access token JWT."
+    });
+    options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+    {
+        [new OpenApiSecuritySchemeReference("Bearer", document)] = []
+    });
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(CorsPolicy, policy =>
@@ -20,24 +66,82 @@ builder.Services.AddCors(options =>
         policy
             .SetIsOriginAllowed(origin =>
             {
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri))
-                {
-                    return false;
-                }
-
+                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
                 return uri.Host is "localhost" or "127.0.0.1";
             })
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
+var jwtSettings = builder.Configuration.GetSection("Auth").Get<AuthSettings>() ?? new AuthSettings();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.MapInboundClaims = false;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.JwtSecret)),
+        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = true,
+        ValidAudience = jwtSettings.Audience,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromSeconds(30),
+        NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,
+        RoleClaimType = "role"
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = async context =>
+        {
+            var sessionClaim = context.Principal?.FindFirst("sessionId")?.Value;
+            var userClaim = context.Principal?.FindFirst("sub")?.Value;
+            var organizationClaim = context.Principal?.FindFirst("organizationId")?.Value;
+            if (!Guid.TryParse(sessionClaim, out var sessionId) || !Guid.TryParse(userClaim, out var userId) ||
+                !Guid.TryParse(organizationClaim, out var organizationId))
+            { context.Fail("Sessao invalida."); return; }
+            var repository = context.HttpContext.RequestServices.GetRequiredService<IAuthRepository>();
+            var session = await repository.ObterSessionAsync(sessionId, context.HttpContext.RequestAborted);
+            var user = await repository.ObterUserAsync(userId, context.HttpContext.RequestAborted);
+            var membership = await repository.ObterMembershipAsync(userId, organizationId, context.HttpContext.RequestAborted);
+            if (session is null || session.UserId != userId || session.OrganizationId != organizationId ||
+                session.RevogadaEm is not null || session.ExpiraEm <= DateTime.UtcNow ||
+                user?.Status != UserStatusEnum.Active || membership?.Organization.Status != OrganizationStatusEnum.Active ||
+                membership.Membership.Role.ToString() != context.Principal?.FindFirst("role")?.Value)
+                context.Fail("Sessao invalida.");
+        }
+    };
+});
+builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("auth", limiter =>
+{
+    limiter.PermitLimit = 10;
+    limiter.Window = TimeSpan.FromMinutes(1);
+    limiter.QueueLimit = 0;
+    limiter.AutoReplenishment = true;
+}));
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<PeticaoApplicationService>();
 builder.Services.AddScoped<ScraperService>();
 builder.Services.AddScoped<JurisprudenciaNormalizerService>();
 builder.Services.AddScoped<JurisprudenciaClassifierService>();
 builder.Services.AddScoped<JurisprudenciaIngestionService>();
+builder.Services.AddScoped<CasoApplicationService>();
+builder.Services.AddScoped<PecaApplicationService>();
+builder.Services.AddScoped<TemplatePecaApplicationService>();
+builder.Services.AddScoped<AuthApplicationService>();
+builder.Services.AddScoped<OrganizationApplicationService>();
 builder.Services.AddScoped<JurisprudenciaRawRepository>();
 builder.Services.AddScoped<JurisprudenciaRepository>();
+builder.Services.AddScoped<ICasoRepository, CasoRepository>();
+builder.Services.AddScoped<IPecaRepository, PecaRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
+builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
+builder.Services.AddSingleton<ITokenService, JwtTokenService>();
+builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
 builder.Services.AddHttpClient<OpenIAGateway>(client =>
 {
     client.BaseAddress = new Uri("https://api.openai.com/v1/");
@@ -45,9 +149,36 @@ builder.Services.AddHttpClient<OpenIAGateway>(client =>
 
 var app = builder.Build();
 
-app.UseCors(CorsPolicy);
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "JuridicoAI API v1");
+        options.DocumentTitle = "JuridicoAI API";
+    });
+}
 
+app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseCors(CorsPolicy);
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapGet("/", () => "Hello World!");
 app.MapControllers();
+if (args.Contains("provision-organization", StringComparer.OrdinalIgnoreCase))
+{
+    var request = new ProvisionOrganizationRequest(
+        Environment.GetEnvironmentVariable("PROVISION_ORGANIZATION_NAME") ?? string.Empty,
+        Environment.GetEnvironmentVariable("PROVISION_OWNER_NAME") ?? string.Empty,
+        Environment.GetEnvironmentVariable("PROVISION_OWNER_EMAIL") ?? string.Empty,
+        Environment.GetEnvironmentVariable("PROVISION_OWNER_PASSWORD") ?? string.Empty);
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    var result = await scope.ServiceProvider.GetRequiredService<OrganizationApplicationService>().ProvisionarAsync(request, default);
+    Console.WriteLine($"Organization provisionada: {result.Organization.Id}; owner: {result.User.Id}");
+    return;
+}
 
 app.Run();

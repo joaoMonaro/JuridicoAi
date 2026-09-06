@@ -2,19 +2,39 @@
 
 Base local padrão: `http://localhost:5299`.
 
-A API não possui autenticação, versionamento de rota ou documento
-OpenAPI/Swagger no estado atual.
+A API usa JWT nas rotas privadas. Login e ciclo de sessão são descritos em
+[Autenticação e multitenancy](autenticacao-e-multitenancy.md). Em ambiente de
+desenvolvimento, a interface Swagger está disponível em
+`http://localhost:5299/swagger` e o documento OpenAPI em
+`http://localhost:5299/swagger/v1/swagger.json`.
 
 ## Resumo dos endpoints
 
 | Método | Rota | Função |
 |---|---|---|
 | `GET` | `/` | verificação básica da aplicação |
+| `POST` | `/auth/login` | autentica e cria uma Session |
+| `POST` | `/auth/refresh` | rotaciona o refresh token |
+| `POST` | `/auth/logout` | revoga a Session atual |
+| `GET` | `/auth/me` | retorna User, Organization e role atuais |
 | `POST` | `/api/jurisprudencias/ingest` | coleta e processa resultados do TJSP |
 | `GET` | `/api/jurisprudencias` | consulta jurisprudências processadas |
 | `GET` | `/api/jurisprudencias/raw` | consulta dados brutos |
 | `POST` | `/api/jurisprudencias/reprocess` | reprocessa dados brutos existentes |
 | `POST` | `/peticoes/gerar` | gera uma petição com ementas e OpenAI |
+| `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
+| `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
+| `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
+| `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
+| `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
+| `POST` | `/templates-peca` | cria um template de Peça |
+| `GET` | `/templates-peca` | lista templates de Peça |
+| `GET` | `/templates-peca/{id}` | obtém um template de Peça |
+| `PATCH` | `/templates-peca/{id}` | atualiza um template de Peça |
+| `DELETE` | `/templates-peca/{id}` | exclui logicamente um template de Peça |
+
+Os contratos, exemplos, regras de cópia de template e controle de concorrência
+estão documentados em [Peças e templates](pecas.md).
 
 ## Ingerir jurisprudências
 
