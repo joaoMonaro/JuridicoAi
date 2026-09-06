@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Application.DTOs;
 
@@ -13,10 +14,10 @@ public sealed record AtualizarPecaRequest(
     JsonElement? HeaderJson = null,
     JsonElement? FooterJson = null,
     JsonElement? Styles = null,
-    PecaStatus? Status = null);
+    PecaStatusEnum? Status = null);
 
 public sealed record PecaListaDto(
-    Guid Id, string Titulo, PecaStatus Status, int Versao, Guid? TemplateId, DateTime DataAtualizacao);
+    Guid Id, string Titulo, PecaStatusEnum Status, int Versao, Guid? TemplateId, DateTime DataAtualizacao);
 
 public sealed record PecaAtualizadaDto(Guid Id, int Versao, DateTime DataAtualizacao);
 

@@ -1,10 +1,6 @@
-namespace JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
-public enum CasoStatus
-{
-    Ativo,
-    Arquivado
-}
+namespace JuridicoAI.Api.Domain.Entities;
 
 public sealed class Caso
 {
@@ -14,7 +10,7 @@ public sealed class Caso
     public Guid UpdatedById { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string? Descricao { get; set; }
-    public CasoStatus Status { get; set; } = CasoStatus.Ativo;
+    public CasoStatusEnum Status { get; set; } = CasoStatusEnum.Ativo;
     public DateTime DataCriacao { get; init; }
     public DateTime DataAtualizacao { get; set; }
 }

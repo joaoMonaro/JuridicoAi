@@ -2,6 +2,7 @@ using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Application.Services;
 
@@ -12,7 +13,7 @@ public sealed class OrganizationApplicationService(IAuthRepository repository, I
         ValidarNome(request.Nome, "nome");
         var agora = DateTime.UtcNow;
         return repository.CriarOrganizationAsync(new Organization
-        { Id = Guid.NewGuid(), Nome = request.Nome.Trim(), Status = OrganizationStatus.Active, DataCriacao = agora, DataAtualizacao = agora }, ct);
+        { Id = Guid.NewGuid(), Nome = request.Nome.Trim(), Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora }, ct);
     }
 
     public async Task<(Organization Organization, User User, Membership Membership)> ProvisionarAsync(
@@ -25,14 +26,14 @@ public sealed class OrganizationApplicationService(IAuthRepository repository, I
         if (await repository.ObterUserPorEmailAsync(email, ct) is not null)
             throw new ConflitoException("Ja existe um usuario com este email.", "EMAIL_ALREADY_EXISTS");
         var agora = DateTime.UtcNow;
-        var organization = new Organization { Id = Guid.NewGuid(), Nome = request.OrganizationName.Trim(), Status = OrganizationStatus.Active, DataCriacao = agora, DataAtualizacao = agora };
+        var organization = new Organization { Id = Guid.NewGuid(), Nome = request.OrganizationName.Trim(), Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora };
         var user = new User
         {
             Id = Guid.NewGuid(),
             Nome = request.OwnerName.Trim(),
             Email = email,
             PasswordHash = await passwordHasher.HashAsync(request.OwnerPassword, ct),
-            Status = UserStatus.Active,
+            Status = UserStatusEnum.Active,
             DataCriacao = agora,
             DataAtualizacao = agora
         };
@@ -41,7 +42,7 @@ public sealed class OrganizationApplicationService(IAuthRepository repository, I
             Id = Guid.NewGuid(),
             OrganizationId = organization.Id,
             UserId = user.Id,
-            Role = MembershipRole.Owner,
+            Role = MembershipRoleEnum.Owner,
             DataCriacao = agora,
             DataAtualizacao = agora
         };

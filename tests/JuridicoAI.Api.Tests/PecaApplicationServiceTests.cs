@@ -4,6 +4,7 @@ using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Tests;
 
@@ -18,7 +19,7 @@ public sealed class PecaApplicationServiceTests
         var (service, _, repository, casoId) = Create();
         var peca = await service.CriarAsync(casoId, new CriarPecaRequest("  Inicial  "), default);
         Assert.Equal("Inicial", peca.Titulo);
-        Assert.Equal(PecaStatus.Rascunho, peca.Status);
+        Assert.Equal(PecaStatusEnum.Rascunho, peca.Status);
         Assert.Equal(1, peca.Versao);
         Assert.Equal("A4", peca.PageConfig.RootElement.GetProperty("format").GetString());
         Assert.Null(peca.TemplateId);
@@ -46,7 +47,7 @@ public sealed class PecaApplicationServiceTests
         Assert.Equal(2, result.Versao);
         Assert.Equal("Novo", (await service.ObterAsync(peca.Id, default)).Titulo);
         await Assert.ThrowsAsync<ConflitoDeVersaoException>(() =>
-            service.AtualizarAsync(peca.Id, new AtualizarPecaRequest(1, Status: PecaStatus.Finalizada), default));
+            service.AtualizarAsync(peca.Id, new AtualizarPecaRequest(1, Status: PecaStatusEnum.Finalizada), default));
     }
 
     [Fact]

@@ -1,11 +1,12 @@
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Application.Abstractions;
 
 public interface ICasoRepository
 {
     Task<Caso> CriarCasoAsync(Caso caso, CancellationToken cancellationToken);
-    Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid organizationId, CasoStatus? status, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid organizationId, CasoStatusEnum? status, CancellationToken cancellationToken);
     Task<Caso?> ObterCasoAsync(Guid id, Guid organizationId, CancellationToken cancellationToken);
     Task<bool> AtualizarCasoAsync(Caso caso, CancellationToken cancellationToken);
     Task<bool> ArquivarCasoAsync(Guid id, Guid organizationId, Guid updatedById, DateTime dataAtualizacao, CancellationToken cancellationToken);

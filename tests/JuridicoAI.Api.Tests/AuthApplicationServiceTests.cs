@@ -3,6 +3,7 @@ using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Auth;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
@@ -31,10 +32,10 @@ public sealed class AuthApplicationServiceTests
         var repository = new FakeAuthRepository();
         var service = new OrganizationApplicationService(repository, new FakePasswordHasher());
         var result = await service.ProvisionarAsync(new(" Escritório ", " João ", " JOAO@EXAMPLE.COM ", "senha-segura-123"), default);
-        Assert.Equal(OrganizationStatus.Active, result.Organization.Status);
+        Assert.Equal(OrganizationStatusEnum.Active, result.Organization.Status);
         Assert.Equal("joao@example.com", result.User.Email);
         Assert.Equal("hash:senha-segura-123", result.User.PasswordHash);
-        Assert.Equal(MembershipRole.Owner, result.Membership.Role);
+        Assert.Equal(MembershipRoleEnum.Owner, result.Membership.Role);
         Assert.Equal(result.Organization.Id, result.Membership.OrganizationId);
         Assert.True(repository.ProvisionCalled);
     }
@@ -58,7 +59,7 @@ public sealed class AuthApplicationServiceTests
         var setup = Setup();
         var missing = await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.LoginAsync(new("missing@example.com", "x"), default));
         var wrong = await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.LoginAsync(new("user@example.com", "errada"), default));
-        setup.Organization.Status = OrganizationStatus.Inactive;
+        setup.Organization.Status = OrganizationStatusEnum.Inactive;
         var inactive = await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.LoginAsync(new("user@example.com", "correta"), default));
         Assert.Equal(missing.Message, wrong.Message);
         Assert.Equal(wrong.Message, inactive.Message);
@@ -68,12 +69,12 @@ public sealed class AuthApplicationServiceTests
     public async Task Login_ComMultiplasOrganizations_ExigeEscolhaEValidaMembership()
     {
         var setup = Setup();
-        var other = setup.Repository.AddOrganization(setup.User, MembershipRole.Member);
+        var other = setup.Repository.AddOrganization(setup.User, MembershipRoleEnum.Member);
         var conflict = await Assert.ThrowsAsync<ConflitoException>(() => setup.Service.LoginAsync(new("user@example.com", "correta"), default));
         Assert.Equal("ORGANIZATION_SELECTION_REQUIRED", conflict.Code);
         var selected = await setup.Service.LoginAsync(new("user@example.com", "correta", other.Id), default);
         Assert.Equal(other.Id, selected.Organization.Id);
-        Assert.Equal(MembershipRole.Member, selected.Role);
+        Assert.Equal(MembershipRoleEnum.Member, selected.Role);
         await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.LoginAsync(new("user@example.com", "correta", Guid.NewGuid()), default));
     }
 
@@ -98,7 +99,7 @@ public sealed class AuthApplicationServiceTests
         var now = DateTime.UtcNow;
         var user = new User { Id = Guid.NewGuid() };
         var organization = new Organization { Id = Guid.NewGuid() };
-        var membership = new Membership { Role = MembershipRole.Owner };
+        var membership = new Membership { Role = MembershipRoleEnum.Owner };
         var session = new Session { Id = Guid.NewGuid() };
         var token = service.CriarAccessToken(user, organization, membership, session, now);
         var parsed = new JwtSecurityTokenHandler().ReadJwtToken(token);
@@ -133,7 +134,7 @@ public sealed class AuthApplicationServiceTests
     {
         var repository = new FakeAuthRepository();
         var user = repository.AddUser();
-        var organization = repository.AddOrganization(user, MembershipRole.Owner);
+        var organization = repository.AddOrganization(user, MembershipRoleEnum.Owner);
         var auth = new MutableAuthContext { User = user.Id, Organization = organization.Id };
         var service = new AuthApplicationService(repository, new FakePasswordHasher(), new FakeTokenService(), auth,
             Options.Create(new AuthSettings { AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30 }));
@@ -149,7 +150,7 @@ public sealed class AuthApplicationServiceTests
         public Guid Organization { get; set; }
         public Guid Session { get; set; }
         public Guid UserId => User; public Guid OrganizationId => Organization; public Guid SessionId => Session;
-        public MembershipRole Role => MembershipRole.Owner;
+        public MembershipRoleEnum Role => MembershipRoleEnum.Owner;
     }
 
     private sealed class FakePasswordHasher : IPasswordHasher
@@ -173,8 +174,8 @@ public sealed class AuthApplicationServiceTests
         public List<Membership> Memberships { get; } = [];
         public List<Session> Sessions { get; } = [];
         public bool ProvisionCalled { get; private set; }
-        public User AddUser() { var now = DateTime.UtcNow; var x = new User { Id = Guid.NewGuid(), Nome = "User", Email = "user@example.com", PasswordHash = "hash:correta", Status = UserStatus.Active, DataCriacao = now, DataAtualizacao = now }; Users.Add(x); return x; }
-        public Organization AddOrganization(User user, MembershipRole role) { var now = DateTime.UtcNow; var o = new Organization { Id = Guid.NewGuid(), Nome = "Org", Status = OrganizationStatus.Active, DataCriacao = now, DataAtualizacao = now }; Organizations.Add(o); Memberships.Add(new Membership { Id = Guid.NewGuid(), UserId = user.Id, OrganizationId = o.Id, Role = role, DataCriacao = now, DataAtualizacao = now }); return o; }
+        public User AddUser() { var now = DateTime.UtcNow; var x = new User { Id = Guid.NewGuid(), Nome = "User", Email = "user@example.com", PasswordHash = "hash:correta", Status = UserStatusEnum.Active, DataCriacao = now, DataAtualizacao = now }; Users.Add(x); return x; }
+        public Organization AddOrganization(User user, MembershipRoleEnum role) { var now = DateTime.UtcNow; var o = new Organization { Id = Guid.NewGuid(), Nome = "Org", Status = OrganizationStatusEnum.Active, DataCriacao = now, DataAtualizacao = now }; Organizations.Add(o); Memberships.Add(new Membership { Id = Guid.NewGuid(), UserId = user.Id, OrganizationId = o.Id, Role = role, DataCriacao = now, DataAtualizacao = now }); return o; }
         public Task<Organization> CriarOrganizationAsync(Organization x, CancellationToken ct) { Organizations.Add(x); return Task.FromResult(x); }
         public Task<(Organization, User, Membership)> ProvisionarAsync(Organization o, User u, Membership m, CancellationToken ct) { ProvisionCalled = true; Organizations.Add(o); Users.Add(u); Memberships.Add(m); return Task.FromResult((o, u, m)); }
         public Task<User?> ObterUserPorEmailAsync(string email, CancellationToken ct) => Task.FromResult(Users.SingleOrDefault(x => x.Email == email));

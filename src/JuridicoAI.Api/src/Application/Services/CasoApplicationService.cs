@@ -2,6 +2,7 @@ using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
 
@@ -17,7 +18,7 @@ public sealed class CasoApplicationService(
     private readonly DocumentStorageSettings _storageSettings = storageOptions.Value;
 
     public Task<IReadOnlyList<Caso>> ListarCasosAsync(
-        CasoStatus? status,
+        CasoStatusEnum? status,
         CancellationToken cancellationToken) =>
         repository.ListarCasosAsync(auth.OrganizationId, status, cancellationToken);
 
@@ -39,7 +40,7 @@ public sealed class CasoApplicationService(
             UpdatedById = auth.UserId,
             Titulo = request.Titulo.Trim(),
             Descricao = NormalizarOpcional(request.Descricao),
-            Status = CasoStatus.Ativo,
+            Status = CasoStatusEnum.Ativo,
             DataCriacao = agora,
             DataAtualizacao = agora
         }, cancellationToken);

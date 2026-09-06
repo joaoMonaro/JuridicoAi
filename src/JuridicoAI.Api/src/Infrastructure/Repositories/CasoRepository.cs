@@ -1,5 +1,6 @@
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +15,7 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
         return caso;
     }
 
-    public async Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid organizationId, CasoStatus? status, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid organizationId, CasoStatusEnum? status, CancellationToken cancellationToken)
     {
         var query = context.Casos.AsNoTracking().Where(x => x.OrganizationId == organizationId);
         if (status.HasValue) query = query.Where(x => x.Status == status.Value);
@@ -34,7 +35,7 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
 
     public async Task<bool> ArquivarCasoAsync(Guid id, Guid organizationId, Guid updatedById, DateTime dataAtualizacao, CancellationToken cancellationToken) =>
         await context.Casos.Where(x => x.Id == id && x.OrganizationId == organizationId).ExecuteUpdateAsync(setters => setters
-            .SetProperty(x => x.Status, CasoStatus.Arquivado)
+            .SetProperty(x => x.Status, CasoStatusEnum.Arquivado)
             .SetProperty(x => x.UpdatedById, updatedById)
             .SetProperty(x => x.DataAtualizacao, dataAtualizacao), cancellationToken) == 1;
 

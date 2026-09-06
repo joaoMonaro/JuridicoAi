@@ -4,6 +4,7 @@ using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Database;
 using JuridicoAI.Api.Infrastructure.Gateways.OpenIA;
 using JuridicoAI.Api.Infrastructure.Http;
@@ -107,7 +108,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             var membership = await repository.ObterMembershipAsync(userId, organizationId, context.HttpContext.RequestAborted);
             if (session is null || session.UserId != userId || session.OrganizationId != organizationId ||
                 session.RevogadaEm is not null || session.ExpiraEm <= DateTime.UtcNow ||
-                user?.Status != UserStatus.Active || membership?.Organization.Status != OrganizationStatus.Active ||
+                user?.Status != UserStatusEnum.Active || membership?.Organization.Status != OrganizationStatusEnum.Active ||
                 membership.Membership.Role.ToString() != context.Principal?.FindFirst("role")?.Value)
                 context.Fail("Sessao invalida.");
         }

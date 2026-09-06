@@ -1,12 +1,7 @@
 using System.Text.Json;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Domain.Entities;
-
-public enum PecaStatus
-{
-    Rascunho,
-    Finalizada
-}
 
 public sealed class Peca
 {
@@ -22,7 +17,7 @@ public sealed class Peca
     public JsonDocument? HeaderJson { get; set; }
     public JsonDocument? FooterJson { get; set; }
     public JsonDocument Styles { get; set; } = null!;
-    public PecaStatus Status { get; set; } = PecaStatus.Rascunho;
+    public PecaStatusEnum Status { get; set; } = PecaStatusEnum.Rascunho;
     public int Versao { get; set; } = 1;
     public DateTime DataCriacao { get; init; }
     public DateTime DataAtualizacao { get; set; }

@@ -1,20 +1,12 @@
-namespace JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
-public enum TipoContextoCaso
-{
-    RelatoInicial,
-    ResumoDosFatos,
-    Cronologia,
-    Observacao,
-    Estrategia,
-    Outro
-}
+namespace JuridicoAI.Api.Domain.Entities;
 
 public sealed class ContextoCaso
 {
     public Guid Id { get; init; }
     public Guid CasoId { get; init; }
-    public TipoContextoCaso Tipo { get; set; }
+    public TipoContextoCasoEnum Tipo { get; set; }
     public string? Titulo { get; set; }
     public string Conteudo { get; set; } = string.Empty;
     public DateTime DataCriacao { get; init; }

@@ -2,6 +2,7 @@ using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
 
@@ -17,7 +18,7 @@ public sealed class AuthApplicationService(
     {
         var email = OrganizationApplicationService.NormalizarEmail(request.Email);
         var user = await repository.ObterUserPorEmailAsync(email, ct);
-        if (user is null || user.Status != UserStatus.Active || !await passwordHasher.VerifyAsync(request.Senha, user.PasswordHash, ct))
+        if (user is null || user.Status != UserStatusEnum.Active || !await passwordHasher.VerifyAsync(request.Senha, user.PasswordHash, ct))
             throw CredenciaisInvalidas();
         var memberships = await repository.ListarMembershipsAsync(user.Id, ct);
         MembershipDetails selected;
@@ -27,7 +28,7 @@ public sealed class AuthApplicationService(
         else if (memberships.Count > 1)
             throw new ConflitoException("Selecione uma Organization para continuar.", "ORGANIZATION_SELECTION_REQUIRED");
         else throw CredenciaisInvalidas();
-        if (selected.Organization.Status != OrganizationStatus.Active) throw CredenciaisInvalidas();
+        if (selected.Organization.Status != OrganizationStatusEnum.Active) throw CredenciaisInvalidas();
         return await CriarSessaoAsync(user, selected, ct);
     }
 
@@ -40,7 +41,7 @@ public sealed class AuthApplicationService(
         if (session is null || session.RevogadaEm is not null || session.ExpiraEm <= agora) throw CredenciaisInvalidas();
         var user = await repository.ObterUserAsync(session.UserId, ct);
         var membership = await repository.ObterMembershipAsync(session.UserId, session.OrganizationId, ct);
-        if (user is null || user.Status != UserStatus.Active || membership is null || membership.Organization.Status != OrganizationStatus.Active)
+        if (user is null || user.Status != UserStatusEnum.Active || membership is null || membership.Organization.Status != OrganizationStatusEnum.Active)
             throw CredenciaisInvalidas();
         var novoRefresh = tokens.CriarRefreshToken();
         if (!await repository.RotacionarRefreshAsync(session.Id, hash, tokens.HashRefreshToken(novoRefresh), agora, ct))

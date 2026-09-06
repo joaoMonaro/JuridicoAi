@@ -3,6 +3,7 @@ using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,7 @@ public sealed class CasoApplicationServiceTests
         Assert.NotEqual(Guid.Empty, caso.Id);
         Assert.Equal("Negativacao indevida", caso.Titulo);
         Assert.Equal("Relato inicial", caso.Descricao);
-        Assert.Equal(CasoStatus.Ativo, caso.Status);
+        Assert.Equal(CasoStatusEnum.Ativo, caso.Status);
         Assert.Equal(caso.DataCriacao, caso.DataAtualizacao);
     }
 
@@ -42,7 +43,7 @@ public sealed class CasoApplicationServiceTests
 
         await service.ArquivarCasoAsync(caso.Id, default);
 
-        Assert.Equal(CasoStatus.Arquivado, (await service.ObterCasoAsync(caso.Id, default)).Status);
+        Assert.Equal(CasoStatusEnum.Arquivado, (await service.ObterCasoAsync(caso.Id, default)).Status);
     }
 
     [Fact]
@@ -52,7 +53,7 @@ public sealed class CasoApplicationServiceTests
         var casoA = await service.CriarCasoAsync(new CriarCasoRequest("A", null), default);
         var casoB = await service.CriarCasoAsync(new CriarCasoRequest("B", null), default);
         var envolvido = await service.CriarEnvolvidoAsync(casoA.Id,
-            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCaso.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
 
         await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
             service.ObterEnvolvidoAsync(casoB.Id, envolvido.Id, default));
@@ -64,9 +65,9 @@ public sealed class CasoApplicationServiceTests
         var (service, _, _) = CreateService();
         var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente A", TipoEnvolvidoCaso.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente A", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente B", TipoEnvolvidoCaso.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente B", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
 
         var itens = await service.ListarEnvolvidosAsync(caso.Id, default);
         Assert.Equal(2, itens.Count);
@@ -78,9 +79,9 @@ public sealed class CasoApplicationServiceTests
         var (service, _, _) = CreateService();
         var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCaso.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
         await service.CriarContextoAsync(caso.Id,
-            new CriarContextoCasoRequest(TipoContextoCaso.RelatoInicial, null, "Fatos"), default);
+            new CriarContextoCasoRequest(TipoContextoCasoEnum.RelatoInicial, null, "Fatos"), default);
         await service.CriarDocumentoAsync(caso.Id, "prova.txt", "text/plain", 5, null,
             new MemoryStream("prova"u8.ToArray()), default);
 
@@ -204,13 +205,13 @@ public sealed class CasoApplicationServiceTests
         public bool FailDocumentCreate { get; set; }
 
         public Task<Caso> CriarCasoAsync(Caso caso, CancellationToken ct) { _casos.Add(caso.Id, caso); return Task.FromResult(caso); }
-        public Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid org, CasoStatus? status, CancellationToken ct) => Result(_casos.Values.Where(x => x.OrganizationId == org && (status is null || x.Status == status)));
+        public Task<IReadOnlyList<Caso>> ListarCasosAsync(Guid org, CasoStatusEnum? status, CancellationToken ct) => Result(_casos.Values.Where(x => x.OrganizationId == org && (status is null || x.Status == status)));
         public Task<Caso?> ObterCasoAsync(Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(id) is { } x && x.OrganizationId == org ? x : null);
         public Task<bool> AtualizarCasoAsync(Caso caso, CancellationToken ct) => Task.FromResult(_casos.ContainsKey(caso.Id));
         public Task<bool> ArquivarCasoAsync(Guid id, Guid org, Guid user, DateTime updatedAt, CancellationToken ct)
         {
             if (!_casos.TryGetValue(id, out var caso) || caso.OrganizationId != org) return Task.FromResult(false);
-            caso.Status = CasoStatus.Arquivado; caso.DataAtualizacao = updatedAt; return Task.FromResult(true);
+            caso.Status = CasoStatusEnum.Arquivado; caso.DataAtualizacao = updatedAt; return Task.FromResult(true);
         }
 
         public Task<EnvolvidoCaso> CriarEnvolvidoAsync(EnvolvidoCaso item, CancellationToken ct) { _envolvidos.Add(item.Id, item); return Task.FromResult(item); }

@@ -3,6 +3,7 @@ using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Application.Services;
 
@@ -34,7 +35,7 @@ public sealed class PecaApplicationService(IPecaRepository repository, IAuthCont
             HeaderJson = template?.HeaderJson is null ? null : PecaDefaults.Copiar(template.HeaderJson),
             FooterJson = template?.FooterJson is null ? null : PecaDefaults.Copiar(template.FooterJson),
             Styles = template is null ? PecaDefaults.NovosEstilos() : PecaDefaults.Copiar(template.Styles),
-            Status = PecaStatus.Rascunho,
+            Status = PecaStatusEnum.Rascunho,
             Versao = 1,
             DataCriacao = agora,
             DataAtualizacao = agora

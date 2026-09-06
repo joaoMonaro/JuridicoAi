@@ -2,6 +2,7 @@ using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace JuridicoAI.Api.Controllers.Casos;
@@ -19,7 +20,7 @@ public sealed class CasosController(CasoApplicationService service) : Controller
     }
 
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<Caso>>> ListarCasos([FromQuery] CasoStatus? status, CancellationToken ct) => Ok(await service.ListarCasosAsync(status, ct));
+    public async Task<ActionResult<IReadOnlyList<Caso>>> ListarCasos([FromQuery] CasoStatusEnum? status, CancellationToken ct) => Ok(await service.ListarCasosAsync(status, ct));
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<Caso>> ObterCaso(Guid id, CancellationToken ct) => Ok(await service.ObterCasoAsync(id, ct));

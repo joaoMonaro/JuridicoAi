@@ -1,14 +1,12 @@
-namespace JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 
-public enum OrganizationStatus { Active, Inactive }
-public enum UserStatus { Active, Inactive }
-public enum MembershipRole { Owner, Member }
+namespace JuridicoAI.Api.Domain.Entities;
 
 public sealed class Organization
 {
     public Guid Id { get; init; }
     public string Nome { get; set; } = string.Empty;
-    public OrganizationStatus Status { get; set; } = OrganizationStatus.Active;
+    public OrganizationStatusEnum Status { get; set; } = OrganizationStatusEnum.Active;
     public DateTime DataCriacao { get; init; }
     public DateTime DataAtualizacao { get; set; }
 }
@@ -19,7 +17,7 @@ public sealed class User
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
-    public UserStatus Status { get; set; } = UserStatus.Active;
+    public UserStatusEnum Status { get; set; } = UserStatusEnum.Active;
     public DateTime DataCriacao { get; init; }
     public DateTime DataAtualizacao { get; set; }
 }
@@ -29,7 +27,7 @@ public sealed class Membership
     public Guid Id { get; init; }
     public Guid OrganizationId { get; init; }
     public Guid UserId { get; init; }
-    public MembershipRole Role { get; set; }
+    public MembershipRoleEnum Role { get; set; }
     public DateTime DataCriacao { get; init; }
     public DateTime DataAtualizacao { get; set; }
 }
