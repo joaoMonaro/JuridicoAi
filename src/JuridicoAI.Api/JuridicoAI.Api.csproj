@@ -19,7 +19,4 @@
   <ItemGroup>
     <ProjectReference Include="..\JuridicoAI.Scrapper\JuridicoAI.Scrapper.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="src\Infrastructure\Gateways\OpenIA\" />
-  </ItemGroup>
 </Project>

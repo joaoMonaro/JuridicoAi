@@ -6,7 +6,6 @@ using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Database;
-using JuridicoAI.Api.Infrastructure.Gateways.OpenIA;
 using JuridicoAI.Api.Infrastructure.Http;
 using JuridicoAI.Api.Infrastructure.Auth;
 using JuridicoAI.Api.Infrastructure.Repositories;
@@ -123,7 +122,6 @@ builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("auth",
     limiter.AutoReplenishment = true;
 }));
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<PeticaoApplicationService>();
 builder.Services.AddScoped<ScraperService>();
 builder.Services.AddScoped<JurisprudenciaNormalizerService>();
 builder.Services.AddScoped<JurisprudenciaClassifierService>();
@@ -142,11 +140,6 @@ builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
-builder.Services.AddHttpClient<OpenIAGateway>(client =>
-{
-    client.BaseAddress = new Uri("https://api.openai.com/v1/");
-});
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

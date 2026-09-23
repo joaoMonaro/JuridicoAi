@@ -14,12 +14,7 @@ JuridicoAI.Api
     |                          +--> HttpClient (busca e paginação)
     |
     |---- jurisprudências ---------------------------> MongoDB
-    |---- identidade, casos e peças (EF Core) --------> PostgreSQL
-    |
-    +---- geração de petição ------------------------> OpenAI Responses API
-                         ^
-                         |
-                 ementas do MongoDB
+    +---- identidade, casos e peças (EF Core) --------> PostgreSQL
 ```
 
 O projeto `JuridicoAI.Api` referencia `JuridicoAI.Scrapper` diretamente. Assim,
@@ -37,7 +32,7 @@ src/
 │       ├── Application/       DTOs e casos de uso
 │       ├── Controllers/       endpoints HTTP
 │       ├── Domain/            entidades persistidas
-│       └── Infrastructure/    EF Core/PostgreSQL, MongoDB, OpenAI e configurações
+│       └── Infrastructure/    EF Core/PostgreSQL, MongoDB e configurações
 └── JuridicoAI.Scrapper/
     ├── Program.cs
     └── src/
@@ -64,24 +59,10 @@ persistência incrementa o contador `falhas`, mas não interrompe os demais iten
 Uma falha na coleta, anterior ao laço, encerra a requisição. Timeout específico
 do scraper é convertido pela API em HTTP 504.
 
-## Fluxo de geração de petição
-
-```text
-POST /peticoes/gerar
-    -> busca as 30 ementas de maior confiança
-    -> combina fatos e ementas em um prompt
-    -> chama POST /v1/responses na OpenAI
-    -> devolve output_text como texto
-```
-
-O prompt instrui o modelo a não inventar fatos ou jurisprudência. Essa instrução
-reduz o risco de conteúdo indevido, mas não substitui revisão jurídica humana.
-
 ## Ciclos de vida e dependências
 
-A API registra serviços de aplicação e repositórios como `scoped`. O gateway da
-OpenAI usa um `HttpClient` gerenciado por `IHttpClientFactory`. O scraper cria
-uma sessão Playwright e um `HttpClient` próprios para cada pesquisa.
+A API registra serviços de aplicação e repositórios como `scoped`. O scraper
+cria uma sessão Playwright e um `HttpClient` próprios para cada pesquisa.
 
 Os índices do MongoDB são criados sob demanda no início das operações de
 ingestão e reprocessamento, não durante a inicialização da API.

@@ -8,8 +8,7 @@ Sintoma comum:
 Configure Mongo:ConnectionString ou a variavel Mongo__ConnectionString.
 ```
 
-Defina a conexão antes de usar ingestão, consulta, reprocessamento ou geração
-de petições:
+Defina a conexão antes de usar ingestão, consulta ou reprocessamento:
 
 ```bash
 export Mongo__ConnectionString="mongodb://usuario:senha@localhost:27017/?authSource=admin"
@@ -123,20 +122,6 @@ Os índices únicos podem falhar se o banco já contiver duplicatas. Faça backu
 identifique documentos com a mesma chave e saneie-os antes de repetir a
 ingestão. O projeto não possui migração automática para esse cenário.
 
-## Geração de petição falha
-
-Verifique:
-
-- `OpenAI:ApiKey`;
-- nome do modelo em `OpenAI:Model`;
-- saldo, limites e permissões do projeto da OpenAI;
-- conectividade;
-- existência e tamanho das ementas enviadas.
-
-O controller atual não converte erros do provedor em respostas específicas;
-eles aparecem como erro interno da API. Evite expor detalhes de exceções em
-produção.
-
 ## Limitações de segurança e produção
 
 Antes de expor a aplicação:
@@ -159,4 +144,3 @@ Antes de expor a aplicação:
 4. Teste a conexão do MongoDB.
 5. Faça uma ingestão com um limite pequeno.
 6. Consulte raw e processado.
-7. Teste OpenAI por último, depois de confirmar que há ementas.

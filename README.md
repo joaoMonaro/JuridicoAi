@@ -14,7 +14,6 @@ Configure os segredos por variaveis de ambiente (ou user-secrets em desenvolvime
 export Mongo__ConnectionString="mongodb://usuario:senha@localhost:27017/"
 export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=..."
 export Auth__JwtSecret="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
-export OpenAI__ApiKey="..."
 ```
 
 Para iniciar os bancos pelo Compose, configure no `.env` as credenciais

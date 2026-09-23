@@ -6,8 +6,7 @@
 - MongoDB 7 ou compatível;
 - PostgreSQL 17 ou compatível;
 - Chromium/Chrome, necessário para a sessão automatizada do TJSP;
-- chave da API da OpenAI, necessária somente para gerar petições;
-- acesso de rede ao TJSP e à OpenAI.
+- acesso de rede ao TJSP.
 
 ## Restaurar e compilar
 
@@ -86,8 +85,6 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `Mongo:ServerSelectionTimeoutSeconds` | `10` | timeout de seleção/conexão do servidor |
 | `Scraper:TimeoutSeconds` | `120` | timeout total da coleta iniciada pela API |
 | `Scraper:MaxResults` | `30` | máximo padrão quando a requisição omite o valor |
-| `OpenAI:ApiKey` | sem padrão | chave obrigatória para `/peticoes/gerar` |
-| `OpenAI:Model` | `gpt-4.1` | modelo enviado à Responses API |
 
 Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
 o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
@@ -103,22 +100,6 @@ dotnet user-secrets --project src/JuridicoAI.Api set \
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Postgres:ConnectionString" \
   "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=defina-uma-senha-local"
-```
-
-Para habilitar a geração de petições, configure a chave da OpenAI:
-
-```bash
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "OpenAI:ApiKey" \
-  "sua-chave-da-openai"
-```
-
-O modelo é opcional:
-
-```bash
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "OpenAI:Model" \
-  "gpt-4.1"
 ```
 
 Também é possível sobrescrever configurações operacionais:
@@ -147,7 +128,6 @@ de nomes usa dois sublinhados:
 ```text
 Mongo:ConnectionString -> Mongo__ConnectionString
 Postgres:ConnectionString -> Postgres__ConnectionString
-OpenAI:ApiKey           -> OpenAI__ApiKey
 ```
 
 Se a senha do MongoDB possuir caracteres reservados de URL, como `@`, `:`, `/`,
@@ -184,7 +164,6 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 | Ingestão pela API | MongoDB, Chromium e acesso ao TJSP |
 | Consulta de jurisprudências | MongoDB |
 | Reprocessamento | MongoDB |
-| Geração de petições | MongoDB, `OpenAI:ApiKey` e acesso à OpenAI |
 | Fundação do caso | PostgreSQL e diretório de storage gravável |
 
 ## Sequência recomendada
@@ -194,9 +173,8 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 3. Inicie os bancos com `docker compose up -d`.
 4. Configure `Mongo:ConnectionString` e `Postgres:ConnectionString` nos
    user-secrets.
-5. Configure `OpenAI:ApiKey` se for gerar petições.
-6. Execute `dotnet restore` e `dotnet build`.
-7. Instale o Chromium do Playwright, se necessário.
-8. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
+5. Execute `dotnet restore` e `dotnet build`.
+6. Instale o Chromium do Playwright, se necessário.
+7. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
    começar a atender requisições.
-9. Valide `GET http://localhost:5299/`.
+8. Valide `GET http://localhost:5299/`.
