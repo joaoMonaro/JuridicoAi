@@ -112,12 +112,3 @@ Não há transação envolvendo as duas collections. Uma interrupção entre sal
 a versão processada e atualizar o status do raw pode deixar dados processados
 com raw ainda marcado como `coletado`. Um novo reprocessamento é seguro por
 causa do upsert.
-
-## Uso na geração de petições
-
-O backend seleciona no máximo 30 ementas da collection processada, ordenadas
-por `classificacao.confianca` decrescente. No estado atual:
-
-- não há filtro pelo assunto dos fatos informados;
-- não há limite explícito de tamanho por ementa;
-- não são enviados ao modelo os demais metadados da decisão.

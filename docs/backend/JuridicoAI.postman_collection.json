@@ -812,37 +812,6 @@
       ]
     },
     {
-      "name": "10 - Petições com IA (público)",
-      "item": [
-        {
-          "name": "Gerar petição",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fatoSimples\": \"A consumidora teve o nome negativado por uma dívida que não reconhece e solicita retirada da negativação e indenização por dano moral.\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": "{{baseUrl}}/peticoes/gerar"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
       "name": "99 - Limpeza e logout",
       "description": "Execute no fim. As exclusões usam os IDs criados pelas requisições anteriores.",
       "item": [

@@ -63,10 +63,6 @@ dotnet user-secrets --project src/JuridicoAI.Api set \
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Mongo:ConnectionString" \
   "mongodb://juridico:senha-local@localhost:27017/?authSource=admin"
-
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "OpenAI:ApiKey" \
-  "sua-chave-da-openai"
 ```
 
 ## Consultar, remover e limpar
@@ -100,7 +96,6 @@ dos user-secrets. Em variáveis de ambiente, substitua `:` por `__`:
 ```text
 Auth:JwtSecret             -> Auth__JwtSecret
 Postgres:ConnectionString  -> Postgres__ConnectionString
-OpenAI:ApiKey              -> OpenAI__ApiKey
 ```
 
 Por exemplo:

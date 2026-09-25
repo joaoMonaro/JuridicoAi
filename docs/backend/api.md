@@ -22,7 +22,6 @@ desenvolvimento, a interface Swagger está disponível em
 | `GET` | `/api/jurisprudencias` | consulta jurisprudências processadas |
 | `GET` | `/api/jurisprudencias/raw` | consulta dados brutos |
 | `POST` | `/api/jurisprudencias/reprocess` | reprocessa dados brutos existentes |
-| `POST` | `/peticoes/gerar` | gera uma petição com ementas e OpenAI |
 | `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
 | `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
 | `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
@@ -142,21 +141,6 @@ Resposta 200:
   "falhas": 2
 }
 ```
-
-## Gerar petição
-
-```http
-POST /peticoes/gerar
-Content-Type: application/json
-
-{
-  "fatoSimples": "A consumidora teve o nome negativado por dívida que não reconhece."
-}
-```
-
-`fatoSimples` é obrigatório e não pode conter apenas espaços. A resposta 200 é
-uma string JSON contendo o texto gerado. Entrada inválida retorna 400 com a
-mensagem `O campo fatoSimples e obrigatorio.`.
 
 ## Exemplos executáveis
 
