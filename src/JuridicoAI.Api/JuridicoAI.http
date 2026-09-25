@@ -5,6 +5,38 @@ Accept: application/json
 
 ###
 
+POST {{JuridicoAI.Api_HostAddress}}/auth/register
+Content-Type: application/json
+
+{
+  "organizationName": "Escritório Exemplo",
+  "name": "João da Silva",
+  "email": "joao@example.com",
+  "password": "senha-segura-com-12-ou-mais"
+}
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "joao@example.com",
+  "senha": "senha-segura-com-12-ou-mais"
+}
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/auth/refresh
+
+###
+
+GET {{JuridicoAI.Api_HostAddress}}/auth/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
 POST {{JuridicoAI.Api_HostAddress}}/peticoes/gerar
 Content-Type: application/json
 

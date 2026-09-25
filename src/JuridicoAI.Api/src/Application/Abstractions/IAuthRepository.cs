@@ -8,6 +8,8 @@ public interface IAuthRepository
     Task<Organization> CriarOrganizationAsync(Organization item, CancellationToken ct);
     Task<(Organization Organization, User User, Membership Membership)> ProvisionarAsync(
         Organization organization, User user, Membership membership, CancellationToken ct);
+    Task<(Organization Organization, User User, Membership Membership, Session Session)> RegistrarAsync(
+        Organization organization, User user, Membership membership, Session session, CancellationToken ct);
     Task<User?> ObterUserPorEmailAsync(string email, CancellationToken ct);
     Task<User?> ObterUserAsync(Guid id, CancellationToken ct);
     Task<IReadOnlyList<MembershipDetails>> ListarMembershipsAsync(Guid userId, CancellationToken ct);

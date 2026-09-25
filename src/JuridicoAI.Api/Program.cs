@@ -115,13 +115,19 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     };
 });
 builder.Services.AddAuthorization();
-builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("auth", limiter =>
+builder.Services.AddRateLimiter(options =>
 {
-    limiter.PermitLimit = 10;
-    limiter.Window = TimeSpan.FromMinutes(1);
-    limiter.QueueLimit = 0;
-    limiter.AutoReplenishment = true;
-}));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 10,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<PeticaoApplicationService>();
 builder.Services.AddScoped<ScraperService>();

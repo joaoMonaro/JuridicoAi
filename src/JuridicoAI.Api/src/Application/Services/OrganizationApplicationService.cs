@@ -10,27 +10,27 @@ public sealed class OrganizationApplicationService(IAuthRepository repository, I
 {
     public Task<Organization> CriarAsync(CriarOrganizationRequest request, CancellationToken ct)
     {
-        ValidarNome(request.Nome, "nome");
+        var nome = NormalizarNome(request.Nome, "nome");
         var agora = DateTime.UtcNow;
         return repository.CriarOrganizationAsync(new Organization
-        { Id = Guid.NewGuid(), Nome = request.Nome.Trim(), Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora }, ct);
+        { Id = Guid.NewGuid(), Nome = nome, Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora }, ct);
     }
 
     public async Task<(Organization Organization, User User, Membership Membership)> ProvisionarAsync(
         ProvisionOrganizationRequest request, CancellationToken ct)
     {
-        ValidarNome(request.OrganizationName, "organizationName");
-        ValidarNome(request.OwnerName, "ownerName");
+        var organizationName = NormalizarNome(request.OrganizationName, "organizationName");
+        var ownerName = NormalizarNome(request.OwnerName, "ownerName");
         var email = NormalizarEmail(request.OwnerEmail);
         ValidarSenha(request.OwnerPassword);
         if (await repository.ObterUserPorEmailAsync(email, ct) is not null)
             throw new ConflitoException("Ja existe um usuario com este email.", "EMAIL_ALREADY_EXISTS");
         var agora = DateTime.UtcNow;
-        var organization = new Organization { Id = Guid.NewGuid(), Nome = request.OrganizationName.Trim(), Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora };
+        var organization = new Organization { Id = Guid.NewGuid(), Nome = organizationName, Status = OrganizationStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora };
         var user = new User
         {
             Id = Guid.NewGuid(),
-            Nome = request.OwnerName.Trim(),
+            Nome = ownerName,
             Email = email,
             PasswordHash = await passwordHasher.HashAsync(request.OwnerPassword, ct),
             Status = UserStatusEnum.Active,
@@ -57,8 +57,13 @@ public sealed class OrganizationApplicationService(IAuthRepository repository, I
         return normalized;
     }
 
-    private static void ValidarNome(string? value, string campo)
-    { if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > 200) throw new RequisicaoInvalidaException($"O campo {campo} e obrigatorio e deve ter ate 200 caracteres."); }
-    private static void ValidarSenha(string? value)
+    internal static string NormalizarNome(string? value, string campo)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Trim().Length > 200)
+            throw new RequisicaoInvalidaException($"O campo {campo} e obrigatorio e deve ter ate 200 caracteres.");
+        return value.Trim();
+    }
+
+    internal static void ValidarSenha(string? value)
     { if (string.IsNullOrWhiteSpace(value) || value.Length < 12 || value.Length > 200) throw new RequisicaoInvalidaException("A senha deve ter entre 12 e 200 caracteres."); }
 }

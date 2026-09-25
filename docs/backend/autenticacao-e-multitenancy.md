@@ -62,10 +62,31 @@ instância da aplicação.
 
 | Método | Rota | Autenticação |
 |---|---|---|
+| `POST` | `/auth/register` | pública |
 | `POST` | `/auth/login` | pública |
 | `POST` | `/auth/refresh` | cookie de refresh |
 | `POST` | `/auth/logout` | cookie de refresh, idempotente |
 | `GET` | `/auth/me` | Bearer JWT |
+
+### Registro
+
+```json
+{
+  "organizationName": "Escritório Exemplo",
+  "name": "João da Silva",
+  "email": "joao@example.com",
+  "password": "senha-segura-com-12-ou-mais"
+}
+```
+
+`POST /auth/register` cria atomicamente uma Organization ativa, seu primeiro
+User ativo, a Membership `Owner` e a Session inicial. O e-mail é normalizado e
+deve ser globalmente único. Em caso de duplicidade, inclusive sob registros
+concorrentes, a API retorna 409 com o código `EMAIL_ALREADY_EXISTS`.
+
+A resposta tem o mesmo contrato público do login e retorna HTTP 201. O access
+token fica no JSON; o refresh token é enviado somente no cookie HttpOnly. O
+registro não seleciona uma Organization existente nem cria usuários `Member`.
 
 ### Login
 
@@ -125,9 +146,9 @@ de senha e tokens nunca fazem parte da resposta.
 
 ## Provisionamento administrativo
 
-Não existe `/auth/register`. O primeiro OWNER é criado por comando
-administrativo, usando variáveis temporárias para não expor a senha nos
-argumentos ou logs:
+Além do registro público, o primeiro OWNER também pode ser criado por comando
+administrativo. Esse caminho permanece disponível para bootstrap e recuperação,
+usando variáveis temporárias para não expor a senha nos argumentos ou logs:
 
 ```bash
 export PROVISION_ORGANIZATION_NAME="Escritório Exemplo"
@@ -139,8 +160,12 @@ dotnet run --project src/JuridicoAI.Api -- provision-organization
 ```
 
 O caso de uso cria Organization ativa, User ativo e Membership `Owner` em uma
-transação. Falha em qualquer etapa causa rollback. `createOrganization` existe
-separadamente no serviço de aplicação para uso futuro sem duplicar User.
+transação, mas não cria uma Session. Falha em qualquer etapa causa rollback.
+`createOrganization` existe separadamente no serviço de aplicação para uso
+futuro sem duplicar User.
+
+Convites, criação de Members, confirmação de e-mail e recuperação de senha
+ainda não fazem parte da API.
 
 ## Isolamento dos dados privados
 

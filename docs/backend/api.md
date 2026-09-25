@@ -13,6 +13,7 @@ desenvolvimento, a interface Swagger está disponível em
 | Método | Rota | Função |
 |---|---|---|
 | `GET` | `/` | verificação básica da aplicação |
+| `POST` | `/auth/register` | cria Organization, Owner e Session inicial |
 | `POST` | `/auth/login` | autentica e cria uma Session |
 | `POST` | `/auth/refresh` | rotaciona o refresh token |
 | `POST` | `/auth/logout` | revoga a Session atual |
@@ -35,6 +36,26 @@ desenvolvimento, a interface Swagger está disponível em
 
 Os contratos, exemplos, regras de cópia de template e controle de concorrência
 estão documentados em [Peças e templates](pecas.md).
+
+## Registrar uma conta
+
+```http
+POST /auth/register
+Content-Type: application/json
+
+{
+  "organizationName": "Escritório Exemplo",
+  "name": "João da Silva",
+  "email": "joao@example.com",
+  "password": "senha-segura-com-12-ou-mais"
+}
+```
+
+O registro cria atomicamente a Organization, seu primeiro User com role
+`Owner` e a Session autenticada. Retorna HTTP 201 com o mesmo corpo público do
+login e define o refresh token no cookie `juridicoai_refresh`. O token de
+refresh não é incluído no JSON. E-mail duplicado retorna HTTP 409 com o código
+`EMAIL_ALREADY_EXISTS`.
 
 ## Ingerir jurisprudências
 

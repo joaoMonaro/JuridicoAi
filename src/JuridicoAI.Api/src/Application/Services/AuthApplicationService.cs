@@ -14,6 +14,47 @@ public sealed class AuthApplicationService(
 {
     private readonly AuthSettings _settings = options.Value;
 
+    public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken ct)
+    {
+        var organizationName = OrganizationApplicationService.NormalizarNome(request.OrganizationName, "organizationName");
+        var name = OrganizationApplicationService.NormalizarNome(request.Name, "name");
+        var email = OrganizationApplicationService.NormalizarEmail(request.Email);
+        OrganizationApplicationService.ValidarSenha(request.Password);
+
+        if (await repository.ObterUserPorEmailAsync(email, ct) is not null)
+            throw EmailJaExiste();
+
+        var agora = DateTime.UtcNow;
+        var organization = new Organization
+        {
+            Id = Guid.NewGuid(), Nome = organizationName, Status = OrganizationStatusEnum.Active,
+            DataCriacao = agora, DataAtualizacao = agora
+        };
+        var user = new User
+        {
+            Id = Guid.NewGuid(), Nome = name, Email = email,
+            PasswordHash = await passwordHasher.HashAsync(request.Password, ct),
+            Status = UserStatusEnum.Active, DataCriacao = agora, DataAtualizacao = agora
+        };
+        var membership = new Membership
+        {
+            Id = Guid.NewGuid(), OrganizationId = organization.Id, UserId = user.Id,
+            Role = MembershipRoleEnum.Owner, DataCriacao = agora, DataAtualizacao = agora
+        };
+        var refresh = tokens.CriarRefreshToken();
+        var session = new Session
+        {
+            Id = Guid.NewGuid(), UserId = user.Id, OrganizationId = organization.Id,
+            RefreshTokenHash = tokens.HashRefreshToken(refresh),
+            ExpiraEm = agora.AddDays(_settings.RefreshTokenTtlDays),
+            DataCriacao = agora, DataAtualizacao = agora
+        };
+
+        await repository.RegistrarAsync(organization, user, membership, session, ct);
+        var details = new MembershipDetails(membership, organization);
+        return Response(tokens.CriarAccessToken(user, organization, membership, session, agora), refresh, user, details, session.ExpiraEm);
+    }
+
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken ct)
     {
         var email = OrganizationApplicationService.NormalizarEmail(request.Email);
@@ -47,7 +88,7 @@ public sealed class AuthApplicationService(
         if (!await repository.RotacionarRefreshAsync(session.Id, hash, tokens.HashRefreshToken(novoRefresh), agora, ct))
             throw CredenciaisInvalidas();
         var access = tokens.CriarAccessToken(user, membership.Organization, membership.Membership, session, agora);
-        return Response(access, novoRefresh, user, membership);
+        return Response(access, novoRefresh, user, membership, session.ExpiraEm);
     }
 
     public async Task LogoutAsync(string? refreshToken, CancellationToken ct)
@@ -81,11 +122,12 @@ public sealed class AuthApplicationService(
             DataAtualizacao = agora
         };
         await repository.CriarSessionAsync(session, ct);
-        return Response(tokens.CriarAccessToken(user, details.Organization, details.Membership, session, agora), refresh, user, details);
+        return Response(tokens.CriarAccessToken(user, details.Organization, details.Membership, session, agora), refresh, user, details, session.ExpiraEm);
     }
 
-    private AuthResponse Response(string access, string refresh, User user, MembershipDetails details) =>
+    private AuthResponse Response(string access, string refresh, User user, MembershipDetails details, DateTime refreshExpiresAt) =>
         new(access, _settings.AccessTokenTtlMinutes * 60, new(user.Id, user.Nome, user.Email),
-            new(details.Organization.Id, details.Organization.Nome), details.Membership.Role, refresh);
+            new(details.Organization.Id, details.Organization.Nome), details.Membership.Role, refresh, refreshExpiresAt);
     private static NaoAutorizadoException CredenciaisInvalidas() => new("Credenciais invalidas.");
+    private static ConflitoException EmailJaExiste() => new("Ja existe um usuario com este email.", "EMAIL_ALREADY_EXISTS");
 }

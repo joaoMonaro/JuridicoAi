@@ -1,8 +1,10 @@
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
+using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Infrastructure.Database;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace JuridicoAI.Api.Infrastructure.Repositories;
 
@@ -19,6 +21,25 @@ public sealed class AuthRepository(JuridicoAiDbContext context) : IAuthRepositor
         await context.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return (organization, user, membership);
+    }
+
+    public async Task<(Organization, User, Membership, Session)> RegistrarAsync(
+        Organization organization, User user, Membership membership, Session session, CancellationToken ct)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(ct);
+        try
+        {
+            context.AddRange(organization, user, membership, session);
+            await context.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return (organization, user, membership, session);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+                   { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: "uq_users_email" })
+        {
+            await transaction.RollbackAsync(ct);
+            throw new ConflitoException("Ja existe um usuario com este email.", "EMAIL_ALREADY_EXISTS");
+        }
     }
 
     public Task<User?> ObterUserPorEmailAsync(string email, CancellationToken ct) =>
