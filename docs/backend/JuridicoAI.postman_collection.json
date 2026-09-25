@@ -1,0 +1,919 @@
+{
+  "info": {
+    "_postman_id": "e9bcfef9-449e-4e18-a493-715257fe4c51",
+    "name": "JuridicoAI - API completa",
+    "description": "Coleção completa da API JuridicoAI. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5299",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "joao@example.com",
+      "type": "string"
+    },
+    {
+      "key": "senha",
+      "value": "troque-esta-senha",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizationId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "casoId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "envolvidoId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "contextoId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "documentoId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "arquivoPath",
+      "value": "/home/jao/Desktop/exemplo.pdf",
+      "type": "string"
+    },
+    {
+      "key": "templateId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "pecaId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
+      "key": "pecaVersao",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "organizationName",
+      "value": "Escritório Exemplo",
+      "type": "string"
+    },
+    {
+      "key": "name",
+      "value": "João da Silva",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Infraestrutura",
+      "item": [
+        {
+          "name": "Verificação básica",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/plain"
+              }
+            ],
+            "url": "{{baseUrl}}/",
+            "description": "Retorna Hello World!. Não é um health check das dependências."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Autenticação",
+      "description": "Configure email e senha nas variáveis da coleção. O primeiro usuário deve ser provisionado pelo comando administrativo descrito na documentação.",
+      "item": [
+        {
+          "name": "Registrar organização e owner",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  pm.collectionVariables.set('organizationId', data.organization.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"organizationName\": \"{{organizationName}}\",\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{senha}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Cria atomicamente uma Organization, seu primeiro User Owner e a Session inicial. O Postman salva o JWT e mantém o refresh token HttpOnly no cookie jar."
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "  pm.collectionVariables.set('organizationId', data.organization.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"senha\": \"{{senha}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Seleciona automaticamente a Organization quando o usuário possui uma única membership. Se houver várias, adicione organizationId ao JSON."
+          },
+          "response": []
+        },
+        {
+          "name": "Renovar sessão",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Usa e rotaciona o cookie juridicoai_refresh mantido pelo Postman."
+          },
+          "response": []
+        },
+        {
+          "name": "Usuário atual",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Casos",
+      "item": [
+        {
+          "name": "Criar caso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('casoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Negativação indevida - João da Silva\",\n  \"descricao\": \"Cliente relata dívida desconhecida.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar casos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos?status=Ativo"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter caso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar caso",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Negativação indevida - João da Silva\",\n  \"descricao\": \"Relato revisado.\",\n  \"status\": \"Ativo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Envolvidos",
+      "item": [
+        {
+          "name": "Criar envolvido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('envolvidoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipo\": \"Cliente\",\n  \"documento\": \"000.000.000-00\",\n  \"dadosAdicionais\": {\n    \"email\": \"joao@example.com\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar envolvidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter envolvido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar envolvido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João da Silva Atualizado\",\n  \"tipo\": \"Cliente\",\n  \"documento\": \"000.000.000-00\",\n  \"dadosAdicionais\": {\n    \"email\": \"joao.atualizado@example.com\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Contextos",
+      "item": [
+        {
+          "name": "Criar contexto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('contextoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"RelatoInicial\",\n  \"titulo\": \"Relato do cliente\",\n  \"conteudo\": \"Cliente afirma que nunca contratou com a empresa.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/contextos"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar contextos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/contextos"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter contexto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/contextos/{{contextoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar contexto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"ResumoDosFatos\",\n  \"titulo\": \"Resumo revisado\",\n  \"conteudo\": \"O cliente contesta a origem da dívida e a negativação.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/contextos/{{contextoId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Documentos",
+      "item": [
+        {
+          "name": "Enviar documento",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('documentoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "arquivo",
+                  "type": "file",
+                  "src": "{{arquivoPath}}"
+                },
+                {
+                  "key": "tipo",
+                  "value": "Contrato",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/documentos",
+            "description": "Se necessário, selecione o arquivo manualmente no Postman; o limite padrão é 20 MiB."
+          },
+          "response": []
+        },
+        {
+          "name": "Listar documentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/documentos"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter metadados do documento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/documentos/{{documentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Baixar arquivo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/documentos/{{documentoId}}/arquivo"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Contexto completo",
+      "item": [
+        {
+          "name": "Obter contexto completo do caso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/contexto-completo"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - Templates de peça",
+      "item": [
+        {
+          "name": "Criar template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('templateId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Petição inicial padrão\",\n  \"conteudoJson\": {\"type\": \"doc\", \"content\": []},\n  \"pageConfig\": {\"format\": \"A4\", \"marginTop\": 30, \"marginBottom\": 20, \"marginLeft\": 30, \"marginRight\": 20},\n  \"styles\": {\"fontFamily\": \"Times New Roman\", \"fontSize\": 12, \"lineHeight\": 1.5, \"textAlign\": \"justify\"}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/templates-peca"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/templates-peca"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter template",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/templates-peca/{{templateId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar template",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Petição inicial padrão revisada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/templates-peca/{{templateId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Peças",
+      "item": [
+        {
+          "name": "Criar peça com template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set('pecaId', data.id);",
+                  "  pm.collectionVariables.set('pecaVersao', data.versao);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Petição inicial\",\n  \"templateId\": \"{{templateId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/pecas"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar peças do caso",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/pecas"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter peça completa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/pecas/{{pecaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar peça",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) pm.collectionVariables.set('pecaVersao', pm.response.json().versao);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"versao\": {{pecaVersao}},\n  \"titulo\": \"Petição inicial revisada\",\n  \"conteudoJson\": {\"type\": \"doc\", \"content\": []}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/pecas/{{pecaId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09 - Jurisprudências públicas",
+      "item": [
+        {
+          "name": "Ingerir jurisprudências",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"termo\": \"negativação indevida dano moral\",\n  \"maxResultados\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/jurisprudencias/ingest"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar jurisprudências processadas",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/jurisprudencias?tema=negativacao_indevida&subtema=debito_inexistente&resultado=provavelmente_favoravel_consumidor&danoMoral=true&fonte=TJSP&limite=50"
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar registros brutos",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/jurisprudencias/raw?limite=20"
+          },
+          "response": []
+        },
+        {
+          "name": "Reprocessar registros brutos",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/jurisprudencias/reprocess?termo=negativação%20indevida%20dano%20moral&limite=500"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10 - Petições com IA (público)",
+      "item": [
+        {
+          "name": "Gerar petição",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fatoSimples\": \"A consumidora teve o nome negativado por uma dívida que não reconhece e solicita retirada da negativação e indenização por dano moral.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/peticoes/gerar"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "99 - Limpeza e logout",
+      "description": "Execute no fim. As exclusões usam os IDs criados pelas requisições anteriores.",
+      "item": [
+        {
+          "name": "Excluir peça",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/pecas/{{pecaId}}?versao={{pecaVersao}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir template",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/templates-peca/{{templateId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir documento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/documentos/{{documentoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir contexto",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/contextos/{{contextoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir envolvido",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Arquivar caso",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Revoga a sessão indicada pelo cookie juridicoai_refresh."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

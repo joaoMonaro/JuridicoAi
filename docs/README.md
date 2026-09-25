@@ -12,6 +12,7 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 ## Backend
 
 - [API HTTP](backend/api.md)
+- [Coleção Postman](backend/JuridicoAI.postman_collection.json)
 - [Autenticação e multitenancy](backend/autenticacao-e-multitenancy.md)
 - [Fundação do caso](backend/casos.md)
 - [Peças e templates](backend/pecas.md)
