@@ -1,3 +1,4 @@
+using System.Data;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Domain.Enums;
@@ -53,17 +54,105 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
     public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
         context.EnvolvidosCaso.AsNoTracking().SingleOrDefaultAsync(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId), cancellationToken);
 
-    public async Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso envolvido, CancellationToken cancellationToken) =>
-        await context.EnvolvidosCaso.Where(x => x.CasoId == envolvido.CasoId && x.Id == envolvido.Id)
+    public async Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso envolvido, Guid organizationId, CancellationToken cancellationToken) =>
+        await context.EnvolvidosCaso.Where(x => x.CasoId == envolvido.CasoId && x.Id == envolvido.Id &&
+                                                context.Casos.Any(c => c.Id == envolvido.CasoId && c.OrganizationId == organizationId))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(x => x.Nome, envolvido.Nome)
                 .SetProperty(x => x.Tipo, envolvido.Tipo)
-                .SetProperty(x => x.Documento, envolvido.Documento)
-                .SetProperty(x => x.DadosAdicionais, envolvido.DadosAdicionais)
+                .SetProperty(x => x.Natureza, envolvido.Natureza)
+                .SetProperty(x => x.NomeFantasia, envolvido.NomeFantasia)
+                .SetProperty(x => x.CpfCnpj, envolvido.CpfCnpj)
+                .SetProperty(x => x.Rg, envolvido.Rg)
+                .SetProperty(x => x.RgOrgaoEmissor, envolvido.RgOrgaoEmissor)
+                .SetProperty(x => x.RgUf, envolvido.RgUf)
+                .SetProperty(x => x.Nacionalidade, envolvido.Nacionalidade)
+                .SetProperty(x => x.EstadoCivil, envolvido.EstadoCivil)
+                .SetProperty(x => x.Profissao, envolvido.Profissao)
+                .SetProperty(x => x.DataNascimento, envolvido.DataNascimento)
+                .SetProperty(x => x.InscricaoEstadual, envolvido.InscricaoEstadual)
+                .SetProperty(x => x.Email, envolvido.Email)
+                .SetProperty(x => x.Telefone, envolvido.Telefone)
                 .SetProperty(x => x.DataAtualizacao, envolvido.DataAtualizacao), cancellationToken) == 1;
 
     public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
         DeleteAsync(context.EnvolvidosCaso.Where(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId)), cancellationToken);
+
+    public async Task<EnderecoEnvolvidoCaso> CriarEnderecoAsync(
+        Guid casoId,
+        Guid organizationId,
+        EnderecoEnvolvidoCaso endereco,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var envolvidoExiste = await context.EnvolvidosCaso.AnyAsync(x => x.Id == endereco.EnvolvidoCasoId &&
+            x.CasoId == casoId && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId), cancellationToken);
+        if (!envolvidoExiste) throw new InvalidOperationException("Envolvido nao encontrado durante a criacao do endereco.");
+
+        if (endereco.Principal)
+            await DesmarcarPrincipalAsync(endereco.EnvolvidoCasoId, endereco.Tipo, null, endereco.DataAtualizacao, cancellationToken);
+
+        context.EnderecosEnvolvidosCaso.Add(endereco);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return endereco;
+    }
+
+    public async Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosAsync(
+        Guid casoId, Guid envolvidoId, Guid organizationId, CancellationToken cancellationToken) =>
+        await EnderecosEscopados(casoId, envolvidoId, organizationId)
+            .OrderByDescending(x => x.Principal).ThenBy(x => x.Tipo).ThenBy(x => x.DataCriacao)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosCasoAsync(
+        Guid casoId, Guid organizationId, CancellationToken cancellationToken) =>
+        await context.EnderecosEnvolvidosCaso.AsNoTracking()
+            .Where(x => context.EnvolvidosCaso.Any(e => e.Id == x.EnvolvidoCasoId && e.CasoId == casoId) &&
+                        context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId))
+            .OrderBy(x => x.EnvolvidoCasoId).ThenByDescending(x => x.Principal).ThenBy(x => x.Tipo)
+            .ToListAsync(cancellationToken);
+
+    public Task<EnderecoEnvolvidoCaso?> ObterEnderecoAsync(
+        Guid casoId, Guid envolvidoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
+        EnderecosEscopados(casoId, envolvidoId, organizationId)
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    public async Task<bool> AtualizarEnderecoAsync(
+        Guid casoId,
+        Guid organizationId,
+        EnderecoEnvolvidoCaso endereco,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var enderecoExiste = await EnderecosEscopados(casoId, endereco.EnvolvidoCasoId, organizationId)
+            .AnyAsync(x => x.Id == endereco.Id, cancellationToken);
+        if (!enderecoExiste) return false;
+
+        if (endereco.Principal)
+            await DesmarcarPrincipalAsync(endereco.EnvolvidoCasoId, endereco.Tipo, endereco.Id, endereco.DataAtualizacao, cancellationToken);
+
+        var atualizado = await EnderecosEscopados(casoId, endereco.EnvolvidoCasoId, organizationId)
+            .Where(x => x.Id == endereco.Id)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.Tipo, endereco.Tipo)
+                .SetProperty(x => x.Principal, endereco.Principal)
+                .SetProperty(x => x.Cep, endereco.Cep)
+                .SetProperty(x => x.Logradouro, endereco.Logradouro)
+                .SetProperty(x => x.Numero, endereco.Numero)
+                .SetProperty(x => x.Complemento, endereco.Complemento)
+                .SetProperty(x => x.Bairro, endereco.Bairro)
+                .SetProperty(x => x.Cidade, endereco.Cidade)
+                .SetProperty(x => x.Uf, endereco.Uf)
+                .SetProperty(x => x.EstadoProvincia, endereco.EstadoProvincia)
+                .SetProperty(x => x.Pais, endereco.Pais)
+                .SetProperty(x => x.DataAtualizacao, endereco.DataAtualizacao), cancellationToken) == 1;
+        await transaction.CommitAsync(cancellationToken);
+        return atualizado;
+    }
+
+    public Task<bool> RemoverEnderecoAsync(
+        Guid casoId, Guid envolvidoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
+        DeleteAsync(EnderecosEscopados(casoId, envolvidoId, organizationId).Where(x => x.Id == id), cancellationToken);
 
     public async Task<ContextoCaso> CriarContextoAsync(ContextoCaso contexto, CancellationToken cancellationToken)
     {
@@ -106,6 +195,24 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
 
     public Task<bool> RemoverDocumentoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
         DeleteAsync(context.DocumentosCaso.Where(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId)), cancellationToken);
+
+    private IQueryable<EnderecoEnvolvidoCaso> EnderecosEscopados(Guid casoId, Guid envolvidoId, Guid organizationId) =>
+        context.EnderecosEnvolvidosCaso.AsNoTracking().Where(x => x.EnvolvidoCasoId == envolvidoId &&
+            context.EnvolvidosCaso.Any(e => e.Id == envolvidoId && e.CasoId == casoId) &&
+            context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId));
+
+    private Task<int> DesmarcarPrincipalAsync(
+        Guid envolvidoId,
+        TipoEnderecoEnum tipo,
+        Guid? ignorarId,
+        DateTime dataAtualizacao,
+        CancellationToken cancellationToken) =>
+        context.EnderecosEnvolvidosCaso
+            .Where(x => x.EnvolvidoCasoId == envolvidoId && x.Tipo == tipo && x.Principal &&
+                        (!ignorarId.HasValue || x.Id != ignorarId.Value))
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(x => x.Principal, false)
+                .SetProperty(x => x.DataAtualizacao, dataAtualizacao), cancellationToken);
 
     private static async Task<bool> DeleteAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken)
         where TEntity : class => await query.ExecuteDeleteAsync(cancellationToken) == 1;

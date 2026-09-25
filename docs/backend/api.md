@@ -22,6 +22,11 @@ desenvolvimento, a interface Swagger está disponível em
 | `GET` | `/api/jurisprudencias` | consulta jurisprudências processadas |
 | `GET` | `/api/jurisprudencias/raw` | consulta dados brutos |
 | `POST` | `/api/jurisprudencias/reprocess` | reprocessa dados brutos existentes |
+| `POST` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` | adiciona endereço ao envolvido |
+| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` | lista endereços do envolvido |
+| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | obtém um endereço |
+| `PATCH` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | substitui os dados de um endereço |
+| `DELETE` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | remove um endereço |
 | `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
 | `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
 | `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |

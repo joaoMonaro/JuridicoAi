@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -44,12 +45,28 @@ internal sealed class EnvolvidoCasoConfiguration : IEntityTypeConfiguration<Envo
         {
             table.HasCheckConstraint("ck_envolvidos_caso_nome", "length(btrim(nome)) > 0");
             table.HasCheckConstraint("ck_envolvidos_caso_tipo", "tipo IN ('Cliente', 'ParteContraria', 'Advogado', 'Testemunha', 'TerceiroInteressado', 'Outro')");
+            table.HasCheckConstraint("ck_envolvidos_caso_natureza", "natureza IN ('NaoInformada', 'PessoaFisica', 'PessoaJuridica', 'OrgaoPublico')");
+            table.HasCheckConstraint("ck_envolvidos_caso_estado_civil", "estado_civil IS NULL OR estado_civil IN ('NaoInformado', 'Solteiro', 'Casado', 'UniaoEstavel', 'Separado', 'Divorciado', 'Viuvo')");
         });
         builder.HasKey(x => x.Id).HasName("envolvidos_caso_pkey");
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(x => x.CasoId).HasColumnName("caso_id");
         builder.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Natureza).HasColumnName("natureza").HasMaxLength(30).HasConversion<string>()
+            .HasDefaultValue(NaturezaPessoaEnum.NaoInformada);
+        builder.Property(x => x.NomeFantasia).HasColumnName("nome_fantasia").HasMaxLength(200);
+        builder.Property(x => x.CpfCnpj).HasColumnName("cpf_cnpj").HasMaxLength(14);
+        builder.Property(x => x.Rg).HasColumnName("rg").HasMaxLength(30);
+        builder.Property(x => x.RgOrgaoEmissor).HasColumnName("rg_orgao_emissor").HasMaxLength(30);
+        builder.Property(x => x.RgUf).HasColumnName("rg_uf").HasMaxLength(2);
+        builder.Property(x => x.Nacionalidade).HasColumnName("nacionalidade").HasMaxLength(100);
+        builder.Property(x => x.EstadoCivil).HasColumnName("estado_civil").HasMaxLength(30).HasConversion<string>();
+        builder.Property(x => x.Profissao).HasColumnName("profissao").HasMaxLength(150);
+        builder.Property(x => x.DataNascimento).HasColumnName("data_nascimento").HasColumnType("date");
+        builder.Property(x => x.InscricaoEstadual).HasColumnName("inscricao_estadual").HasMaxLength(30);
+        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(254);
+        builder.Property(x => x.Telefone).HasColumnName("telefone").HasMaxLength(20);
         builder.Property(x => x.Documento).HasColumnName("documento").HasMaxLength(50);
 
         var converter = new ValueConverter<IReadOnlyDictionary<string, string?>?, string?>(
@@ -75,6 +92,42 @@ internal sealed class EnvolvidoCasoConfiguration : IEntityTypeConfiguration<Envo
 
     private static string Json(IReadOnlyDictionary<string, string?>? value) =>
         value == null ? string.Empty : JsonSerializer.Serialize(value, JsonOptions);
+}
+
+internal sealed class EnderecoEnvolvidoCasoConfiguration : IEntityTypeConfiguration<EnderecoEnvolvidoCaso>
+{
+    public void Configure(EntityTypeBuilder<EnderecoEnvolvidoCaso> builder)
+    {
+        builder.ToTable("enderecos_envolvidos_caso", table =>
+        {
+            table.HasCheckConstraint("ck_enderecos_envolvidos_tipo", "tipo IN ('Residencial', 'Comercial', 'Sede', 'Correspondencia', 'Citacao', 'Outro')");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_logradouro", "length(btrim(logradouro)) > 0");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_cidade", "length(btrim(cidade)) > 0");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_pais", "length(pais) = 2");
+        });
+        builder.HasKey(x => x.Id).HasName("enderecos_envolvidos_caso_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.EnvolvidoCasoId).HasColumnName("envolvido_caso_id");
+        builder.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(30).HasConversion<string>();
+        builder.Property(x => x.Principal).HasColumnName("principal");
+        builder.Property(x => x.Cep).HasColumnName("cep").HasMaxLength(20);
+        builder.Property(x => x.Logradouro).HasColumnName("logradouro").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Numero).HasColumnName("numero").HasMaxLength(30);
+        builder.Property(x => x.Complemento).HasColumnName("complemento").HasMaxLength(100);
+        builder.Property(x => x.Bairro).HasColumnName("bairro").HasMaxLength(100);
+        builder.Property(x => x.Cidade).HasColumnName("cidade").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Uf).HasColumnName("uf").HasMaxLength(2);
+        builder.Property(x => x.EstadoProvincia).HasColumnName("estado_provincia").HasMaxLength(100);
+        builder.Property(x => x.Pais).HasColumnName("pais").HasMaxLength(2).IsRequired();
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao");
+        builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+        builder.HasOne<EnvolvidoCaso>().WithMany().HasForeignKey(x => x.EnvolvidoCasoId)
+            .OnDelete(DeleteBehavior.Cascade).HasConstraintName("enderecos_envolvidos_caso_envolvido_id_fkey");
+        builder.HasIndex(x => x.EnvolvidoCasoId).HasDatabaseName("ix_enderecos_envolvidos_envolvido_id");
+        builder.HasIndex(x => new { x.EnvolvidoCasoId, x.Tipo })
+            .IsUnique().HasFilter("principal = TRUE")
+            .HasDatabaseName("uq_enderecos_envolvidos_principal_tipo");
+    }
 }
 
 internal sealed class ContextoCasoConfiguration : IEntityTypeConfiguration<ContextoCaso>

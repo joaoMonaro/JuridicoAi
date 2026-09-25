@@ -113,20 +113,98 @@ vínculos ou arquivos do caso.
 | `PUT` | `/casos/{casoId}/envolvidos/{id}` |
 | `DELETE` | `/casos/{casoId}/envolvidos/{id}` |
 
+Criação de pessoa física:
+
 ```json
 {
   "nome": "João da Silva",
   "tipo": "Cliente",
-  "documento": "000.000.000-00",
-  "dadosAdicionais": {
-    "email": "joao@example.com"
-  }
+  "natureza": "PessoaFisica",
+  "cpfCnpj": "529.982.247-25",
+  "rg": "12345678",
+  "rgOrgaoEmissor": "SSP",
+  "rgUf": "SP",
+  "nacionalidade": "Brasileira",
+  "estadoCivil": "Casado",
+  "profissao": "Motorista",
+  "dataNascimento": "1985-04-10",
+  "email": "joao@example.com",
+  "telefone": "+55 11 99999-9999"
+}
+```
+
+Criação de pessoa jurídica:
+
+```json
+{
+  "nome": "Empresa Exemplo Ltda.",
+  "nomeFantasia": "Empresa Exemplo",
+  "tipo": "ParteContraria",
+  "natureza": "PessoaJuridica",
+  "cpfCnpj": "11.222.333/0001-81",
+  "inscricaoEstadual": "123456789",
+  "email": "juridico@empresa.example"
 }
 ```
 
 Tipos: `Cliente`, `ParteContraria`, `Advogado`, `Testemunha`,
 `TerceiroInteressado` e `Outro`. Múltiplos envolvidos do mesmo tipo são
-permitidos.
+permitidos. Naturezas aceitas: `NaoInformada`, `PessoaFisica`,
+`PessoaJuridica` e `OrgaoPublico`.
+
+CPF, CNPJ, CEP, UF, país, e-mail e telefone são normalizados pelo backend.
+CPF/CNPJ fornecido precisa possuir dígitos verificadores válidos e ser
+compatível com a natureza. A listagem mascara o documento; a consulta
+individual autenticada retorna a identidade completa. `Documento` e
+`DadosAdicionais` permanecem apenas como colunas legadas e não fazem parte dos
+novos contratos.
+
+## Endereços dos envolvidos
+
+| Método | Rota |
+|---|---|
+| `POST` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` |
+| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` |
+| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` |
+| `PATCH` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` |
+| `DELETE` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` |
+
+Endereço residencial:
+
+```json
+{
+  "tipo": "Residencial",
+  "principal": true,
+  "cep": "01001-000",
+  "logradouro": "Praça da Sé",
+  "numero": "100-A",
+  "complemento": "Apto 20",
+  "bairro": "Sé",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "pais": "BR"
+}
+```
+
+Sede empresarial usa o mesmo contrato com `tipo` igual a `Sede`. Os demais
+tipos são `Comercial`, `Correspondencia`, `Citacao` e `Outro`. Pode existir
+somente um endereço principal de cada tipo por envolvido; marcar outro como
+principal desmarca o anterior na mesma transação. O `PATCH` substitui os campos
+do endereço pelo contrato enviado.
+
+```json
+{
+  "tipo": "Sede",
+  "principal": true,
+  "cep": "20040-020",
+  "logradouro": "Rua da Assembleia",
+  "numero": "10",
+  "bairro": "Centro",
+  "cidade": "Rio de Janeiro",
+  "uf": "RJ",
+  "pais": "BR"
+}
+```
 
 ## Contextos
 
@@ -178,9 +256,10 @@ retorna 400, tamanho excedido retorna 413 e formato não suportado retorna 415.
 
 ## Contexto completo
 
-`GET /casos/{id}/contexto-completo` retorna o caso, todos os envolvidos,
-contextos e metadados dos documentos. O binário dos documentos não faz parte
-da resposta.
+`GET /casos/{id}/contexto-completo` retorna o caso, a identidade completa dos
+envolvidos com seus endereços, contextos e metadados dos documentos. Os
+endereços são carregados em uma consulta única e o binário dos documentos não
+faz parte da resposta.
 
 Todos os acessos a filhos usam simultaneamente `casoId` e `id`: um identificador
 válido não pode ser consultado, alterado ou removido pela rota de outro caso.

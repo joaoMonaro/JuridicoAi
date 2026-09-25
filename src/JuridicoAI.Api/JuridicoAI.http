@@ -1,4 +1,7 @@
 @JuridicoAI.Api_HostAddress = http://localhost:5299
+@accessToken = substitua-pelo-access-token
+@casoId = 00000000-0000-0000-0000-000000000000
+@envolvidoId = 00000000-0000-0000-0000-000000000000
 
 GET {{JuridicoAI.Api_HostAddress}}/
 Accept: application/json
@@ -34,6 +37,38 @@ POST {{JuridicoAI.Api_HostAddress}}/auth/refresh
 GET {{JuridicoAI.Api_HostAddress}}/auth/me
 Authorization: Bearer {{accessToken}}
 Accept: application/json
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/casos/{{casoId}}/envolvidos
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "nome": "João da Silva",
+  "tipo": "Cliente",
+  "natureza": "PessoaFisica",
+  "cpfCnpj": "529.982.247-25",
+  "email": "joao@example.com"
+}
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "tipo": "Residencial",
+  "principal": true,
+  "cep": "01001-000",
+  "logradouro": "Praça da Sé",
+  "numero": "100-A",
+  "bairro": "Sé",
+  "cidade": "São Paulo",
+  "uf": "SP",
+  "pais": "BR"
+}
 
 ###
 

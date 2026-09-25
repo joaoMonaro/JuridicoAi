@@ -200,6 +200,105 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.EnderecoEnvolvidoCaso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Bairro")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("bairro");
+
+                    b.Property<string>("Cep")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("cep");
+
+                    b.Property<string>("Cidade")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("cidade");
+
+                    b.Property<string>("Complemento")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("complemento");
+
+                    b.Property<DateTime>("DataAtualizacao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_atualizacao");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("data_criacao");
+
+                    b.Property<Guid>("EnvolvidoCasoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("envolvido_caso_id");
+
+                    b.Property<string>("EstadoProvincia")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("estado_provincia");
+
+                    b.Property<string>("Logradouro")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("logradouro");
+
+                    b.Property<string>("Numero")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("numero");
+
+                    b.Property<string>("Pais")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("pais");
+
+                    b.Property<bool>("Principal")
+                        .HasColumnType("boolean")
+                        .HasColumnName("principal");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo");
+
+                    b.Property<string>("Uf")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("uf");
+
+                    b.HasKey("Id")
+                        .HasName("enderecos_envolvidos_caso_pkey");
+
+                    b.HasIndex("EnvolvidoCasoId")
+                        .HasDatabaseName("ix_enderecos_envolvidos_envolvido_id");
+
+                    b.HasIndex("EnvolvidoCasoId", "Tipo")
+                        .IsUnique()
+                        .HasDatabaseName("uq_enderecos_envolvidos_principal_tipo")
+                        .HasFilter("principal = TRUE");
+
+                    b.ToTable("enderecos_envolvidos_caso", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_enderecos_envolvidos_cidade", "length(btrim(cidade)) > 0");
+
+                            t.HasCheckConstraint("ck_enderecos_envolvidos_logradouro", "length(btrim(logradouro)) > 0");
+
+                            t.HasCheckConstraint("ck_enderecos_envolvidos_pais", "length(pais) = 2");
+
+                            t.HasCheckConstraint("ck_enderecos_envolvidos_tipo", "tipo IN ('Residencial', 'Comercial', 'Sede', 'Correspondencia', 'Citacao', 'Outro')");
+                        });
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.EnvolvidoCaso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -209,6 +308,11 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.Property<Guid>("CasoId")
                         .HasColumnType("uuid")
                         .HasColumnName("caso_id");
+
+                    b.Property<string>("CpfCnpj")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("cpf_cnpj");
 
                     b.Property<string>("DadosAdicionais")
                         .HasColumnType("jsonb")
@@ -222,16 +326,77 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("data_criacao");
 
+                    b.Property<DateOnly?>("DataNascimento")
+                        .HasColumnType("date")
+                        .HasColumnName("data_nascimento");
+
                     b.Property<string>("Documento")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("documento");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("EstadoCivil")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado_civil");
+
+                    b.Property<string>("InscricaoEstadual")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("inscricao_estadual");
+
+                    b.Property<string>("Nacionalidade")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("nacionalidade");
+
+                    b.Property<string>("Natureza")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("NaoInformada")
+                        .HasColumnName("natureza");
 
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("nome");
+
+                    b.Property<string>("NomeFantasia")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome_fantasia");
+
+                    b.Property<string>("Profissao")
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("profissao");
+
+                    b.Property<string>("Rg")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("rg");
+
+                    b.Property<string>("RgOrgaoEmissor")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("rg_orgao_emissor");
+
+                    b.Property<string>("RgUf")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)")
+                        .HasColumnName("rg_uf");
+
+                    b.Property<string>("Telefone")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("telefone");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -247,6 +412,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.ToTable("envolvidos_caso", null, t =>
                         {
+                            t.HasCheckConstraint("ck_envolvidos_caso_estado_civil", "estado_civil IS NULL OR estado_civil IN ('NaoInformado', 'Solteiro', 'Casado', 'UniaoEstavel', 'Separado', 'Divorciado', 'Viuvo')");
+
+                            t.HasCheckConstraint("ck_envolvidos_caso_natureza", "natureza IN ('NaoInformada', 'PessoaFisica', 'PessoaJuridica', 'OrgaoPublico')");
+
                             t.HasCheckConstraint("ck_envolvidos_caso_nome", "length(btrim(nome)) > 0");
 
                             t.HasCheckConstraint("ck_envolvidos_caso_tipo", "tipo IN ('Cliente', 'ParteContraria', 'Advogado', 'Testemunha', 'TerceiroInteressado', 'Outro')");
@@ -644,6 +813,16 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("documentos_caso_caso_id_fkey");
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.EnderecoEnvolvidoCaso", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.EnvolvidoCaso", null)
+                        .WithMany()
+                        .HasForeignKey("EnvolvidoCasoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("enderecos_envolvidos_caso_envolvido_id_fkey");
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.EnvolvidoCaso", b =>

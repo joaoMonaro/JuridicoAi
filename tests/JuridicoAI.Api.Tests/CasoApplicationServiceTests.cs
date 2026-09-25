@@ -53,7 +53,7 @@ public sealed class CasoApplicationServiceTests
         var casoA = await service.CriarCasoAsync(new CriarCasoRequest("A", null), default);
         var casoB = await service.CriarCasoAsync(new CriarCasoRequest("B", null), default);
         var envolvido = await service.CriarEnvolvidoAsync(casoA.Id,
-            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
 
         await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
             service.ObterEnvolvidoAsync(casoB.Id, envolvido.Id, default));
@@ -65,9 +65,9 @@ public sealed class CasoApplicationServiceTests
         var (service, _, _) = CreateService();
         var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente A", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente A", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente B", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente B", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
 
         var itens = await service.ListarEnvolvidosAsync(caso.Id, default);
         Assert.Equal(2, itens.Count);
@@ -79,7 +79,7 @@ public sealed class CasoApplicationServiceTests
         var (service, _, _) = CreateService();
         var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
         await service.CriarEnvolvidoAsync(caso.Id,
-            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, null, null), default);
+            new CriarEnvolvidoCasoRequest("Cliente", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
         await service.CriarContextoAsync(caso.Id,
             new CriarContextoCasoRequest(TipoContextoCasoEnum.RelatoInicial, null, "Fatos"), default);
         await service.CriarDocumentoAsync(caso.Id, "prova.txt", "text/plain", 5, null,
@@ -89,6 +89,7 @@ public sealed class CasoApplicationServiceTests
 
         Assert.Equal(caso.Id, completo.Caso.Id);
         Assert.Single(completo.Envolvidos);
+        Assert.Empty(completo.Envolvidos[0].Enderecos);
         Assert.Single(completo.Contextos);
         Assert.Single(completo.Documentos);
     }
@@ -163,6 +164,155 @@ public sealed class CasoApplicationServiceTests
         await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() => serviceA.ArquivarCasoAsync(casoB.Id, default));
     }
 
+    [Fact]
+    public async Task Envolvido_PessoaFisicaNormalizaIdentidadeEMascaraDocumentoNaListagem()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+
+        var criado = await service.CriarEnvolvidoAsync(caso.Id, new CriarEnvolvidoCasoRequest(
+            "  Joao da Silva  ", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica,
+            CpfCnpj: "529.982.247-25", RgUf: "sp", Email: "JOAO@EXAMPLE.COM", Telefone: "+55 (11) 99999-9999"), default);
+        var lista = await service.ListarEnvolvidosAsync(caso.Id, default);
+
+        Assert.Equal("Joao da Silva", criado.Nome);
+        Assert.Equal("52998224725", criado.CpfCnpj);
+        Assert.Equal("SP", criado.RgUf);
+        Assert.Equal("joao@example.com", criado.Email);
+        Assert.Equal("+5511999999999", criado.Telefone);
+        Assert.Equal("***.***.***-25", Assert.Single(lista).DocumentoMascarado);
+    }
+
+    [Fact]
+    public async Task Envolvido_PessoaJuridicaAceitaCnpjValido()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+
+        var criado = await service.CriarEnvolvidoAsync(caso.Id, new CriarEnvolvidoCasoRequest(
+            "Empresa Exemplo Ltda.", TipoEnvolvidoCasoEnum.ParteContraria, NaturezaPessoaEnum.PessoaJuridica,
+            NomeFantasia: "Empresa Exemplo", CpfCnpj: "11.222.333/0001-81"), default);
+
+        Assert.Equal("11222333000181", criado.CpfCnpj);
+        Assert.Equal("Empresa Exemplo", criado.NomeFantasia);
+    }
+
+    [Theory]
+    [InlineData("529.982.247-24", NaturezaPessoaEnum.PessoaFisica)]
+    [InlineData("11.222.333/0001-80", NaturezaPessoaEnum.PessoaJuridica)]
+    public async Task Envolvido_RejeitaDocumentoInvalido(string documento, NaturezaPessoaEnum natureza)
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa", TipoEnvolvidoCasoEnum.Cliente, natureza, CpfCnpj: documento), default));
+    }
+
+    [Fact]
+    public async Task Envolvido_RejeitaDataNascimentoFutura()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica,
+                DataNascimento: DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1))), default));
+    }
+
+    [Fact]
+    public async Task Endereco_NormalizaCamposETrocaPrincipalDoMesmoTipo()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+        var envolvido = await service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
+        var primeiro = await service.CriarEnderecoAsync(caso.Id, envolvido.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Residencial, true, "01001-000", "Rua A", "1", null, null, "Sao Paulo", "sp", null), default);
+
+        var segundo = await service.CriarEnderecoAsync(caso.Id, envolvido.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Residencial, true, "20040-020", "Rua B", "S/N", null, null, "Rio de Janeiro", "rj", null), default);
+        var enderecos = await service.ListarEnderecosAsync(caso.Id, envolvido.Id, default);
+
+        Assert.Equal("01001000", primeiro.Cep);
+        Assert.Equal("SP", primeiro.Uf);
+        Assert.False(enderecos.Single(x => x.Id == primeiro.Id).Principal);
+        Assert.True(enderecos.Single(x => x.Id == segundo.Id).Principal);
+    }
+
+    [Fact]
+    public async Task Endereco_DeOutroEnvolvidoNaoPodeSerObtido()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+        var a = await service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("A", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
+        var b = await service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("B", TipoEnvolvidoCasoEnum.ParteContraria, NaturezaPessoaEnum.PessoaJuridica), default);
+        var endereco = await service.CriarEnderecoAsync(caso.Id, a.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Residencial, false, null, "Rua A", null, null, null, "Sao Paulo", "SP", null), default);
+
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            service.ObterEnderecoAsync(caso.Id, b.Id, endereco.Id, default));
+    }
+
+    [Fact]
+    public async Task Endereco_PodeSerAtualizadoERemovido()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+        var envolvido = await service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
+        var endereco = await service.CriarEnderecoAsync(caso.Id, envolvido.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Residencial, false, null, "Rua A", null, null, null, "Sao Paulo", "SP", null), default);
+
+        var atualizado = await service.AtualizarEnderecoAsync(caso.Id, envolvido.Id, endereco.Id,
+            new AtualizarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Citacao, true, "20040-020", "Rua B", "20", null, "Centro", "Rio de Janeiro", "RJ", null), default);
+        await service.RemoverEnderecoAsync(caso.Id, envolvido.Id, endereco.Id, default);
+
+        Assert.Equal(TipoEnderecoEnum.Citacao, atualizado.Tipo);
+        Assert.Equal("Rio de Janeiro", atualizado.Cidade);
+        Assert.True(atualizado.Principal);
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            service.ObterEnderecoAsync(caso.Id, envolvido.Id, endereco.Id, default));
+    }
+
+    [Fact]
+    public async Task Endereco_DeOutraOrganizationNaoPodeSerConsultado()
+    {
+        var repository = new InMemoryCasoRepository();
+        var storage = new InMemoryFileStorage();
+        var settings = Options.Create(new DocumentStorageSettings { MaxFileSizeBytes = 1024 });
+        var serviceA = new CasoApplicationService(repository, storage, new TestAuthContext(), settings, NullLogger<CasoApplicationService>.Instance);
+        var serviceB = new CasoApplicationService(repository, storage, new TestAuthContext(), settings, NullLogger<CasoApplicationService>.Instance);
+        var casoB = await serviceB.CriarCasoAsync(new CriarCasoRequest("B", null), default);
+        var envolvidoB = await serviceB.CriarEnvolvidoAsync(casoB.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa B", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica), default);
+        var enderecoB = await serviceB.CriarEnderecoAsync(casoB.Id, envolvidoB.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Residencial, true, null, "Rua B", null, null, null, "Cidade B", "SP", null), default);
+
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.ObterEnderecoAsync(casoB.Id, envolvidoB.Id, enderecoB.Id, default));
+    }
+
+    [Fact]
+    public async Task ContextoCompleto_IncluiIdentidadeEEnderecos()
+    {
+        var (service, _, _) = CreateService();
+        var caso = await service.CriarCasoAsync(new CriarCasoRequest("Caso", null), default);
+        var envolvido = await service.CriarEnvolvidoAsync(caso.Id,
+            new CriarEnvolvidoCasoRequest("Pessoa", TipoEnvolvidoCasoEnum.Cliente, NaturezaPessoaEnum.PessoaFisica,
+                CpfCnpj: "52998224725"), default);
+        await service.CriarEnderecoAsync(caso.Id, envolvido.Id,
+            new CriarEnderecoEnvolvidoRequest(TipoEnderecoEnum.Citacao, true, null, "Rua A", "10", null, null, "Sao Paulo", "SP", null), default);
+
+        var completo = await service.ObterContextoCompletoAsync(caso.Id, default);
+
+        var item = Assert.Single(completo.Envolvidos);
+        Assert.Equal("52998224725", item.CpfCnpj);
+        Assert.Single(item.Enderecos);
+    }
+
     private static (CasoApplicationService Service, InMemoryCasoRepository Repository, InMemoryFileStorage Storage)
         CreateService(long maxFileSize = 1024)
     {
@@ -200,6 +350,7 @@ public sealed class CasoApplicationServiceTests
     {
         private readonly Dictionary<Guid, Caso> _casos = [];
         private readonly Dictionary<Guid, EnvolvidoCaso> _envolvidos = [];
+        private readonly Dictionary<Guid, EnderecoEnvolvidoCaso> _enderecos = [];
         private readonly Dictionary<Guid, ContextoCaso> _contextos = [];
         private readonly Dictionary<Guid, DocumentoCaso> _documentos = [];
         public bool FailDocumentCreate { get; set; }
@@ -217,8 +368,45 @@ public sealed class CasoApplicationServiceTests
         public Task<EnvolvidoCaso> CriarEnvolvidoAsync(EnvolvidoCaso item, CancellationToken ct) { _envolvidos.Add(item.Id, item); return Task.FromResult(item); }
         public Task<IReadOnlyList<EnvolvidoCaso>> ListarEnvolvidosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_envolvidos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
         public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_envolvidos.GetValueOrDefault(id) is { } x && x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org ? x : null);
-        public Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso item, CancellationToken ct) => Task.FromResult(_envolvidos.ContainsKey(item.Id));
-        public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(casoId)?.OrganizationId == org && Remove(_envolvidos, casoId, id, x => x.CasoId));
+        public Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso item, Guid org, CancellationToken ct) => Task.FromResult(_envolvidos.ContainsKey(item.Id) && _casos.GetValueOrDefault(item.CasoId)?.OrganizationId == org);
+        public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct)
+        {
+            if (_casos.GetValueOrDefault(casoId)?.OrganizationId != org || !Remove(_envolvidos, casoId, id, x => x.CasoId)) return Task.FromResult(false);
+            foreach (var enderecoId in _enderecos.Values.Where(x => x.EnvolvidoCasoId == id).Select(x => x.Id).ToList()) _enderecos.Remove(enderecoId);
+            return Task.FromResult(true);
+        }
+
+        public Task<EnderecoEnvolvidoCaso> CriarEnderecoAsync(Guid casoId, Guid org, EnderecoEnvolvidoCaso item, CancellationToken ct)
+        {
+            if (!_envolvidos.TryGetValue(item.EnvolvidoCasoId, out var envolvido) || envolvido.CasoId != casoId || _casos.GetValueOrDefault(casoId)?.OrganizationId != org)
+                throw new InvalidOperationException();
+            if (item.Principal) DesmarcarPrincipal(item);
+            _enderecos.Add(item.Id, item);
+            return Task.FromResult(item);
+        }
+        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosAsync(Guid casoId, Guid envolvidoId, Guid org, CancellationToken ct) =>
+            Result(EnderecosEscopados(casoId, envolvidoId, org).OrderByDescending(x => x.Principal).ThenBy(x => x.Tipo));
+        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosCasoAsync(Guid casoId, Guid org, CancellationToken ct) =>
+            Result(_enderecos.Values.Where(x => _envolvidos.GetValueOrDefault(x.EnvolvidoCasoId)?.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
+        public Task<EnderecoEnvolvidoCaso?> ObterEnderecoAsync(Guid casoId, Guid envolvidoId, Guid id, Guid org, CancellationToken ct) =>
+            Task.FromResult(EnderecosEscopados(casoId, envolvidoId, org).SingleOrDefault(x => x.Id == id));
+        public Task<bool> AtualizarEnderecoAsync(Guid casoId, Guid org, EnderecoEnvolvidoCaso item, CancellationToken ct)
+        {
+            if (!EnderecosEscopados(casoId, item.EnvolvidoCasoId, org).Any(x => x.Id == item.Id)) return Task.FromResult(false);
+            if (item.Principal) DesmarcarPrincipal(item);
+            _enderecos[item.Id] = item;
+            return Task.FromResult(true);
+        }
+        public Task<bool> RemoverEnderecoAsync(Guid casoId, Guid envolvidoId, Guid id, Guid org, CancellationToken ct) =>
+            Task.FromResult(EnderecosEscopados(casoId, envolvidoId, org).Any(x => x.Id == id) && _enderecos.Remove(id));
+
+        private IEnumerable<EnderecoEnvolvidoCaso> EnderecosEscopados(Guid casoId, Guid envolvidoId, Guid org) =>
+            _enderecos.Values.Where(x => x.EnvolvidoCasoId == envolvidoId && _envolvidos.GetValueOrDefault(envolvidoId)?.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org);
+        private void DesmarcarPrincipal(EnderecoEnvolvidoCaso item)
+        {
+            foreach (var atual in _enderecos.Values.Where(x => x.EnvolvidoCasoId == item.EnvolvidoCasoId && x.Tipo == item.Tipo && x.Id != item.Id))
+                atual.Principal = false;
+        }
 
         public Task<ContextoCaso> CriarContextoAsync(ContextoCaso item, CancellationToken ct) { _contextos.Add(item.Id, item); return Task.FromResult(item); }
         public Task<IReadOnlyList<ContextoCaso>> ListarContextosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_contextos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));

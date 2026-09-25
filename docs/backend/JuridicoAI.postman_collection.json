@@ -52,6 +52,11 @@
       "type": "string"
     },
     {
+      "key": "enderecoId",
+      "value": "00000000-0000-0000-0000-000000000000",
+      "type": "string"
+    },
+    {
       "key": "contextoId",
       "value": "00000000-0000-0000-0000-000000000000",
       "type": "string"
@@ -353,7 +358,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipo\": \"Cliente\",\n  \"documento\": \"000.000.000-00\",\n  \"dadosAdicionais\": {\n    \"email\": \"joao@example.com\"\n  }\n}",
+              "raw": "{\n  \"nome\": \"João da Silva\",\n  \"tipo\": \"Cliente\",\n  \"natureza\": \"PessoaFisica\",\n  \"cpfCnpj\": \"529.982.247-25\",\n  \"rg\": \"12345678\",\n  \"rgOrgaoEmissor\": \"SSP\",\n  \"rgUf\": \"SP\",\n  \"nacionalidade\": \"Brasileira\",\n  \"estadoCivil\": \"Casado\",\n  \"profissao\": \"Motorista\",\n  \"dataNascimento\": \"1985-04-10\",\n  \"email\": \"joao@example.com\",\n  \"telefone\": \"+55 11 99999-9999\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -394,7 +399,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"João da Silva Atualizado\",\n  \"tipo\": \"Cliente\",\n  \"documento\": \"000.000.000-00\",\n  \"dadosAdicionais\": {\n    \"email\": \"joao.atualizado@example.com\"\n  }\n}",
+              "raw": "{\n  \"nome\": \"João da Silva Atualizado\",\n  \"tipo\": \"Cliente\",\n  \"natureza\": \"PessoaFisica\",\n  \"cpfCnpj\": \"529.982.247-25\",\n  \"rg\": \"12345678\",\n  \"rgOrgaoEmissor\": \"SSP\",\n  \"rgUf\": \"SP\",\n  \"nacionalidade\": \"Brasileira\",\n  \"estadoCivil\": \"Casado\",\n  \"profissao\": \"Motorista\",\n  \"dataNascimento\": \"1985-04-10\",\n  \"email\": \"joao.atualizado@example.com\",\n  \"telefone\": \"+55 11 99999-9999\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -402,6 +407,81 @@
               }
             },
             "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Criar endereço residencial",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) pm.collectionVariables.set('enderecoId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"Residencial\",\n  \"principal\": true,\n  \"cep\": \"01001-000\",\n  \"logradouro\": \"Praça da Sé\",\n  \"numero\": \"100-A\",\n  \"complemento\": \"Apto 20\",\n  \"bairro\": \"Sé\",\n  \"cidade\": \"São Paulo\",\n  \"uf\": \"SP\",\n  \"pais\": \"BR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos"
+          },
+          "response": []
+        },
+        {
+          "name": "Listar endereços",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos"
+          },
+          "response": []
+        },
+        {
+          "name": "Obter endereço",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos/{{enderecoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Atualizar endereço",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"Residencial\",\n  \"principal\": true,\n  \"cep\": \"01001-000\",\n  \"logradouro\": \"Praça da Sé\",\n  \"numero\": \"101\",\n  \"complemento\": null,\n  \"bairro\": \"Sé\",\n  \"cidade\": \"São Paulo\",\n  \"uf\": \"SP\",\n  \"pais\": \"BR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos/{{enderecoId}}"
           },
           "response": []
         }
@@ -848,6 +928,15 @@
             "method": "DELETE",
             "header": [],
             "url": "{{baseUrl}}/casos/{{casoId}}/contextos/{{contextoId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Excluir endereço",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/casos/{{casoId}}/envolvidos/{{envolvidoId}}/enderecos/{{enderecoId}}"
           },
           "response": []
         },
