@@ -61,6 +61,7 @@ public sealed class OpenAiAssistenteIaProvider(
             var completed = false;
             var model = _settings.Model;
             int? inputTokens = null;
+            int? cachedInputTokens = null;
             int? outputTokens = null;
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
@@ -94,6 +95,8 @@ public sealed class OpenAiAssistenteIaProvider(
                             if (responseElement.TryGetProperty("usage", out var usage))
                             {
                                 inputTokens = ReadNullableInt(usage, "input_tokens");
+                                if (usage.TryGetProperty("input_tokens_details", out var inputDetails))
+                                    cachedInputTokens = ReadNullableInt(inputDetails, "cached_tokens");
                                 outputTokens = ReadNullableInt(usage, "output_tokens");
                             }
                         }
@@ -118,6 +121,7 @@ public sealed class OpenAiAssistenteIaProvider(
                 structured.Alertas,
                 structured.Achados,
                 inputTokens,
+                cachedInputTokens,
                 outputTokens,
                 model);
         }

@@ -23,6 +23,136 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageLedgerEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<int?>("CachedInputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cached_input_tokens");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long>("DurationMs")
+                        .HasColumnType("bigint")
+                        .HasColumnName("duration_ms");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("error_code");
+
+                    b.Property<decimal?>("EstimatedCostUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("estimated_cost_usd");
+
+                    b.Property<int?>("InputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("mode");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model");
+
+                    b.Property<string>("Operation")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("operation");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int?>("OutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("output_tokens");
+
+                    b.Property<Guid>("PecaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peca_id");
+
+                    b.Property<string>("PricingVersion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("pricing_version");
+
+                    b.Property<string>("PromptVersion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("prompt_version");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("provider");
+
+                    b.Property<Guid>("SolicitacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitacao_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("ai_usage_ledger_pkey");
+
+                    b.HasIndex("CorrelationId")
+                        .HasDatabaseName("ix_ai_usage_correlation_id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "CreatedAt")
+                        .HasDatabaseName("ix_ai_usage_organization_created_at");
+
+                    b.HasIndex("SolicitacaoId", "AttemptCount")
+                        .IsUnique()
+                        .HasDatabaseName("uq_ai_usage_solicitacao_attempt");
+
+                    b.ToTable("ai_usage_ledger", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_usage_attempt_count", "attempt_count > 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_cost", "estimated_cost_usd IS NULL OR estimated_cost_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_duration", "duration_ms >= 0");
+                        });
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Caso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -357,6 +487,7 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.Property<string>("Natureza")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasDefaultValue("NaoInformada")
@@ -493,6 +624,43 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("organizations", null, t =>
                         {
                             t.HasCheckConstraint("ck_organizations_nome", "length(btrim(nome)) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.OrganizationFeature", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Feature")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("feature");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("OrganizationId", "Feature")
+                        .HasName("organization_features_pkey");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.HasIndex("OrganizationId", "Enabled")
+                        .HasDatabaseName("ix_organization_features_enabled");
+
+                    b.ToTable("organization_features", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_organization_features_feature", "feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION')");
                         });
                 });
 
@@ -774,6 +942,21 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageLedgerEntry", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Caso", b =>
                 {
                     b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
@@ -848,6 +1031,20 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.OrganizationFeature", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Peca", b =>

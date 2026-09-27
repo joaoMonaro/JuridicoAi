@@ -11,10 +11,13 @@ public sealed record AssistenteIaExecucao(
     Guid SolicitacaoId,
     Guid ClientRequestId,
     Guid OrganizationId,
+    Guid UserId,
     Guid PecaId,
+    Guid CorrelationId,
     AssistenteModo Modo,
     AssistenteAncoraDto Ancora,
-    AssistenteIaProviderRequest ProviderRequest);
+    AssistenteIaProviderRequest ProviderRequest,
+    IAsyncDisposable UsageLease);
 
 public sealed class AssistenteIaApplicationService(
     IPecaRepository pecaRepository,
@@ -24,29 +27,38 @@ public sealed class AssistenteIaApplicationService(
     AssistenteContextBuilder contextBuilder,
     AssistentePromptPolicy promptPolicy,
     AssistenteRequestRegistry requestRegistry,
-    IOptions<AssistenteIaSettings> options,
+    IAssistenteFeatureAccess featureAccess,
+    IAssistenteUsageLimiter usageLimiter,
+    IAssistenteUsageRecorder usageRecorder,
+    ICorrelationContext correlationContext,
+    IOptionsMonitor<AssistenteIaSettings> options,
     ILogger<AssistenteIaApplicationService> logger)
 {
-    private static readonly AssistenteModo[] SupportedModes = Enum.GetValues<AssistenteModo>();
-    private readonly AssistenteIaSettings _settings = options.Value;
+    private AssistenteIaSettings Settings => options.CurrentValue;
 
-    public AssistenteCapacidadesDto ObterCapacidades() => new(
-        _settings.Enabled,
-        SupportedModes,
-        new AssistenteLimitesDto(
-            _settings.MaxInstructionCharacters,
-            _settings.MaxDocumentContextCharacters,
-            _settings.MaxAdditionalContextCharacters),
-        SuportaStreaming: true,
-        SuportaHistorico: false);
+    public async Task<AssistenteCapacidadesDto> ObterCapacidadesAsync(CancellationToken cancellationToken)
+    {
+        var snapshot = await featureAccess.ObterAsync(authContext.OrganizationId, cancellationToken);
+        var settings = Settings;
+        return new(
+            snapshot.Habilitado,
+            snapshot.Modos,
+            new AssistenteLimitesDto(
+                settings.MaxInstructionCharacters,
+                settings.MaxDocumentContextCharacters,
+                settings.MaxAdditionalContextCharacters),
+            SuportaStreaming: true,
+            SuportaHistorico: false,
+            snapshot.Features.Select(x => x.ToString()).ToArray());
+    }
 
     public async Task<AssistenteIaExecucao> PrepararAsync(
         Guid pecaId,
         CriarSolicitacaoAssistenteRequest request,
         CancellationToken cancellationToken)
     {
-        EnsureEnabled();
         ValidateBaseRequest(pecaId, request);
+        await featureAccess.ExigirModoAsync(authContext.OrganizationId, request.Modo, cancellationToken);
 
         var peca = await pecaRepository.ObterPecaAsync(pecaId, authContext.OrganizationId, cancellationToken)
             ?? throw new AssistenteIaException(
@@ -90,12 +102,19 @@ public sealed class AssistenteIaApplicationService(
             envolvidos,
             contextos);
 
+        var usageLease = await usageLimiter.AdquirirAsync(
+            authContext.OrganizationId,
+            authContext.UserId,
+            cancellationToken);
         if (!requestRegistry.TryStart(authContext.OrganizationId, request.ClientRequestId))
+        {
+            await usageLease.DisposeAsync();
             throw new AssistenteIaException(
                 StatusCodes.Status409Conflict,
                 "AI_REQUEST_ALREADY_RUNNING",
                 "Já existe uma solicitação com este identificador em andamento.",
                 retryable: true);
+        }
 
         var anchor = new AssistenteAncoraDto(
             documento.Selecao?.From,
@@ -108,7 +127,7 @@ public sealed class AssistenteIaApplicationService(
             input,
             request.Modo,
             operacoesPermitidas,
-            _settings.MaxOutputTokens);
+            Settings.MaxOutputTokens);
         var solicitationId = Guid.NewGuid();
 
         logger.LogInformation(
@@ -128,10 +147,13 @@ public sealed class AssistenteIaApplicationService(
             solicitationId,
             request.ClientRequestId,
             authContext.OrganizationId,
+            authContext.UserId,
             pecaId,
+            correlationContext.CorrelationId,
             request.Modo,
             anchor,
-            providerRequest);
+            providerRequest,
+            usageLease);
     }
 
     public async Task<AssistenteSolicitacaoConcluidaDto> GerarAsync(
@@ -139,11 +161,12 @@ public sealed class AssistenteIaApplicationService(
         CancellationToken cancellationToken)
     {
         var startedAt = TimeProvider.System.GetTimestamp();
+        AssistenteIaProviderResult? providerResult = null;
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(_settings.TimeoutSeconds));
-            var result = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(Settings.TimeoutSeconds));
+            var result = providerResult = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
             ValidateProviderResult(result, execution.Modo, execution.ProviderRequest.OperacoesPermitidas);
 
             var suggestion = new AssistenteSugestaoDto(
@@ -169,10 +192,27 @@ public sealed class AssistenteIaApplicationService(
                 result.SaidaTokens,
                 TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds);
 
+            await RecordUsageAsync(
+                execution,
+                result.OperacaoSugerida,
+                result.Modelo,
+                result.EntradaTokens,
+                result.EntradaTokensEmCache,
+                result.SaidaTokens,
+                "succeeded",
+                null,
+                ElapsedMilliseconds(startedAt));
+
             return new AssistenteSolicitacaoConcluidaDto(
                 suggestion,
-                new AssistenteUsoDto(result.EntradaTokens, result.SaidaTokens),
+                new AssistenteUsoDto(result.EntradaTokens, result.SaidaTokens, result.EntradaTokensEmCache),
                 result.Modelo);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+                "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
+            throw;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -181,6 +221,8 @@ public sealed class AssistenteIaApplicationService(
                 execution.SolicitacaoId,
                 execution.OrganizationId,
                 execution.PecaId);
+            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+                "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
             throw new AssistenteIaException(
                 StatusCodes.Status504GatewayTimeout,
                 "AI_PROVIDER_TIMEOUT",
@@ -197,21 +239,30 @@ public sealed class AssistenteIaApplicationService(
                 execution.PecaId,
                 ex.Code,
                 ex.ProviderStatusCode);
+            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+                "failed", ex.Code, ElapsedMilliseconds(startedAt));
             throw MapProviderException(ex);
+        }
+        catch (AssistenteIaException ex)
+        {
+            await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
+                providerResult?.EntradaTokens, providerResult?.EntradaTokensEmCache, providerResult?.SaidaTokens,
+                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+            throw;
+        }
+        catch (Exception)
+        {
+            await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
+                providerResult?.EntradaTokens, providerResult?.EntradaTokensEmCache, providerResult?.SaidaTokens,
+                "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
+            throw;
         }
     }
 
-    public void Finalizar(AssistenteIaExecucao execution) =>
-        requestRegistry.Complete(execution.OrganizationId, execution.ClientRequestId);
-
-    private void EnsureEnabled()
+    public async ValueTask FinalizarAsync(AssistenteIaExecucao execution)
     {
-        if (!_settings.Enabled)
-            throw new AssistenteIaException(
-                StatusCodes.Status503ServiceUnavailable,
-                "AI_UNAVAILABLE",
-                "O assistente de IA não está habilitado.",
-                retryable: true);
+        requestRegistry.Complete(execution.OrganizationId, execution.ClientRequestId);
+        await execution.UsageLease.DisposeAsync();
     }
 
     private void ValidateBaseRequest(Guid pecaId, CriarSolicitacaoAssistenteRequest request)
@@ -225,13 +276,13 @@ public sealed class AssistenteIaApplicationService(
             throw Invalid("A versão conhecida da peça deve ser maior que zero.");
         if (string.IsNullOrWhiteSpace(request.Instrucao))
             throw Invalid("A instrução é obrigatória.");
-        if (request.Instrucao.Trim().Length > _settings.MaxInstructionCharacters)
+        if (request.Instrucao.Trim().Length > Settings.MaxInstructionCharacters)
             throw TooLarge("A instrução ultrapassa o limite permitido.");
         if (request.Contexto?.Documento is null)
             throw Invalid("O contexto do documento é obrigatório.");
-        if ((request.Contexto.ContextoAdicional?.Trim().Length ?? 0) > _settings.MaxAdditionalContextCharacters)
+        if ((request.Contexto.ContextoAdicional?.Trim().Length ?? 0) > Settings.MaxAdditionalContextCharacters)
             throw TooLarge("O contexto adicional ultrapassa o limite permitido.");
-        if ((request.Contexto.Documento.Texto?.Length ?? 0) > _settings.MaxDocumentContextCharacters)
+        if ((request.Contexto.Documento.Texto?.Length ?? 0) > Settings.MaxDocumentContextCharacters)
             throw TooLarge("O contexto do documento ultrapassa o limite permitido.");
         if ((request.Contexto.ContextoCasoIds?.Count ?? 0) > 20)
             throw TooLarge("Foram selecionados contextos do caso em excesso.");
@@ -304,7 +355,7 @@ public sealed class AssistenteIaApplicationService(
             throw ProviderOutputInvalid("A IA retornou uma operação incompatível com a solicitação.");
         if (mode != AssistenteModo.Revisar && string.IsNullOrWhiteSpace(result.Texto))
             throw ProviderOutputInvalid("A IA retornou uma sugestão sem conteúdo.");
-        if (result.Texto.Length > _settings.MaxOutputCharacters)
+        if (result.Texto.Length > Settings.MaxOutputCharacters)
             throw ProviderOutputInvalid("A resposta da IA ultrapassou o limite permitido.");
         if (result.Titulo.Length > 200 || result.Resumo.Length > 2_000)
             throw ProviderOutputInvalid("A resposta da IA contém metadados inválidos.");
@@ -353,4 +404,37 @@ public sealed class AssistenteIaApplicationService(
 
     private static AssistenteIaException ProviderOutputInvalid(string message) =>
         new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", message);
+
+    private Task RecordUsageAsync(
+        AssistenteIaExecucao execution,
+        AssistenteOperacao? operation,
+        string model,
+        int? inputTokens,
+        int? cachedInputTokens,
+        int? outputTokens,
+        string status,
+        string? errorCode,
+        long durationMs) => usageRecorder.RegistrarAsync(new AssistenteUsageRecord(
+            execution.OrganizationId,
+            execution.UserId,
+            execution.PecaId,
+            execution.SolicitacaoId,
+            execution.ClientRequestId,
+            execution.CorrelationId,
+            execution.Modo,
+            operation,
+            Settings.Provider,
+            model,
+            AssistentePromptPolicy.Version,
+            AttemptCount: 1,
+            inputTokens,
+            cachedInputTokens,
+            outputTokens,
+            status,
+            errorCode,
+            durationMs),
+        CancellationToken.None);
+
+    private static long ElapsedMilliseconds(long startedAt) =>
+        (long)TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds;
 }

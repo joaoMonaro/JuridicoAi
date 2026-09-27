@@ -303,3 +303,64 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.HasIndex(x => new { x.UserId, x.OrganizationId }).HasDatabaseName("ix_sessions_user_organization");
     }
 }
+
+internal sealed class OrganizationFeatureConfiguration : IEntityTypeConfiguration<OrganizationFeature>
+{
+    public void Configure(EntityTypeBuilder<OrganizationFeature> builder)
+    {
+        builder.ToTable("organization_features", table =>
+            table.HasCheckConstraint(
+                "ck_organization_features_feature",
+                "feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION')"));
+        builder.HasKey(x => new { x.OrganizationId, x.Feature }).HasName("organization_features_pkey");
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.Enabled }).HasDatabaseName("ix_organization_features_enabled");
+    }
+}
+
+internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration<AiUsageLedgerEntry>
+{
+    public void Configure(EntityTypeBuilder<AiUsageLedgerEntry> builder)
+    {
+        builder.ToTable("ai_usage_ledger", table =>
+        {
+            table.HasCheckConstraint("ck_ai_usage_attempt_count", "attempt_count > 0");
+            table.HasCheckConstraint("ck_ai_usage_duration", "duration_ms >= 0");
+            table.HasCheckConstraint("ck_ai_usage_cost", "estimated_cost_usd IS NULL OR estimated_cost_usd >= 0");
+        });
+        builder.HasKey(x => x.Id).HasName("ai_usage_ledger_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.PecaId).HasColumnName("peca_id");
+        builder.Property(x => x.SolicitacaoId).HasColumnName("solicitacao_id");
+        builder.Property(x => x.ClientRequestId).HasColumnName("client_request_id");
+        builder.Property(x => x.CorrelationId).HasColumnName("correlation_id");
+        builder.Property(x => x.Mode).HasColumnName("mode").HasMaxLength(30).IsRequired();
+        builder.Property(x => x.Operation).HasColumnName("operation").HasMaxLength(40);
+        builder.Property(x => x.Provider).HasColumnName("provider").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Model).HasColumnName("model").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.PromptVersion).HasColumnName("prompt_version").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
+        builder.Property(x => x.InputTokens).HasColumnName("input_tokens");
+        builder.Property(x => x.CachedInputTokens).HasColumnName("cached_input_tokens");
+        builder.Property(x => x.OutputTokens).HasColumnName("output_tokens");
+        builder.Property(x => x.EstimatedCostUsd).HasColumnName("estimated_cost_usd").HasPrecision(18, 8);
+        builder.Property(x => x.PricingVersion).HasColumnName("pricing_version").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+        builder.Property(x => x.ErrorCode).HasColumnName("error_code").HasMaxLength(80);
+        builder.Property(x => x.DurationMs).HasColumnName("duration_ms");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.CreatedAt }).HasDatabaseName("ix_ai_usage_organization_created_at");
+        builder.HasIndex(x => new { x.SolicitacaoId, x.AttemptCount }).IsUnique().HasDatabaseName("uq_ai_usage_solicitacao_attempt");
+        builder.HasIndex(x => x.CorrelationId).HasDatabaseName("ix_ai_usage_correlation_id");
+    }
+}

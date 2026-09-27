@@ -17,6 +17,7 @@ public sealed record AssistenteIaProviderResult(
     IReadOnlyList<AssistenteAlertaDto> Alertas,
     IReadOnlyList<AssistenteAchadoDto> Achados,
     int? EntradaTokens,
+    int? EntradaTokensEmCache,
     int? SaidaTokens,
     string Modelo);
 

@@ -49,6 +49,12 @@ backend. A entrada do assistente fica oculta ou identificada como indisponível
 quando a feature estiver desabilitada; modos, limites e suporte a histórico não
 são presumidos no bundle.
 
+Para o rollout, essa consulta deve ocorrer antes de renderizar a toolbar e o
+atalho. `AI_ASSISTANT` controla a entrada principal; `AI_EDIT`, `AI_REVIEW` e
+`AI_DOCUMENT_GENERATION` filtram modos e ações. A API repete todas as
+validações. Consulte o
+[Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md).
+
 Estados principais:
 
 ```text
@@ -136,10 +142,16 @@ Antes de habilitar “Substituir” ou “Inserir após”:
 
 Para inserção no cursor, revisão e posição também precisam coincidir. Se alguma
 condição falhar, a sugestão continua legível e copiável, mas a ação original é
-desabilitada. O usuário pode escolher explicitamente “Inserir no cursor atual”.
+desabilitada. O usuário deve selecionar outro trecho e gerar novamente, ou
+descartar a sugestão. A resposta antiga nunca é aplicada à nova seleção.
 
 Mapeamento de posições através de transações pode ser acrescentado depois. O
 MVP privilegia segurança e previsibilidade.
+
+A política completa está no
+[Tópico 7 — Âncora expirada](topico-07-ancora-expirada.md). Inserir no cursor
+atual não é fallback do MVP; se existir futuramente, será uma operação explícita
+de inserção, não reaplicação da alteração original.
 
 ### Aplicação
 
@@ -152,10 +164,15 @@ MVP privilegia segurança e previsibilidade.
 - não chamar `PATCH /pecas` diretamente a partir do cartão de sugestão;
 - marcar a sugestão como aplicada somente se `chain.run()` retornar sucesso.
 
-Se o autosave estiver em `CONFLITO`, aplicação de IA fica desabilitada até o
-usuário resolver o conflito. Se estiver `ERRO` ou `NAO_SALVO`, a UI avisa que a
-sugestão será aplicada localmente e ainda dependerá de persistência; a decisão
-final sobre permitir isso deve ser validada no primeiro protótipo.
+Uma sugestão da IA só pode ser aplicada quando o autosave estiver em `SALVO`.
+Em `SALVANDO`, a aplicação aguarda, sem ser enfileirada automaticamente. Em
+`ERRO`, `NAO_SALVO` ou `CONFLITO`, ela fica bloqueada. A edição manual, o undo e
+o retry de salvamento continuam disponíveis.
+
+Se o autosave iniciado depois de uma aplicação falhar, a alteração permanece
+local e pode ser desfeita, mas a interface não a apresenta como persistida e
+bloqueia novas aplicações. A política completa está no
+[Tópico 8 — Aplicação com autosave em erro](topico-08-autosave-em-erro.md).
 
 ## Painel e controles
 
@@ -218,6 +235,7 @@ expor de forma tipada:
 - estado atual;
 - última versão confirmada;
 - `flush(): Promise` com resultado observável;
+- `retry(): Promise` com resultado observável;
 - indicação de conflito que possa desabilitar aplicação.
 
 O assistente envia a versão conhecida para diagnóstico, mas não depende de
@@ -247,6 +265,11 @@ Ctrl/Cmd + Alt + A -> abrir/focar assistente
 
 ## Testes mínimos
 
+A estratégia, ferramentas, matriz de cenários e critérios de fechamento estão
+no [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md).
+O alvo é Vitest para unidades, React Testing Library para componentes,
+Playwright para E2E e axe-core para verificações automatizadas.
+
 ### Funções puras
 
 - seleção e cursor são capturados corretamente;
@@ -258,10 +281,11 @@ Ctrl/Cmd + Alt + A -> abrir/focar assistente
 
 ### Hook e protocolo
 
+- evento completo em um chunk;
 - SSE fragmentado em vários chunks;
 - vários eventos no mesmo chunk;
 - UTF-8 multibyte fragmentado;
-- conclusão, falha, cancelamento e EOF inesperado;
+- `[DONE]`, duplicação, conclusão, falha, cancelamento e EOF inesperado;
 - troca de Peça aborta stream e impede atualização tardia;
 - nova tentativa cria novo `clientRequestId`.
 
@@ -276,6 +300,14 @@ Ctrl/Cmd + Alt + A -> abrir/focar assistente
 - conflito de versão bloqueia aplicação;
 - alertas de verificação permanecem visíveis.
 
+### E2E e acessibilidade
+
+- pedir alteração, receber stream, aplicar, concluir autosave e validar reload;
+- conflito, erro, retry, cancelamento e troca de Peça;
+- axe-core nos estados principais, sem violações críticas ou sérias;
+- teclado, foco, ARIA, contraste e smoke test com leitor de tela;
+- `Ctrl + Alt + A` em Windows/Linux e `Cmd + Alt + A` em macOS.
+
 ## Sequência recomendada
 
 - [x] Integrar editor, revisão local e estado do autosave por interfaces tipadas.
@@ -285,6 +317,13 @@ Ctrl/Cmd + Alt + A -> abrir/focar assistente
 - [x] Implementar cartão, edição de proposta e comparação.
 - [x] Implementar validação de âncora e transações TipTap.
 - [x] Integrar autosave, conflito, cancelamento e troca de Peça.
+- [ ] Restringir aplicação da IA a `SALVO` e testar erro, retry e conflito.
+- [ ] Refinar a UX de âncora expirada com seleção guiada e nova geração.
 - [ ] Adicionar infraestrutura e testes automatizados dos fluxos críticos.
-- [ ] Concluir auditoria de acessibilidade e adicionar telemetria sem conteúdo sensível.
+- [ ] Executar a suíte e auditoria de acessibilidade definidas no Tópico 12.
+- [ ] Adicionar telemetria sem conteúdo sensível.
+- [ ] Consumir capacidades por Organization e ocultar toolbar, atalho e modos
+      conforme o Tópico 13.
+- [ ] Propagar `CorrelationId` e emitir eventos de produto sem conteúdo conforme
+      o Tópico 14.
 - [x] Atualizar checklist e links no documento principal.

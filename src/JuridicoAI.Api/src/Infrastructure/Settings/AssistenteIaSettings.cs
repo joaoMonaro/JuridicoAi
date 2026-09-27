@@ -14,5 +14,13 @@ public sealed class AssistenteIaSettings
     public int MaxTotalContextCharacters { get; set; } = 80_000;
     public int MaxOutputCharacters { get; set; } = 20_000;
     public int MaxOutputTokens { get; set; } = 6_000;
-    public int RequestsPerUserPerMinute { get; set; } = 6;
+    public long MaxRequestBodyBytes { get; set; } = 512 * 1024;
+    public int RequestsPerUserPerMinute { get; set; } = 10;
+    public int ConcurrentRequestsPerUser { get; set; } = 2;
+    public int RequestsPerOrganizationPerMinute { get; set; } = 30;
+    public int ConcurrentRequestsPerOrganization { get; set; } = 6;
+    public decimal InputCostPerMillionTokensUsd { get; set; }
+    public decimal CachedInputCostPerMillionTokensUsd { get; set; }
+    public decimal OutputCostPerMillionTokensUsd { get; set; }
+    public string PricingVersion { get; set; } = "unconfigured";
 }

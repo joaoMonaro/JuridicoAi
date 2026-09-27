@@ -23,7 +23,14 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
-            await WriteProblemAsync(context, ex.StatusCode, "O arquivo excede o limite permitido.");
+            var isAiRequest = context.Request.Path.Value?.Contains(
+                "/assistente/solicitacoes",
+                StringComparison.OrdinalIgnoreCase) == true;
+            await WriteProblemAsync(
+                context,
+                ex.StatusCode,
+                isAiRequest ? "A solicitação de IA excede o limite permitido." : "O arquivo excede o limite permitido.",
+                isAiRequest ? "AI_REQUEST_TOO_LARGE" : null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

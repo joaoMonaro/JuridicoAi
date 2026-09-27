@@ -73,7 +73,8 @@ public sealed record AssistenteCapacidadesDto(
     IReadOnlyList<AssistenteModo> Modos,
     AssistenteLimitesDto Limites,
     bool SuportaStreaming,
-    bool SuportaHistorico);
+    bool SuportaHistorico,
+    IReadOnlyList<string>? Features = null);
 
 public sealed record AssistenteAlertaDto(string Codigo, string Mensagem);
 
@@ -102,9 +103,12 @@ public sealed record AssistenteSugestaoDto(
     IReadOnlyList<AssistenteAchadoDto> Achados,
     AssistenteAncoraDto Ancora);
 
-public sealed record AssistenteUsoDto(int? EntradaTokens, int? SaidaTokens);
+public sealed record AssistenteUsoDto(int? EntradaTokens, int? SaidaTokens, int? EntradaTokensEmCache = null);
 
-public sealed record AssistenteSolicitacaoIniciadaDto(Guid SolicitacaoId, Guid ClientRequestId);
+public sealed record AssistenteSolicitacaoIniciadaDto(
+    Guid SolicitacaoId,
+    Guid ClientRequestId,
+    Guid CorrelationId);
 
 public sealed record AssistenteSolicitacaoConcluidaDto(
     AssistenteSugestaoDto Sugestao,

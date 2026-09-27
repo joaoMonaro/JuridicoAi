@@ -4,7 +4,6 @@ using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace JuridicoAI.Api.Controllers.Assistente;
 
@@ -17,10 +16,10 @@ public sealed class AssistenteController(
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
     [HttpGet("assistente/capacidades")]
-    public ActionResult<AssistenteCapacidadesDto> ObterCapacidades() => Ok(service.ObterCapacidades());
+    public async Task<ActionResult<AssistenteCapacidadesDto>> ObterCapacidades(CancellationToken cancellationToken) =>
+        Ok(await service.ObterCapacidadesAsync(cancellationToken));
 
     [HttpPost("pecas/{pecaId:guid}/assistente/solicitacoes")]
-    [EnableRateLimiting("assistente-ia")]
     public async Task Solicitar(
         Guid pecaId,
         CriarSolicitacaoAssistenteRequest request,
@@ -35,7 +34,10 @@ public sealed class AssistenteController(
             Response.Headers["X-Accel-Buffering"] = "no";
             await WriteEventAsync(
                 "solicitacao.iniciada",
-                new AssistenteSolicitacaoIniciadaDto(execution.SolicitacaoId, execution.ClientRequestId),
+                new AssistenteSolicitacaoIniciadaDto(
+                    execution.SolicitacaoId,
+                    execution.ClientRequestId,
+                    execution.CorrelationId),
                 cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
 
@@ -77,7 +79,7 @@ public sealed class AssistenteController(
         }
         finally
         {
-            service.Finalizar(execution);
+            await service.FinalizarAsync(execution);
         }
     }
 

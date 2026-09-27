@@ -2,7 +2,7 @@
 
 > **Estado:** primeira fatia vertical implementada
 >
-> **Última atualização:** 2026-09-26
+> **Última atualização:** 2026-09-27
 >
 > **Projeto:** `src/JuridicoAI.Api`
 
@@ -20,24 +20,28 @@ falhas, custos e políticas próprios.
 
 ## Estado implementado
 
-Em 2026-09-26, estão disponíveis:
+Em 2026-09-27, estão disponíveis:
 
 - `GET /assistente/capacidades`;
 - `POST /pecas/{pecaId}/assistente/solicitacoes` em SSE;
-- feature flag e limites na seção `AssistenteIa`;
+- kill switch global, feature flags por Organization e limites na seção
+  `AssistenteIa`;
 - validação antecipada de Peça, Caso, seleção, contexto e operação;
 - isolamento por Organization e autorização dos contextos do Caso;
 - deduplicação de `clientRequestId` enquanto uma geração está em andamento;
 - prompt versionado em código e saída validada por JSON Schema;
 - adapter OpenAI Responses com `store: false`, timeout e cancelamento;
-- rate limit por usuário, particionado dentro da Organization;
+- rate limit e concorrência cumulativos por usuário e Organization;
+- `CorrelationId` validado/gerado pelo backend e devolvido no header e no SSE;
+- limite próprio de payload para a rota de IA;
+- ledger técnico persistente de tokens, custo estimado, duração e estado final;
 - logs técnicos sem prompt, resposta ou PII;
 - testes do serviço de aplicação e do contrato HTTP com o provider.
 
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
 provider acumula e valida o JSON estruturado antes de emitir `conteudo.delta`,
 portanto esse evento contém o texto completo em um bloco. Extração incremental
-segura do campo `texto`, orçamento por Organization e testes HTTP end-to-end
+segura do campo `texto`, bloqueio por orçamento e testes HTTP end-to-end
 continuam pendentes.
 
 ## Arquitetura alvo
@@ -166,13 +170,26 @@ latência, contagem de entrada/saída, estado final e IDs técnicos. Alterar reg
 de segurança exige nova versão e casos de avaliação. Prompts nunca ficam no
 frontend.
 
+O gate mínimo para mudanças de prompt ou modelo está definido no
+[Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
+Enquanto a suíte e a baseline não existirem, o `PA-09` continua bloqueando a
+produção.
+
 O formato final deve ser estruturado pelo recurso nativo do provedor quando
 disponível. Mesmo assim, o backend revalida tudo; esquema do provedor não é uma
 fronteira de confiança.
 
 ## Configuração
 
-Configuração proposta, com valores reais fora do repositório:
+O alvo aprovado para modelo, tokens, orçamento, concorrência e retry está no
+[Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md). A configuração
+abaixo representa a primeira fatia atualmente implementada e ainda será
+migrada para os perfis definidos naquele documento.
+
+Retenção, histórico, exclusão, minimização de dados e transparência seguem o
+[Tópico 3 — Retenção, exclusão e LGPD](topico-03-retencao-exclusao-lgpd.md).
+
+Configuração atual, com segredos reais fora do repositório:
 
 ```json
 {
@@ -187,30 +204,59 @@ Configuração proposta, com valores reais fora do repositório:
     "MaxDocumentContextCharacters": 60000,
     "MaxAdditionalContextCharacters": 8000,
     "MaxOutputCharacters": 20000,
-    "RequestsPerUserPerMinute": 6,
-    "RequestsPerOrganizationPerMinute": 30
+    "MaxRequestBodyBytes": 524288,
+    "RequestsPerUserPerMinute": 10,
+    "ConcurrentRequestsPerUser": 2,
+    "RequestsPerOrganizationPerMinute": 30,
+    "ConcurrentRequestsPerOrganization": 6,
+    "InputCostPerMillionTokensUsd": 0,
+    "CachedInputCostPerMillionTokensUsd": 0,
+    "OutputCostPerMillionTokensUsd": 0,
+    "PricingVersion": "unconfigured"
   }
 }
 ```
+
+Os valores são configuráveis. Alterações de limites aplicam-se a novas
+partições após reinício; para previsibilidade operacional, alterar esses
+valores com restart controlado da aplicação.
+
+As tarifas começam em zero e o custo fica `null`, sem fabricar uma estimativa.
+Antes do tenant interno, preencher as três tarifas por milhão de tokens e uma
+`PricingVersion` identificável, conforme o preço vigente do modelo contratado.
 
 `ApiKey` deve vir de user-secrets no desenvolvimento e de secret manager ou
 variável de ambiente no deploy. Ela nunca é devolvida ao cliente ou registrada.
 `Enabled=false` deve responder `AI_UNAVAILABLE` sem tentar acessar o provedor.
 
+Esse `Enabled` representa o kill switch global `AI_ENABLED`. O rollout por
+Organization usa `OrganizationFeature` e falha fechado. Uma flag pode ser
+alterada operacionalmente com o comando `set-ai-feature`, usando
+`AI_FEATURE_ORGANIZATION_ID`, `AI_FEATURE_NAME` e `AI_FEATURE_ENABLED`. O
+comando registra data; uma futura interface administrativa deverá também
+registrar o usuário responsável.
+
 ## Persistência e auditoria
 
-Primeira fatia:
+Estado atualmente implementado:
 
 - não exige persistir conversa ou conteúdo integral;
-- produz logs estruturados com IDs, estado, duração, tamanhos e uso;
+- produz logs estruturados com IDs, estado, duração e uso;
 - não registra instrução, contexto, resposta, token de autenticação ou PII;
 - permite correlacionar `clientRequestId`, `solicitacaoId`, request trace,
   Organization, usuário e Peça por identificadores.
+- persiste `ai_usage_ledger` sem conteúdo jurídico, incluindo tokens de entrada,
+  cache e saída, preço versionado e custo estimado.
 
-Se for necessário persistir histórico, criar entidades próprias; não incorporar
-mensagens ao JSON da Peça. A migration deve definir retenção e índices por
-Organization/Peça/data. Conteúdo persistido deve ter autorização, exclusão e
-política de proteção equivalentes às da Peça.
+O alvo de métricas, ledger de custo, eventos de produto e `CorrelationId`
+ponta a ponta está no
+[Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md).
+O estado atual ainda não possui dashboards, alertas ou exportador de métricas.
+
+O histórico persistente aprovado no Tópico 3 será implementado em entidades
+próprias; mensagens não entram no JSON da Peça. A migration deve definir
+retenção e índices por Organization/Caso/Peça/data. Conteúdo persistido deve ter
+autorização, exclusão e política de proteção equivalentes às da Peça.
 
 “Aceita” e “rejeitada” não podem ser inferidas apenas porque uma Peça foi salva.
 Uma futura coleta dessa decisão deve usar endpoint explícito. Métricas agregadas
@@ -218,8 +264,9 @@ não devem permitir reconstruir conteúdo jurídico.
 
 ## Rate limit, custos e resiliência
 
-- partições por usuário e Organization, além do limite do endpoint de auth;
-- limite de solicitações simultâneas para impedir esgotamento de conexões;
+- 10 solicitações/minuto e 2 simultâneas por usuário;
+- 30 solicitações/minuto e 6 simultâneas por Organization;
+- partições cumulativas por usuário e Organization, além do endpoint de auth;
 - limite de caracteres antes do cálculo/estimativa de tokens;
 - timeout total e cancelamento propagado;
 - circuit breaker somente se compatível com o adapter escolhido;
@@ -232,6 +279,9 @@ Quando existir fallback, ele precisa ser configurado, observável e indicado no
 evento final.
 
 ## Segurança e LGPD
+
+A política completa e seus critérios de comprovação estão no
+[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
 
 - consultar Peça e Contextos sempre pelo escopo fornecido por `IAuthContext`;
 - não aceitar `organizationId`, `casoId` ou `userId` como autoridade no corpo;
@@ -292,7 +342,13 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [x] Implementar controller SSE.
 - [ ] Adicionar testes HTTP end-to-end do controller e protocolo SSE.
 - [x] Adicionar adapter OpenAI Responses.
-- [x] Adicionar rate limit por usuário.
-- [ ] Adicionar orçamento e limite agregado por Organization.
+- [x] Adicionar rate limit e concorrência por usuário e Organization.
+- [x] Adicionar feature flags por Organization e kill switch global.
+- [x] Adicionar `CorrelationId`, limite de payload e ledger inicial de custo.
+- [ ] Adicionar bloqueio e alertas de orçamento por Organization.
+- [ ] Implementar perfis de saída, contagem de tokens, concorrência e retry do
+      [Tópico 1](topico-01-modelo-e-operacao.md).
+- [ ] Implementar histórico, exclusão, retenção, minimização e transparência do
+      [Tópico 3](topico-03-retencao-exclusao-lgpd.md).
 - [x] Atualizar Swagger, `.env.example`, user-secrets e documentação operacional.
 - [ ] Marcar critérios correspondentes no documento principal.

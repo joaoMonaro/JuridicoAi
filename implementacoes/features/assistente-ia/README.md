@@ -2,14 +2,25 @@
 
 > **Estado:** primeira fatia vertical implementada no backend e no frontend
 >
-> **Última atualização:** 2026-09-26
+> **Última atualização:** 2026-09-27
 >
 > **Implementação atual:** geração, streaming, revisão e aplicação explícita
 > integrados; validação funcional ponta a ponta e endurecimento continuam pendentes
 >
 > **Documentos relacionados:** [contrato HTTP](contrato-api.md),
 > [backend](backend.md), [frontend](frontend.md) e
-> [pontos em aberto](pontos-em-aberto.md)
+> [pontos em aberto](pontos-em-aberto.md). Decisões consolidadas:
+> [Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md),
+> [Tópico 3 — Retenção, exclusão e LGPD](topico-03-retencao-exclusao-lgpd.md),
+> [Tópico 7 — Âncora expirada](topico-07-ancora-expirada.md) e
+> [Tópico 8 — Autosave em erro](topico-08-autosave-em-erro.md)
+>
+> Planos ainda abertos:
+> [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md),
+> [Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md),
+> [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md),
+> [Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md)
+> e [Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md)
 
 Este diretório é a fonte de verdade da feature de assistência por IA no editor
 de Peças. Ele deve ser atualizado junto com cada mudança de escopo, contrato ou
@@ -64,6 +75,9 @@ explícita do usuário.
 - comparação para substituições;
 - aceitar, rejeitar, editar e tentar novamente;
 - inserção no cursor, após uma seleção ou substituição da seleção;
+- geração integral de Peça em fluxo próprio, com proposta separada, revisão e
+  aplicação explícita (planejada no MVP; fluxo pendente em `PA-16`);
+- histórico de interações mantido no JuridicoAI, com exclusão independente;
 - integração com undo/redo e autosave existentes;
 - cancelamento, limites de uso, erros compreensíveis e auditoria técnica.
 
@@ -80,7 +94,7 @@ explícita do usuário.
 
 Metadados de documentos anexados podem ser exibidos ao modelo apenas em fase
 posterior. O conteúdo de um arquivo só poderá entrar no contexto depois de
-existir extração, consentimento visível e política de retenção definida.
+existir extração, confirmação visível e política de retenção definida.
 
 ## Vocabulário
 
@@ -191,6 +205,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [ ] Rejeitar ou cancelar não altera o `conteudoJson` nem incrementa a versão.
 - [ ] Aceitar gera uma única transação TipTap, pode ser desfeito e entra no
       autosave normal.
+- [ ] Aplicação da IA fica bloqueada até o autosave estar em `SALVO`, sem
+      impedir edição manual, undo ou retry nos demais estados.
 - [x] O endpoint de geração não chama `IPecaRepository.AtualizarAsync` nem
       qualquer caminho equivalente de escrita na Peça.
 - [x] Uma Organization não acessa nem usa contexto de outra Organization.
@@ -207,9 +223,12 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Definir princípios, escopo e fluxos.
 - [x] Propor contrato HTTP e protocolo de streaming.
 - [x] Escolher OpenAI como primeiro provider, preservando abstração para troca.
-- [ ] Escolher o modelo inicial por configuração e validar custo/qualidade.
-- [ ] Aprovar retenção de prompts/respostas e termos exibidos ao usuário.
-- [ ] Validar limites iniciais de entrada, saída e requisições.
+- [x] Escolher `gpt-5.6-terra` como modelo inicial por configuração.
+- [x] Definir limites iniciais de entrada, saída, orçamento e requisições.
+- [ ] Validar custo e qualidade com amostras jurídicas representativas.
+- [ ] Criar e executar os 30 casos fictícios definidos no Tópico 9.
+- [x] Definir retenção, exclusão, minimização e aviso inicial do MVP.
+- [ ] Obter validação jurídica e contratual de `PA-17` antes da comercialização.
 
 ### F1 — backend vertical
 
@@ -219,6 +238,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Endpoint autenticado com SSE e cancelamento.
 - [x] Resposta por JSON Schema, política de prompt e códigos de erro.
 - [ ] Completar limites por Organization, orçamento e métricas operacionais.
+- [ ] Implementar limites por tokens/operação e retry definidos no Tópico 1.
 - [x] Testes unitários do serviço, isolamento e adapter OpenAI.
 
 ### F2 — frontend vertical
@@ -229,16 +249,18 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Consumo do stream, cancelamento e estados de erro.
 - [x] Preview/diff e aplicação segura no TipTap.
 - [x] Integração com autosave, conflito de versão e undo/redo.
-- [ ] Testes dos fluxos críticos e acessibilidade.
+- [ ] Restringir aplicação da IA ao estado `SALVO` conforme o Tópico 8.
+- [ ] Configurar e executar a suíte frontend definida no Tópico 12.
 
 ### F3 — endurecimento e lançamento
 
-- [ ] Avaliação com conjunto de exemplos jurídicos sem dados reais.
+- [ ] Executar e aprovar a suíte de qualidade jurídica do Tópico 9.
 - [ ] Testes de isolamento, prompt injection e vazamento em logs.
+- [ ] Implementar e comprovar o gate de segurança do Tópico 11.
 - [ ] Limites por usuário/Organization e orçamento operacional.
 - [ ] Política de retenção/exclusão implementada e documentada.
-- [ ] Feature flag e rollout controlado.
-- [ ] Métricas de qualidade, aceitação, rejeição, latência e falha.
+- [ ] Implementar feature flags e rollout controlado conforme o Tópico 13.
+- [ ] Implementar métricas, dashboards e alertas conforme o Tópico 14.
 
 ## Decisões registradas
 
@@ -248,10 +270,27 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-26 | O contexto do documento é explícito e começa no menor escopo necessário. | Aceita |
 | 2026-09-26 | O primeiro formato de saída editável é texto dividido em parágrafos, não JSON TipTap produzido pelo modelo. | Proposta |
 | 2026-09-26 | O transporte progressivo será `fetch` + Server-Sent Events sobre `POST`. | Proposta |
-| 2026-09-26 | Histórico conversacional persistente não bloqueia a primeira fatia vertical. | Proposta |
+| 2026-09-26 | Histórico conversacional persistente não bloqueou a primeira fatia vertical sem histórico. | Implementada; decisão posterior em `PA-06` |
 | 2026-09-26 | OpenAI Responses é o primeiro provider; `IAssistenteIaProvider` preserva a fronteira para alternativas. | Implementada, revisável |
-| 2026-09-26 | O provider envia `store: false`; histórico do produto não depende da retenção do provider. | Aceita |
+| 2026-09-26 | O provider envia `store: false`; histórico do produto não depende da retenção do provider. | Aceita; não equivale a ZDR, ver `PA-17` |
 | 2026-09-26 | O atalho inicial do painel é `Ctrl/Cmd + Alt + A`, evitando conflito com ferramentas do navegador. | Implementada, sujeita a teste multiplataforma |
+| 2026-09-27 | `PA-01`: o modelo único do MVP é `gpt-5.6-terra`; não haverá roteamento nem fallback automático de modelo. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-01`: falhas transitórias permitem até duas novas tentativas, respeitando `Retry-After`, sem retry após delta. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-02`: entrada limitada a 60 mil tokens e saída definida por perfil entre 2 mil e 8 mil tokens. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-02`: orçamento inicial de US$ 10/mês por Organization, alertas em 70%/90% e bloqueio em 100%. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-02`: usuário limitado a 10 solicitações/minuto e 2 simultâneas, sem orçamento financeiro individual. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-03`: dados do Caso e histórico acompanham o Caso; logs duram 90 dias, backups até 30 dias e exclusão tem recuperação por 30 dias. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-04`: dados são minimizados e identificadores desnecessários são pseudonimizados antes do provider. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-05`: primeiro uso exige aviso versionado; a confirmação não é presumida como base legal geral. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Aceita; refinamento de UX e testes pendentes |
+| 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
+| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Metodologia aceita; suíte e execução pendentes |
+| 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Política aceita; implementação e evidências pendentes |
+| 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Estratégia aceita; suíte e execução pendentes |
+| 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Estratégia aceita; implementação e rollout pendentes |
+| 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |
+| 2026-09-27 | A validação jurídica, contratual e de transferência internacional permanece bloqueadora em `PA-17`. | Pendente |
 
 ### Decisões pendentes
 

@@ -2,7 +2,7 @@
 
 > **Estado:** primeira fatia do backend implementada
 >
-> **Última atualização:** 2026-09-26
+> **Última atualização:** 2026-09-27
 >
 > Capacidades, geração, validação e eventos SSE estão implementados. O delta de
 > conteúdo ainda é emitido como um único bloco após a validação da saída
@@ -24,6 +24,7 @@ Resposta proposta:
 ```json
 {
   "habilitado": true,
+  "features": ["AI_ASSISTANT", "AI_EDIT", "AI_REVIEW"],
   "modos": ["Perguntar", "Redigir", "Reescrever", "Revisar"],
   "limites": {
     "instrucaoCaracteres": 4000,
@@ -41,17 +42,34 @@ chave, prompt de sistema, custo, nome interno de deployment ou configuração
 sensível. Uma indisponibilidade temporária durante a geração continua sendo
 tratada pelo endpoint de solicitação.
 
+`features` contém as flags efetivas da Organization autenticada e `modos` é
+filtrado pelas mesmas regras usadas pela rota de geração. Sem `AI_ASSISTANT`,
+`habilitado` é `false` e nenhum modo fica disponível. Consulte o
+[Tópico 13 — Feature flags e rollout](./topico-13-feature-flags-rollout.md).
+
 ## Endpoint de geração
 
 ```http
 POST /pecas/{pecaId}/assistente/solicitacoes
 Authorization: Bearer <token>
+X-Correlation-ID: <uuid>
 Content-Type: application/json
 Accept: text/event-stream
 ```
 
 O endpoint valida que a Peça pertence à Organization autenticada e apenas gera
 uma resposta. Ele não atualiza a Peça.
+
+O corpo não aceita `organizationId` como autoridade. O tenant é obtido da
+identidade, sessão e membership validadas pelo backend; `pecaId` e todos os IDs
+de contexto são consultados dentro desse tenant. Uma tentativa de usar recurso
+de outra Organization retorna 404/403 sem conteúdo e sem chamar o provider. Ver
+[Tópico 11 — Segurança, isolamento e logs](./topico-11-seguranca-isolamento-logs.md).
+
+O backend valida ou gera `X-Correlation-ID`, devolve-o no header da resposta e
+no evento `solicitacao.iniciada`. O ID é somente para rastreio e nunca participa
+da autorização. A geração do ID no frontend ainda está pendente. Consulte o
+[Tópico 14 — Observabilidade e métricas](./topico-14-observabilidade-metricas.md).
 
 ### Requisição
 
@@ -138,7 +156,7 @@ branco.
 
 ```text
 event: solicitacao.iniciada
-data: {"solicitacaoId":"9bdfaf6b-6c57-43ef-86ee-65b614dc9051","clientRequestId":"f79cd150-fca4-491e-9018-7f3a7f177af4"}
+data: {"solicitacaoId":"9bdfaf6b-6c57-43ef-86ee-65b614dc9051","clientRequestId":"f79cd150-fca4-491e-9018-7f3a7f177af4","correlationId":"15e86af9-a82f-4890-a1d4-99c7d81e0d71"}
 ```
 
 ### `conteudo.delta`
@@ -196,6 +214,14 @@ data: {"code":"AI_PROVIDER_TIMEOUT","message":"A IA demorou mais que o esperado.
 O stream termina após `solicitacao.concluida`, `solicitacao.falhou` ou
 cancelamento da conexão. O frontend ignora qualquer sugestão sem evento final.
 
+Para fechar o `PA-12`, cada evento deverá receber ID ou sequência monotônica
+estável dentro da solicitação. O frontend ignorará repetições da mesma sequência
+e qualquer evento posterior ao primeiro terminal. Comparar o texto do delta não
+é uma estratégia válida de deduplicação. O marcador `[DONE]`, se recebido, é
+ignorado para compatibilidade e não substitui `solicitacao.concluida` ou
+`solicitacao.falhou`. Essa evolução ainda não está implementada; consulte o
+[Tópico 12 — Testes e acessibilidade](./topico-12-testes-acessibilidade.md).
+
 ## Operações
 
 | Operação | Pré-condição de aplicação no frontend |
@@ -206,9 +232,18 @@ cancelamento da conexão. O frontend ignora qualquer sugestão sem evento final.
 | `SubstituirSelecao` | `from`, `to`, revisão e texto original ainda correspondem |
 | `CriarSecao` | destino da nova seção escolhido e mostrado ao usuário |
 
-O frontend pode oferecer “Inserir no cursor atual” quando a âncora expirou,
-desde que isso seja uma nova escolha explícita. Ele nunca deve reutilizar uma
-posição antiga silenciosamente.
+Além da pré-condição específica da operação, toda escrita no editor exige
+autosave em `SALVO`. `SALVANDO`, `NAO_SALVO`, `ERRO` e `CONFLITO` bloqueiam a
+aplicação da sugestão, mas não a leitura, cópia ou geração da resposta. Consulte
+[Tópico 8 — Aplicação com autosave em erro](./topico-08-autosave-em-erro.md).
+
+Quando a âncora expirar, o frontend deve bloquear a aplicação da sugestão e
+oferecer: selecionar um novo trecho, gerar novamente ou descartar. A resposta
+antiga nunca deve ser aplicada à nova seleção. “Inserir no cursor atual” não é
+um fallback do MVP; se essa opção for criada futuramente, deverá iniciar uma
+nova operação de inserção explícita, sem reaproveitar a alteração original.
+
+Consulte [Tópico 7 — Âncora expirada e destino alternativo](./topico-07-ancora-expirada.md).
 
 ## Erros HTTP antes do stream
 
@@ -219,11 +254,17 @@ atual do middleware da API.
 |---|---|---|
 | 400 | `AI_INVALID_REQUEST` | modo, contexto ou operação inválidos |
 | 401 | padrão de autenticação | sessão ausente ou inválida |
+| 403 | `AI_FEATURE_NOT_ENABLED` | feature indisponível para a Organization |
 | 404 | `PECA_NOT_FOUND` | Peça inexistente para a Organization |
 | 409 | `AI_REQUEST_ALREADY_RUNNING` | mesmo `clientRequestId` ainda em andamento |
-| 413 | `AI_CONTEXT_TOO_LARGE` | contexto ultrapassa limite configurado |
+| 413 | `AI_CONTEXT_TOO_LARGE` | um campo de contexto ultrapassa seu limite |
+| 413 | `AI_REQUEST_TOO_LARGE` | corpo HTTP ultrapassa o limite configurado |
 | 422 | `AI_CONTEXT_INCOMPATIBLE` | seleção/modo não formam uma solicitação válida |
-| 429 | `AI_RATE_LIMITED` | limite local ou do provedor |
+| 429 | `AI_USER_RATE_LIMITED` | taxa por usuário excedida |
+| 429 | `AI_USER_CONCURRENCY_LIMITED` | concorrência por usuário excedida |
+| 429 | `AI_ORGANIZATION_RATE_LIMITED` | taxa da Organization excedida |
+| 429 | `AI_ORGANIZATION_CONCURRENCY_LIMITED` | concorrência da Organization excedida |
+| 429 | `AI_RATE_LIMITED` | limite do provedor |
 | 502 | `AI_PROVIDER_ERROR` | resposta inválida ou falha não transitória do provedor |
 | 503 | `AI_UNAVAILABLE` | feature desabilitada ou provedor indisponível |
 | 504 | `AI_PROVIDER_TIMEOUT` | tempo máximo excedido |
@@ -249,7 +290,10 @@ Histórico persistente, decisão de aceitar/rejeitar e conversas podem adicionar
 GET  /pecas/{pecaId}/assistente/conversas
 GET  /pecas/{pecaId}/assistente/conversas/{conversaId}
 POST /pecas/{pecaId}/assistente/sugestoes/{sugestaoId}/decisao
+POST /pecas/{pecaId}/assistente/eventos
 ```
 
 Essas rotas não devem bloquear o endpoint vertical de geração. Quando forem
-adotadas, seus contratos passam a integrar este documento.
+adotadas, seus contratos passam a integrar este documento. A rota de eventos é
+autenticada, deriva a Organization do backend, aceita somente enum e IDs
+técnicos, deduplica por `eventId` e nunca recebe conteúdo da Peça ou sugestão.

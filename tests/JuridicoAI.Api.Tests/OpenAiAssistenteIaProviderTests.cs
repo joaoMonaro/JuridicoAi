@@ -30,7 +30,12 @@ public sealed class OpenAiAssistenteIaProviderTests
             response = new
             {
                 model = "modelo-resolvido",
-                usage = new { input_tokens = 42, output_tokens = 17 }
+                usage = new
+                {
+                    input_tokens = 42,
+                    input_tokens_details = new { cached_tokens = 12 },
+                    output_tokens = 17
+                }
             }
         });
         var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
@@ -50,6 +55,7 @@ public sealed class OpenAiAssistenteIaProviderTests
         Assert.Equal("Resposta da IA", result.Texto);
         Assert.Equal(AssistenteOperacao.ResponderNoPainel, result.OperacaoSugerida);
         Assert.Equal(42, result.EntradaTokens);
+        Assert.Equal(12, result.EntradaTokensEmCache);
         Assert.Equal(17, result.SaidaTokens);
         Assert.Equal("modelo-resolvido", result.Modelo);
         Assert.NotNull(handler.RequestBody);

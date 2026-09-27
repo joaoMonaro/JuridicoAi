@@ -2,26 +2,20 @@
 
 > **Estado:** decisões pendentes
 >
-> **Última atualização:** 2026-09-26
+> **Última atualização:** 2026-09-27
 >
 > **Documento principal:** [Assistente de IA](README.md)
 
 Este documento reúne decisões que ainda afetam produto, segurança, custo ou
-arquitetura. Um item só é encerrado quando existe uma decisão registrada, um
-responsável e, quando aplicável, evidência de teste ou homologação.
+arquitetura. Um ponto decisório pode ser encerrado quando existe uma decisão
+registrada e um responsável. Isso não marca automaticamente a implementação
+como entregue: comportamentos aplicáveis continuam pendentes até haver teste ou
+homologação registrados no documento do tópico.
 
 ## Resumo e prioridade
 
 | ID | Tema | Prioridade | Bloqueia produção |
 |---|---|---:|:---:|
-| `PA-01` | Modelo inicial e fallback | Alta | Sim |
-| `PA-02` | Limites, rate limit e orçamento | Alta | Sim |
-| `PA-03` | Retenção, exclusão e LGPD | Crítica | Sim |
-| `PA-04` | Dados enviados e mascaramento | Crítica | Sim |
-| `PA-05` | Aviso e consentimento do usuário | Alta | Sim |
-| `PA-06` | Histórico de conversas | Média | Não |
-| `PA-07` | Âncora expirada e destino alternativo | Média | Não |
-| `PA-08` | Aplicação com autosave em erro | Alta | Sim |
 | `PA-09` | Avaliação de qualidade jurídica | Crítica | Sim |
 | `PA-10` | Legislação, jurisprudência e fontes | Crítica | Sim |
 | `PA-11` | Segurança, isolamento e logs | Crítica | Sim |
@@ -29,146 +23,95 @@ responsável e, quando aplicável, evidência de teste ou homologação.
 | `PA-13` | Feature flag e rollout | Alta | Sim |
 | `PA-14` | Observabilidade e métricas | Alta | Sim |
 | `PA-15` | Tamanho do bundle do frontend | Baixa | Não |
+| `PA-16` | Fluxo seguro de geração integral da Peça | Alta | Sim |
+| `PA-17` | Validação jurídica e contratual para comercialização | Crítica | Sim |
 
 ## Ordem recomendada de decisão
 
-1. Resolver `PA-03`, `PA-04` e `PA-05`, definindo a fronteira de dados.
+1. Submeter `PA-17` à revisão jurídica e contratual.
 2. Criar a avaliação de `PA-09` e a política de fontes de `PA-10`.
-3. Selecionar modelo e limites em `PA-01` e `PA-02` usando essa avaliação.
-4. Fechar segurança, autosave e testes em `PA-08`, `PA-11` e `PA-12`.
+3. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
+4. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
+   autosave registrada no `PA-08`.
 5. Preparar operação e lançamento com `PA-13` e `PA-14`.
-6. Tratar melhorias não bloqueantes em `PA-06`, `PA-07` e `PA-15`.
+6. Definir o fluxo de geração integral em `PA-16`.
+7. Tratar a melhoria não bloqueante de bundle em `PA-15`.
 
-## Decisões de IA e custo
+## Pontos resolvidos
 
-### PA-01 — Modelo inicial e fallback
-
-Definir:
-
-- modelo principal configurado por ambiente;
-- requisitos mínimos de saída estruturada, contexto e latência;
-- se haverá fallback e em quais erros ele será permitido;
-- como uma troca de modelo será indicada e auditada.
-
-Direção atual: não fixar o modelo no código. Comparar candidatos usando o mesmo
-conjunto de casos jurídicos e não fazer fallback silencioso para um modelo com
-política ou qualidade diferente.
-
-Critério de fechamento: modelo aprovado em avaliação, custo estimado por fluxo,
-configuração documentada e comportamento de indisponibilidade testado.
-
-### PA-02 — Limites, rate limit e orçamento
-
-Definir limites de:
-
-- caracteres e tokens de entrada e saída;
-- requisições por usuário e por Organization;
-- gerações simultâneas;
-- gasto diário ou mensal por Organization;
-- comportamento ao atingir cada limite.
-
-Direção atual: manter limite por usuário, adicionar partição e orçamento por
-Organization e recusar antes de chamar o provider sempre que possível.
-
-Critério de fechamento: limites configuráveis, resposta compreensível ao
-usuário, métricas de consumo e testes de concorrência e excesso.
+| ID | Decisão | Responsável | Registro |
+|---|---|---|---|
+| `PA-01` | GPT-5.6 Terra como modelo único do MVP; duas novas tentativas transitórias; sem fallback de modelo. | Produto / proprietário do projeto | [Tópico 1](topico-01-modelo-e-operacao.md) |
+| `PA-02` | Limites por operação, 60 mil tokens de entrada, orçamento de US$ 10 e controles operacionais por usuário e Organization. | Produto / proprietário do projeto | [Tópico 1](topico-01-modelo-e-operacao.md) |
+| `PA-03` | Retenção por categoria, histórico próprio, logs por 90 dias, backups por 30 dias e exclusão recuperável por 30 dias. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
+| `PA-04` | Minimização e pseudonimização por necessidade, com proteção reforçada para dados sensíveis relevantes. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
+| `PA-05` | Aviso versionado antes do primeiro uso, sem tratá-lo automaticamente como base legal geral. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
+| `PA-06` | Histórico persistente por Caso no JuridicoAI, com exclusão independente e sem usar o provider como fonte primária. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
+| `PA-07` | Âncora expirada bloqueia aplicação; o usuário seleciona outro trecho e gera novamente ou descarta. Inserção no cursor atual não é fallback do MVP. | Produto / proprietário do projeto | [Tópico 7](topico-07-ancora-expirada.md) |
+| `PA-08` | Edição manual continua disponível, mas sugestões da IA só podem ser aplicadas quando o autosave está em `SALVO`. | Produto / proprietário do projeto | [Tópico 8](topico-08-autosave-em-erro.md) |
 
 ## Privacidade e dados
 
-### PA-03 — Retenção, exclusão e LGPD
+### PA-17 — Validação jurídica e contratual para comercialização
 
-Definir:
+As decisões técnicas de `PA-03`, `PA-04`, `PA-05` e `PA-06` estão registradas no
+[Tópico 3](topico-03-retencao-exclusao-lgpd.md), mas não encerram:
 
-- se instruções, contextos e respostas serão persistidos pelo JuridicoAI;
-- prazo de retenção e processo de exclusão;
-- base legal, papéis de controlador/operador e fornecedores envolvidos;
-- configuração de retenção e treinamento no provider;
-- tratamento de backups e logs técnicos.
+- base legal de cada operação, inclusive dados sensíveis;
+- papéis formais de controlador, operador e suboperador;
+- contrato, política de privacidade, termos e acordo de tratamento;
+- mecanismo de transferência internacional;
+- governança de fornecedores e suboperadores;
+- direitos dos titulares, incidentes e hipóteses excepcionais de conservação.
 
-Direção atual: manter `store: false` no provider e não persistir conteúdo de
-solicitações na primeira entrega. Registrar somente metadados técnicos sem
-permitir reconstrução do conteúdo jurídico.
-
-Critério de fechamento: política aprovada, termos refletidos na interface e
-configurações de produção verificadas.
-
-### PA-04 — Dados enviados e mascaramento
-
-Definir exatamente quais campos entram quando “Incluir dados do caso” estiver
-ativo, incluindo tratamento de nomes, CPF/CNPJ, endereços, contatos, dados de
-saúde e informações de menores.
-
-Direção atual: nenhum dado do Caso é selecionado por padrão; enviar somente o
-necessário para a tarefa e mascarar identificadores quando seu valor literal não
-for indispensável.
-
-Critério de fechamento: matriz campo × finalidade, política de mascaramento,
-testes de payload e revisão dos textos exibidos antes do envio.
-
-### PA-05 — Aviso e consentimento do usuário
-
-Definir:
-
-- aviso apresentado no primeiro uso;
-- resumo visível das fontes em cada solicitação;
-- acesso às políticas de privacidade e do provider;
-- necessidade de aceite por usuário ou por administrador da Organization.
-
-Critério de fechamento: texto aprovado, versão do aceite auditável quando
-necessário e interface homologada.
+Critério de fechamento: revisão jurídica formal, documentos aprovados,
+configuração do provider verificada e autorização expressa para comercialização.
 
 ## Produto e edição
 
-### PA-06 — Histórico de conversas
+### PA-16 — Fluxo seguro de geração integral da Peça
 
-Escolher entre:
+O modelo e o limite de 8.000 tokens foram definidos no
+[Tópico 1](topico-01-modelo-e-operacao.md). Ainda é necessário definir:
 
-- solicitações independentes mantidas somente enquanto a Peça está aberta;
-- histórico local temporário;
-- conversas persistentes por Peça.
+- se a geração parte de documento vazio, template ou Peça existente;
+- como o usuário informa estrutura, fatos e seções esperadas;
+- se a revisão e aplicação serão integrais ou seção por seção;
+- como preview, diff, undo e autosave funcionarão para o documento inteiro;
+- como evitar substituição acidental de conteúdo já existente;
+- quais dados e fontes são obrigatórios antes de gerar.
 
-Persistência exige autorização, modelo próprio, retenção, exclusão e isolamento
-por Organization. Ela não deve ser adicionada ao `conteudoJson` da Peça.
+Direção atual: gerar uma proposta separada, nunca alterar a Peça durante a
+geração e exigir revisão e aplicação explícita. Não reutilizar `Redigir` sem um
+contrato que diferencie trecho, seção e documento completo.
 
-Direção atual: manter estado apenas na tela até existir necessidade validada.
-
-### PA-07 — Âncora expirada e destino alternativo
-
-Hoje, qualquer mudança após o envio invalida a aplicação no destino original.
-Definir se o usuário poderá escolher explicitamente “Inserir no cursor atual”
-ou gerar novamente a proposta.
-
-Direção atual: manter o bloqueio seguro. Um destino alternativo só deve ser
-oferecido como uma nova ação explícita, nunca como fallback automático.
-
-### PA-08 — Aplicação com autosave em erro
-
-Conflitos já bloqueiam aplicação. Ainda é necessário decidir se os estados
-`ERRO` e `NAO_SALVO` permitem edição local com aviso ou exigem persistência
-restabelecida antes da aplicação.
-
-Direção recomendada: permitir edição local, informar claramente que ainda não
-foi salva e preservar undo. Antes do lançamento, validar risco de perda ao
-recarregar ou trocar de Peça.
-
-Critério de fechamento: comportamento aprovado e coberto por testes de erro,
-recuperação, navegação e conflito 409.
+Critério de fechamento: fluxo de produto aprovado, contrato tipado, protótipo
+homologado e testes que comprovem que cancelar, rejeitar ou falhar não altera a
+Peça.
 
 ## Qualidade jurídica
 
 ### PA-09 — Avaliação de qualidade jurídica
 
-Criar um conjunto versionado de exemplos fictícios e anonimizados cobrindo:
+A metodologia está definida no
+[Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
+Devem ser criados 30 casos inteiramente fictícios, com 5 casos em cada grupo:
 
-- perguntas sem seleção;
-- redação e reescrita;
-- lacunas, contradições e clareza;
-- recusa em inventar fatos;
-- manutenção do sentido jurídico;
-- alertas para informação ausente ou não verificada.
+- reescrita;
+- redação;
+- análise;
+- fatos;
+- fontes;
+- preservação.
 
-Definir rubrica, avaliadores, nota mínima, casos impeditivos e comparação entre
-modelos/prompts. A aprovação deve incluir profissionais jurídicos.
+Cada caso deve possuir entrada, contexto, resultado semântico esperado,
+proibições e rubrica. Inventar jurisprudência ou fato material, alterar data ou
+valor relevante sem base, alegar verificação inexistente ou vazar dados entre
+tenants reprova a execução independentemente da média.
+
+Critério de fechamento: suíte versionada com os 30 casos, baseline do modelo e
+prompt do MVP executada, resultados preservados e relatório aprovado por
+responsável jurídico. A metodologia, isoladamente, não fecha o ponto.
 
 ### PA-10 — Legislação, jurisprudência e fontes
 
@@ -189,55 +132,85 @@ mensagem clara ao usuário.
 
 ### PA-11 — Segurança, isolamento e logs
 
+A política está definida no
+[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
+Foram aprovados:
+
+- tenant derivado exclusivamente da identidade validada pelo backend;
+- filtro de `OrganizationId` para Caso, Documento, anexo, conversa e sugestão;
+- 404/403 sem conteúdo para tentativa de acesso cruzado;
+- conteúdo externo sempre tratado como dado, nunca como instrução;
+- proibição de corpos, conteúdo jurídico, dados pessoais e segredos em logs;
+- limites configuráveis de payload, upload, tokens e timeout;
+- 10 requisições/minuto e 2 simultâneas por usuário;
+- 30 requisições/minuto e 6 simultâneas por Organization.
+
 Ainda precisam de evidência específica:
 
 - testes de prompt injection em Peça e contexto do Caso;
-- tentativa de acesso cruzado entre Organizations;
-- inspeção de logs e telemetria para conteúdo, CPF/CNPJ e tokens;
-- cancelamento, timeout, payload excessivo e respostas inválidas;
+- testes HTTP abrangentes de acesso cruzado entre Organizations; a camada de
+  aplicação já possui cobertura de Peça e flags;
+- inspeção de logs e telemetria de infraestrutura para conteúdo, CPF/CNPJ, JWT
+  e API keys; o fluxo principal já possui teste com marcador sensível;
+- cancelamento, timeout e respostas inválidas; payload excessivo já possui
+  limite e teste unitário;
 - validação das configurações de produção.
 
-Critério de fechamento: suíte automatizada, revisão dos logs gerados e ausência
-de dados sensíveis nos cenários de falha.
+Critério de fechamento: controles implementados, suíte automatizada executada,
+configuração de produção revisada e ausência comprovada de dados sensíveis nos
+logs de sucesso e falha. A política aprovada, sozinha, não fecha o ponto.
 
 ### PA-12 — Testes e acessibilidade do frontend
 
-Adicionar infraestrutura de testes e cobrir:
+A estratégia está definida no
+[Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md):
 
-- parser SSE fragmentado, UTF-8, falha e EOF incompleto;
-- captura de seleção, seção e documento;
-- validade de âncoras e transação única do TipTap;
-- cancelar, rejeitar, tentar novamente, aplicar e desfazer;
-- conflito e erro de autosave;
-- navegação por teclado, foco, leitor de tela e contraste;
-- atalho em Windows, Linux e macOS.
+- unitários com Vitest;
+- componentes com React Testing Library;
+- E2E com Playwright;
+- acessibilidade automatizada com axe-core;
+- auditoria manual de teclado, foco, contraste e leitor de tela.
 
-Critério de fechamento: testes críticos automatizados e auditoria manual de
-acessibilidade registrada.
+Critério de fechamento: ferramentas configuradas, cenários críticos presentes,
+suíte executada com sucesso e auditoria manual registrada. O plano, sozinho,
+não fecha o ponto.
 
 ## Lançamento e operação
 
 ### PA-13 — Feature flag e rollout
 
-Definir ativação por ambiente e por Organization, grupo piloto, responsáveis
-pela liberação e procedimento de desligamento. A flag global atual não oferece
-rollout seletivo.
+A estratégia está definida no
+[Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md).
+Foram aprovados:
 
-Critério de fechamento: ativação gradual testada, rollback documentado e
-organizações sem acesso incapazes de gerar solicitações.
+- `AI_ENABLED` como kill switch global;
+- `AI_ASSISTANT`, `AI_EDIT`, `AI_REVIEW` e `AI_DOCUMENT_GENERATION` por
+  Organization;
+- validação obrigatória no backend e ocultação correspondente no frontend;
+- ausência de flag tratada como desabilitada;
+- rollout por tenant nomeado, sem percentual: desenvolvimento, tenant interno,
+  piloto, grupo de 2 a 5 clientes e disponibilidade geral.
+
+Critério de fechamento: persistência e validação implementadas, isolamento
+testado, kill switch e rollback comprovados e primeiras etapas do rollout
+executadas com evidência. A estratégia, sozinha, não fecha o ponto.
 
 ### PA-14 — Observabilidade e métricas
 
-Definir métricas sem conteúdo sensível:
+A estratégia está definida no
+[Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md).
+Ela responde a funcionamento, utilidade e custo com:
 
-- volume, sucesso, falha e cancelamento;
-- latência até início e conclusão;
-- tokens e custo lógico;
-- aplicação, rejeição e nova tentativa, somente por eventos explícitos;
-- alertas de indisponibilidade, erro e orçamento.
+- métricas técnicas de volume, sucesso, falha, cancelamento, TTFT e duração;
+- ledger financeiro de tokens e custo por Organization/operação;
+- eventos explícitos de sugestão gerada, aplicada, rejeitada, regenerada,
+  expirada e solicitação cancelada;
+- `CorrelationId` desde o frontend até a chamada instrumentada ao provider;
+- dashboards e alertas sem prompt, resposta ou conteúdo da Peça.
 
-Critério de fechamento: dashboards, alertas, responsáveis e política de acesso
-aos dados operacionais.
+Critério de fechamento: coleta implementada e testada, dashboards disponíveis,
+alertas com responsáveis/runbooks e política de retenção e acesso validada. A
+estratégia, sozinha, não fecha o ponto.
 
 ### PA-15 — Tamanho do bundle do frontend
 
@@ -258,4 +231,3 @@ Data | ID | decisão | responsável | evidência/link
 
 Depois, remover o item deste documento ou marcá-lo como resolvido com link para
 a decisão consolidada. Não encerrar um ponto apenas porque existe código parcial.
-

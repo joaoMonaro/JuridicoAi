@@ -6,7 +6,7 @@ using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Settings;
-using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace JuridicoAI.Api.Tests;
@@ -14,11 +14,11 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteIaApplicationServiceTests
 {
     [Fact]
-    public void Capacidades_RefletemConfiguracaoSemExporSegredos()
+    public async Task Capacidades_RefletemConfiguracaoSemExporSegredos()
     {
         var setup = Create();
 
-        var result = setup.Service.ObterCapacidades();
+        var result = await setup.Service.ObterCapacidadesAsync(default);
 
         Assert.True(result.Habilitado);
         Assert.Contains(AssistenteModo.Reescrever, result.Modos);
@@ -99,7 +99,7 @@ public sealed class AssistenteIaApplicationServiceTests
 
         var execution = await setup.Service.PrepararAsync(setup.Peca.Id, request, default);
         var result = await setup.Service.GerarAsync(execution, default);
-        setup.Service.Finalizar(execution);
+        await setup.Service.FinalizarAsync(execution);
 
         Assert.NotNull(setup.Provider.LastRequest);
         Assert.Contains("Maria de Souza", setup.Provider.LastRequest.Input);
@@ -109,6 +109,10 @@ public sealed class AssistenteIaApplicationServiceTests
         Assert.DoesNotContain("privado@example.test", setup.Provider.LastRequest.Input);
         Assert.Equal("Resposta segura", result.Sugestao.Texto);
         Assert.Equal(0, setup.Pecas.UpdateCalls);
+        var usage = Assert.Single(setup.UsageRecorder.Records);
+        Assert.Equal("succeeded", usage.Status);
+        Assert.Equal(execution.CorrelationId, usage.CorrelationId);
+        Assert.Equal(100, usage.InputTokens);
     }
 
     [Fact]
@@ -143,7 +147,7 @@ public sealed class AssistenteIaApplicationServiceTests
 
         var exception = await Assert.ThrowsAsync<AssistenteIaException>(() =>
             setup.Service.PrepararAsync(setup.Peca.Id, request, default));
-        setup.Service.Finalizar(execution);
+        await setup.Service.FinalizarAsync(execution);
 
         Assert.Equal("AI_REQUEST_ALREADY_RUNNING", exception.Code);
         Assert.Equal(409, exception.StatusCode);
@@ -161,10 +165,35 @@ public sealed class AssistenteIaApplicationServiceTests
 
         var exception = await Assert.ThrowsAsync<AssistenteIaException>(() =>
             setup.Service.GerarAsync(execution, default));
-        setup.Service.Finalizar(execution);
+        await setup.Service.FinalizarAsync(execution);
 
         Assert.Equal("AI_PROVIDER_ERROR", exception.Code);
         Assert.Equal(502, exception.StatusCode);
+        var usage = Assert.Single(setup.UsageRecorder.Records);
+        Assert.Equal("failed", usage.Status);
+        Assert.Equal(100, usage.InputTokens);
+    }
+
+    [Fact]
+    public async Task Logs_NaoIncluemInstrucaoNemConteudoJuridico()
+    {
+        var setup = Create();
+        const string sensitiveMarker = "CPF-SEGREDO-52998224725";
+        var request = new CriarSolicitacaoAssistenteRequest(
+            Guid.NewGuid(),
+            AssistenteModo.Perguntar,
+            $"Analise {sensitiveMarker}",
+            1,
+            AssistenteOperacao.ResponderNoPainel,
+            new AssistenteContextoRequest(new AssistenteDocumentoRequest(
+                AssistenteEscopoDocumento.SecaoAtual,
+                $"DOS FATOS {sensitiveMarker}")));
+
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id, request, default);
+        await setup.Service.GerarAsync(execution, default);
+        await setup.Service.FinalizarAsync(execution);
+
+        Assert.DoesNotContain(setup.Logger.Messages, message => message.Contains(sensitiveMarker, StringComparison.Ordinal));
     }
 
     private static Setup Create()
@@ -181,6 +210,8 @@ public sealed class AssistenteIaApplicationServiceTests
         pecas.Items.Add(peca);
         var casos = new CasoRepositoryStub(auth.OrganizationId);
         var provider = new ProviderStub();
+        var usageRecorder = new UsageRecorderStub();
+        var logger = new CaptureLogger<AssistenteIaApplicationService>();
         var service = new AssistenteIaApplicationService(
             pecas,
             casos,
@@ -189,9 +220,13 @@ public sealed class AssistenteIaApplicationServiceTests
             new AssistenteContextBuilder(Options.Create(settings)),
             new AssistentePromptPolicy(),
             new AssistenteRequestRegistry(),
-            Options.Create(settings),
-            NullLogger<AssistenteIaApplicationService>.Instance);
-        return new Setup(service, pecas, casos, provider, auth, peca);
+            new FeatureAccessStub(),
+            new UsageLimiterStub(),
+            usageRecorder,
+            new CorrelationContextStub(),
+            new TestOptionsMonitor<AssistenteIaSettings>(settings),
+            logger);
+        return new Setup(service, pecas, casos, provider, usageRecorder, logger, auth, peca);
     }
 
     private static Peca CreatePeca(Guid id, Guid casoId, Guid organizationId) => new()
@@ -240,6 +275,8 @@ public sealed class AssistenteIaApplicationServiceTests
         PecaRepositoryStub Pecas,
         CasoRepositoryStub Casos,
         ProviderStub Provider,
+        UsageRecorderStub UsageRecorder,
+        CaptureLogger<AssistenteIaApplicationService> Logger,
         TestAuthContext Auth,
         Peca Peca);
 
@@ -254,6 +291,7 @@ public sealed class AssistenteIaApplicationServiceTests
             [],
             [],
             100,
+            0,
             20,
             "modelo-teste");
 
@@ -264,6 +302,61 @@ public sealed class AssistenteIaApplicationServiceTests
             LastRequest = request;
             return Task.FromResult(Result);
         }
+    }
+
+    private sealed class FeatureAccessStub : IAssistenteFeatureAccess
+    {
+        public Task<AssistenteFeatureSnapshot> ObterAsync(Guid organizationId, CancellationToken cancellationToken) =>
+            Task.FromResult(new AssistenteFeatureSnapshot(
+                true,
+                [OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT, OrganizationFeatureEnum.AI_REVIEW],
+                Enum.GetValues<AssistenteModo>()));
+
+        public Task ExigirModoAsync(Guid organizationId, AssistenteModo modo, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+    }
+
+    private sealed class UsageLimiterStub : IAssistenteUsageLimiter
+    {
+        public ValueTask<IAsyncDisposable> AdquirirAsync(Guid organizationId, Guid userId, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<IAsyncDisposable>(new NoopLease());
+
+        private sealed class NoopLease : IAsyncDisposable
+        {
+            public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class UsageRecorderStub : IAssistenteUsageRecorder
+    {
+        public List<AssistenteUsageRecord> Records { get; } = [];
+        public Task RegistrarAsync(AssistenteUsageRecord record, CancellationToken cancellationToken)
+        {
+            Records.Add(record);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class CorrelationContextStub : ICorrelationContext
+    {
+        public Guid CorrelationId { get; } = Guid.NewGuid();
+    }
+
+    private sealed class TestOptionsMonitor<T>(T initialValue) : IOptionsMonitor<T>
+    {
+        private readonly T _value = initialValue;
+        public T CurrentValue => _value;
+        public T Get(string? name) => _value;
+        public IDisposable? OnChange(Action<T, string?> listener) => null;
+    }
+
+    private sealed class CaptureLogger<T> : ILogger<T>
+    {
+        public List<string> Messages { get; } = [];
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Add(formatter(state, exception));
     }
 
     private sealed class PecaRepositoryStub : IPecaRepository

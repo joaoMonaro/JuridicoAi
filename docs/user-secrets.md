@@ -90,6 +90,23 @@ A inicialização falha de forma explícita se o assistente estiver habilitado s
 chave, modelo ou com limites inválidos. A chave nunca deve ser colocada em
 `appsettings*.json`, `.env`, commits, logs ou exemplos compartilhados.
 
+O kill switch global não libera um tenant sozinho. Para habilitar uma flag em
+uma Organization, execute o comando operacional com acesso à mesma configuração
+de PostgreSQL da API:
+
+```bash
+AI_FEATURE_ORGANIZATION_ID="uuid-da-organizacao" \
+AI_FEATURE_NAME="AI_ASSISTANT" \
+AI_FEATURE_ENABLED="true" \
+dotnet run --project src/JuridicoAI.Api -- set-ai-feature
+```
+
+Repita explicitamente para `AI_EDIT`, `AI_REVIEW` ou
+`AI_DOCUMENT_GENERATION`, conforme o estágio do rollout. Ausência de registro
+equivale a desabilitado. Esse comando é administrativo e não recebe conteúdo
+jurídico; até existir uma interface autenticada, sua execução deve ficar
+restrita ao ambiente operacional controlado.
+
 ## Consultar, remover e limpar
 
 Listar todos os valores configurados:

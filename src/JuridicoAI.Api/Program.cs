@@ -32,7 +32,11 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
     .Validate(x => x.TimeoutSeconds > 0 && x.MaxInstructionCharacters > 0 &&
                    x.MaxDocumentContextCharacters > 0 && x.MaxAdditionalContextCharacters > 0 &&
                    x.MaxTotalContextCharacters > 0 && x.MaxOutputCharacters > 0 &&
-                   x.MaxOutputTokens > 0 && x.RequestsPerUserPerMinute > 0,
+                   x.MaxOutputTokens > 0 && x.MaxRequestBodyBytes > 0 &&
+                   x.RequestsPerUserPerMinute > 0 && x.ConcurrentRequestsPerUser > 0 &&
+                   x.RequestsPerOrganizationPerMinute > 0 && x.ConcurrentRequestsPerOrganization > 0 &&
+                   x.InputCostPerMillionTokensUsd >= 0 && x.CachedInputCostPerMillionTokensUsd >= 0 &&
+                   x.OutputCostPerMillionTokensUsd >= 0 && !string.IsNullOrWhiteSpace(x.PricingVersion),
         "Os limites de AssistenteIa devem ser maiores que zero.")
     .Validate(x => !x.Enabled || string.Equals(x.Provider, "OpenAI", StringComparison.OrdinalIgnoreCase),
         "AssistenteIa:Provider não é suportado.")
@@ -142,18 +146,6 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
-    var assistantLimit = Math.Max(
-        1,
-        builder.Configuration.GetValue<int?>("AssistenteIa:RequestsPerUserPerMinute") ?? 6);
-    options.AddPolicy("assistente-ia", context => RateLimitPartition.GetFixedWindowLimiter(
-        $"{context.User.FindFirst("organizationId")?.Value}:{context.User.FindFirst("sub")?.Value}",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = assistantLimit,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0,
-            AutoReplenishment = true
-        }));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ScraperService>();
@@ -169,12 +161,18 @@ builder.Services.AddScoped<AssistenteIaApplicationService>();
 builder.Services.AddScoped<AssistenteContextBuilder>();
 builder.Services.AddSingleton<AssistentePromptPolicy>();
 builder.Services.AddSingleton<AssistenteRequestRegistry>();
+builder.Services.AddScoped<IAssistenteFeatureAccess, AssistenteFeatureAccessService>();
+builder.Services.AddSingleton<IAssistenteUsageLimiter, AssistenteUsageLimiter>();
+builder.Services.AddScoped<IAssistenteUsageRecorder, AssistenteUsageRecorder>();
 builder.Services.AddScoped<JurisprudenciaRawRepository>();
 builder.Services.AddScoped<JurisprudenciaRepository>();
 builder.Services.AddScoped<ICasoRepository, CasoRepository>();
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IOrganizationFeatureRepository, OrganizationFeatureRepository>();
+builder.Services.AddScoped<IAiUsageLedgerRepository, AiUsageLedgerRepository>();
 builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
+builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
@@ -198,7 +196,9 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseMiddleware<AssistenteRequestSizeMiddleware>();
 app.UseCors(CorsPolicy);
 app.UseAuthentication();
 app.UseRateLimiter();
@@ -217,6 +217,31 @@ if (args.Contains("provision-organization", StringComparer.OrdinalIgnoreCase))
     await db.Database.MigrateAsync();
     var result = await scope.ServiceProvider.GetRequiredService<OrganizationApplicationService>().ProvisionarAsync(request, default);
     Console.WriteLine($"Organization provisionada: {result.Organization.Id}; owner: {result.User.Id}");
+    return;
+}
+if (args.Contains("set-ai-feature", StringComparer.OrdinalIgnoreCase))
+{
+    var organizationText = Environment.GetEnvironmentVariable("AI_FEATURE_ORGANIZATION_ID");
+    var featureText = Environment.GetEnvironmentVariable("AI_FEATURE_NAME");
+    var enabledText = Environment.GetEnvironmentVariable("AI_FEATURE_ENABLED");
+    if (!Guid.TryParse(organizationText, out var organizationId) ||
+        !Enum.TryParse<OrganizationFeatureEnum>(featureText, ignoreCase: true, out var feature) ||
+        !Enum.IsDefined(feature) ||
+        !bool.TryParse(enabledText, out var enabled))
+        throw new InvalidOperationException(
+            "Informe AI_FEATURE_ORGANIZATION_ID, AI_FEATURE_NAME e AI_FEATURE_ENABLED válidos.");
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<IOrganizationFeatureRepository>().DefinirAsync(
+        organizationId,
+        feature,
+        enabled,
+        updatedById: null,
+        DateTime.UtcNow,
+        default);
+    Console.WriteLine($"Feature {feature} definida como {enabled} para a organização {organizationId}.");
     return;
 }
 
