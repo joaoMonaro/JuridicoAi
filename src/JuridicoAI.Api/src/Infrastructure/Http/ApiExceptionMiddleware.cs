@@ -12,7 +12,14 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         catch (ApiException ex)
         {
             await WriteProblemAsync(context, ex.StatusCode, ex.Message,
-                ex switch { ConflitoDeVersaoException conflito => conflito.Code, ConflitoException conflito => conflito.Code, _ => null });
+                ex switch
+                {
+                    ConflitoDeVersaoException conflito => conflito.Code,
+                    ConflitoException conflito => conflito.Code,
+                    AssistenteIaException assistente => assistente.Code,
+                    _ => null
+                },
+                ex is AssistenteIaException ai ? ai.Retryable : null);
         }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
@@ -25,7 +32,12 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         }
     }
 
-    private static Task WriteProblemAsync(HttpContext context, int statusCode, string detail, string? code = null)
+    private static Task WriteProblemAsync(
+        HttpContext context,
+        int statusCode,
+        string detail,
+        string? code = null,
+        bool? retryable = null)
     {
         context.Response.StatusCode = statusCode;
         context.Response.ContentType = "application/problem+json";
@@ -37,6 +49,7 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
             Instance = context.Request.Path
         };
         if (code is not null) problem.Extensions["code"] = code;
+        if (retryable.HasValue) problem.Extensions["retryable"] = retryable.Value;
         return context.Response.WriteAsJsonAsync(problem);
     }
 }

@@ -11,6 +11,7 @@ using JuridicoAI.Api.Infrastructure.Auth;
 using JuridicoAI.Api.Infrastructure.Repositories;
 using JuridicoAI.Api.Infrastructure.Settings;
 using JuridicoAI.Api.Infrastructure.Storage;
+using JuridicoAI.Api.Infrastructure.AI;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,6 +28,21 @@ builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mong
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
+builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.GetSection("AssistenteIa"))
+    .Validate(x => x.TimeoutSeconds > 0 && x.MaxInstructionCharacters > 0 &&
+                   x.MaxDocumentContextCharacters > 0 && x.MaxAdditionalContextCharacters > 0 &&
+                   x.MaxTotalContextCharacters > 0 && x.MaxOutputCharacters > 0 &&
+                   x.MaxOutputTokens > 0 && x.RequestsPerUserPerMinute > 0,
+        "Os limites de AssistenteIa devem ser maiores que zero.")
+    .Validate(x => !x.Enabled || string.Equals(x.Provider, "OpenAI", StringComparison.OrdinalIgnoreCase),
+        "AssistenteIa:Provider não é suportado.")
+    .Validate(x => !x.Enabled || !string.IsNullOrWhiteSpace(x.Model),
+        "AssistenteIa:Model é obrigatório quando o assistente está habilitado.")
+    .Validate(x => !x.Enabled || !string.IsNullOrWhiteSpace(x.ApiKey),
+        "AssistenteIa:ApiKey é obrigatória quando o assistente está habilitado.")
+    .Validate(x => Uri.TryCreate(x.BaseUrl, UriKind.Absolute, out _),
+        "AssistenteIa:BaseUrl deve ser uma URL absoluta.")
+    .ValidateOnStart();
 builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
     .Validate(x => x.JwtSecret.Length >= 32, "Auth:JwtSecret deve possuir ao menos 32 caracteres.")
     .Validate(x => x.AccessTokenTtlMinutes > 0 && x.RefreshTokenTtlDays > 0, "TTLs de autenticacao invalidos.")
@@ -126,6 +142,18 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0,
             AutoReplenishment = true
         }));
+    var assistantLimit = Math.Max(
+        1,
+        builder.Configuration.GetValue<int?>("AssistenteIa:RequestsPerUserPerMinute") ?? 6);
+    options.AddPolicy("assistente-ia", context => RateLimitPartition.GetFixedWindowLimiter(
+        $"{context.User.FindFirst("organizationId")?.Value}:{context.User.FindFirst("sub")?.Value}",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = assistantLimit,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        }));
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ScraperService>();
@@ -137,6 +165,10 @@ builder.Services.AddScoped<PecaApplicationService>();
 builder.Services.AddScoped<TemplatePecaApplicationService>();
 builder.Services.AddScoped<AuthApplicationService>();
 builder.Services.AddScoped<OrganizationApplicationService>();
+builder.Services.AddScoped<AssistenteIaApplicationService>();
+builder.Services.AddScoped<AssistenteContextBuilder>();
+builder.Services.AddSingleton<AssistentePromptPolicy>();
+builder.Services.AddSingleton<AssistenteRequestRegistry>();
 builder.Services.AddScoped<JurisprudenciaRawRepository>();
 builder.Services.AddScoped<JurisprudenciaRepository>();
 builder.Services.AddScoped<ICasoRepository, CasoRepository>();
@@ -146,6 +178,14 @@ builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+builder.Services.AddHttpClient<OpenAiAssistenteIaProvider>((services, client) =>
+{
+    var settings = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AssistenteIaSettings>>().Value;
+    client.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
+builder.Services.AddScoped<IAssistenteIaProvider>(services =>
+    services.GetRequiredService<OpenAiAssistenteIaProvider>());
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -160,8 +200,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ApiExceptionMiddleware>();
 app.UseCors(CorsPolicy);
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapGet("/", () => "Hello World!");
 app.MapControllers();

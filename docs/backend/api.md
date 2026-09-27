@@ -32,6 +32,8 @@ desenvolvimento, a interface Swagger está disponível em
 | `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
 | `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
 | `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
+| `GET` | `/assistente/capacidades` | informa disponibilidade, modos e limites do assistente |
+| `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera sugestão por IA em stream SSE, sem alterar a Peça |
 | `POST` | `/templates-peca` | cria um template de Peça |
 | `GET` | `/templates-peca` | lista templates de Peça |
 | `GET` | `/templates-peca/{id}` | obtém um template de Peça |
@@ -40,6 +42,8 @@ desenvolvimento, a interface Swagger está disponível em
 
 Os contratos, exemplos, regras de cópia de template e controle de concorrência
 estão documentados em [Peças e templates](pecas.md).
+O contrato do assistente e seus eventos estão documentados em
+[Assistente de IA](../../implementacoes/features/assistente-ia/contrato-api.md).
 
 ## Registrar uma conta
 

@@ -2,6 +2,7 @@
 @accessToken = substitua-pelo-access-token
 @casoId = 00000000-0000-0000-0000-000000000000
 @envolvidoId = 00000000-0000-0000-0000-000000000000
+@pecaId = 00000000-0000-0000-0000-000000000000
 
 GET {{JuridicoAI.Api_HostAddress}}/
 Accept: application/json
@@ -91,3 +92,37 @@ GET {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias/raw?limite=20
 ###
 
 POST {{JuridicoAI.Api_HostAddress}}/api/jurisprudencias/reprocess?limite=500
+
+###
+
+GET {{JuridicoAI.Api_HostAddress}}/assistente/capacidades
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+###
+
+POST {{JuridicoAI.Api_HostAddress}}/pecas/{{pecaId}}/assistente/solicitacoes
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "clientRequestId": "11111111-1111-1111-1111-111111111111",
+  "modo": "Perguntar",
+  "instrucao": "Quais pontos desta fundamentação precisam ser esclarecidos?",
+  "versaoPeca": 1,
+  "operacaoPreferida": "ResponderNoPainel",
+  "contexto": {
+    "documento": {
+      "escopo": "SecaoAtual",
+      "texto": "DA FUNDAMENTAÇÃO\nA parte autora sofreu bloqueio indevido de sua conta.",
+      "tituloSecao": "DA FUNDAMENTAÇÃO",
+      "selecao": null,
+      "cursor": null,
+      "revisaoEditor": 1
+    },
+    "contextoAdicional": null,
+    "incluirDadosCaso": false,
+    "contextoCasoIds": []
+  }
+}

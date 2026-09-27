@@ -33,6 +33,12 @@ pendentes são aplicadas na inicialização da API quando
 A documentação dos endpoints de Peças, templates e concorrência otimista está
 em [`docs/backend/pecas.md`](docs/backend/pecas.md).
 
+A primeira fatia do assistente de IA para redação jurídica, seu contrato SSE e
+os planos de backend/frontend estão em
+[`implementacoes/features/assistente-ia/README.md`](implementacoes/features/assistente-ia/README.md).
+Ela permanece desabilitada por padrão até que provider, modelo e chave sejam
+configurados com segurança.
+
 Autenticação JWT, refresh token, provisionamento e isolamento por Organization
 estão documentados em
 [`docs/backend/autenticacao-e-multitenancy.md`](docs/backend/autenticacao-e-multitenancy.md).

@@ -13,6 +13,8 @@ JuridicoAI.Api
     |                          +--> Playwright (sessão e reCAPTCHA)
     |                          +--> HttpClient (busca e paginação)
     |
+    |---- assistente IA --> IAssistenteIaProvider ----> OpenAI Responses API
+    |
     |---- jurisprudências ---------------------------> MongoDB
     |---- identidade, casos e peças (EF Core) --------> PostgreSQL
 ```
@@ -93,3 +95,20 @@ PATCH /pecas/{pecaId}
 Templates são origens copiáveis, não vínculos dinâmicos. Alterações posteriores
 no template não propagam para Peças existentes. A listagem por Caso projeta
 somente metadados para não carregar documentos TipTap potencialmente grandes.
+
+## Fluxo do assistente de IA
+
+```text
+POST /pecas/{pecaId}/assistente/solicitacoes
+    -> autentica User e Organization
+    -> valida Peça, modo, seleção, operação e limites
+    -> autoriza contextos no mesmo Caso
+    -> monta contexto explicitamente selecionado
+    -> solicita saída estruturada ao provider com store=false
+    -> valida operação, tamanhos, alertas e achados
+    -> transmite eventos SSE ao cliente
+```
+
+Esse fluxo não chama atualização de Peça. A aplicação de uma sugestão será uma
+ação explícita do frontend no TipTap e será persistida posteriormente pelo
+`PATCH /pecas/{pecaId}` já existente.

@@ -65,6 +65,31 @@ dotnet user-secrets --project src/JuridicoAI.Api set \
   "mongodb://juridico:senha-local@localhost:27017/?authSource=admin"
 ```
 
+### Assistente de IA
+
+O assistente permanece desabilitado por padrão. Para usar o provider OpenAI no
+ambiente de desenvolvimento, configure a chave fora do repositório, escolha um
+modelo compatível com Responses e Structured Outputs e só então habilite a
+feature:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "AssistenteIa:ApiKey" \
+  "sua-chave-da-api"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "AssistenteIa:Model" \
+  "modelo-escolhido"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "AssistenteIa:Enabled" \
+  "true"
+```
+
+A inicialização falha de forma explícita se o assistente estiver habilitado sem
+chave, modelo ou com limites inválidos. A chave nunca deve ser colocada em
+`appsettings*.json`, `.env`, commits, logs ou exemplos compartilhados.
+
 ## Consultar, remover e limpar
 
 Listar todos os valores configurados:
@@ -96,6 +121,7 @@ dos user-secrets. Em variáveis de ambiente, substitua `:` por `__`:
 ```text
 Auth:JwtSecret             -> Auth__JwtSecret
 Postgres:ConnectionString  -> Postgres__ConnectionString
+AssistenteIa:ApiKey        -> AssistenteIa__ApiKey
 ```
 
 Por exemplo:

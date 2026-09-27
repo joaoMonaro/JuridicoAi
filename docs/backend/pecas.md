@@ -203,6 +203,8 @@ Consultas e updates incluem a Organization autenticada; Caso e Template de
 outra Organization não podem ser usados para criar uma Peça. O locking
 otimista inclui `organizationId` além de identificador e versão.
 
-Não fazem parte desta implementação editor visual, paginação, autosave no
-cliente, imagens, uploads, PDF, DOCX, histórico, colaboração em tempo real ou
-geração de conteúdo por IA.
+Não fazem parte dos endpoints de Peças editor visual, paginação, autosave no
+cliente, imagens, uploads, PDF, DOCX, histórico ou colaboração em tempo real.
+A geração de sugestões por IA existe em endpoints separados, consulta a Peça
+somente para autorização e **não** atualiza `conteudoJson`. Veja o
+[Assistente de IA](../../implementacoes/features/assistente-ia/README.md).
