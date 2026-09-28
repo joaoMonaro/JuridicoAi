@@ -159,11 +159,16 @@ entregue, para evitar texto duplicado.
 
 ## Prompt e versionamento
 
-O prompt de sistema é código versionado. Sugestão de localização:
+O prompt de sistema é código versionado em:
 
 ```text
-src/JuridicoAI.Api/src/Application/AI/Prompts/assistente-juridico-v1.md
+src/JuridicoAI.Api/src/Application/Services/AssistentePromptPolicy.cs
 ```
+
+A versão atual é `assistente-juridico-v2`. Ela explicita que o modelo não tem
+pesquisa externa, proíbe referência jurisprudencial concreta sem fonte e exige
+`REFERENCIA_NAO_VERIFICADA` para legislação não fornecida. A política completa
+está no [Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
 
 Cada solicitação registra ao menos `promptVersion`, provider lógico, modelo,
 latência, contagem de entrada/saída, estado final e IDs técnicos. Alterar regras
@@ -172,8 +177,10 @@ frontend.
 
 O gate mínimo para mudanças de prompt ou modelo está definido no
 [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
-Enquanto a suíte e a baseline não existirem, o `PA-09` continua bloqueando a
-produção.
+A suíte de 30 casos e seu executor já existem em
+[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
+Enquanto a baseline real não for executada e homologada, o `PA-09` continua
+bloqueando a produção.
 
 O formato final deve ser estruturado pelo recurso nativo do provedor quando
 disponível. Mesmo assim, o backend revalida tudo; esquema do provedor não é uma

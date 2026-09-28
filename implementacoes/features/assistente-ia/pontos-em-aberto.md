@@ -2,7 +2,7 @@
 
 > **Estado:** decisões pendentes
 >
-> **Última atualização:** 2026-09-27
+> **Última atualização:** 2026-09-28
 >
 > **Documento principal:** [Assistente de IA](README.md)
 
@@ -17,7 +17,6 @@ homologação registrados no documento do tópico.
 | ID | Tema | Prioridade | Bloqueia produção |
 |---|---|---:|:---:|
 | `PA-09` | Avaliação de qualidade jurídica | Crítica | Sim |
-| `PA-10` | Legislação, jurisprudência e fontes | Crítica | Sim |
 | `PA-11` | Segurança, isolamento e logs | Crítica | Sim |
 | `PA-12` | Testes e acessibilidade do frontend | Alta | Sim |
 | `PA-13` | Feature flag e rollout | Alta | Sim |
@@ -29,7 +28,8 @@ homologação registrados no documento do tópico.
 ## Ordem recomendada de decisão
 
 1. Submeter `PA-17` à revisão jurídica e contratual.
-2. Criar a avaliação de `PA-09` e a política de fontes de `PA-10`.
+2. Executar e homologar a baseline de `PA-09`, usando a suíte já implementada e
+   a política de fontes aprovada no `PA-10`.
 3. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
 4. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
    autosave registrada no `PA-08`.
@@ -49,6 +49,7 @@ homologação registrados no documento do tópico.
 | `PA-06` | Histórico persistente por Caso no JuridicoAI, com exclusão independente e sem usar o provider como fonte primária. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
 | `PA-07` | Âncora expirada bloqueia aplicação; o usuário seleciona outro trecho e gera novamente ou descarta. Inserção no cursor atual não é fallback do MVP. | Produto / proprietário do projeto | [Tópico 7](topico-07-ancora-expirada.md) |
 | `PA-08` | Edição manual continua disponível, mas sugestões da IA só podem ser aplicadas quando o autosave está em `SALVO`. | Produto / proprietário do projeto | [Tópico 8](topico-08-autosave-em-erro.md) |
+| `PA-10` | O MVP não pesquisa externamente; somente fontes fornecidas no contexto podem ser tratadas como confirmadas. O scraper fica fora do fluxo e da apresentação. | Produto / proprietário do projeto | [Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md) |
 
 ## Privacidade e dados
 
@@ -95,7 +96,7 @@ Peça.
 
 A metodologia está definida no
 [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
-Devem ser criados 30 casos inteiramente fictícios, com 5 casos em cada grupo:
+Foram criados 30 casos inteiramente fictícios, com 5 casos em cada grupo:
 
 - reescrita;
 - redação;
@@ -109,24 +110,14 @@ proibições e rubrica. Inventar jurisprudência ou fato material, alterar data 
 valor relevante sem base, alegar verificação inexistente ou vazar dados entre
 tenants reprova a execução independentemente da média.
 
-Critério de fechamento: suíte versionada com os 30 casos, baseline do modelo e
-prompt do MVP executada, resultados preservados e relatório aprovado por
-responsável jurídico. A metodologia, isoladamente, não fecha o ponto.
+A suíte, a validação estrutural, as verificações automáticas iniciais e o
+executor estão em
+[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
+Ainda falta executar os 30 casos com o modelo real e revisar as respostas.
 
-### PA-10 — Legislação, jurisprudência e fontes
-
-Definir se o assistente:
-
-- apenas usa fontes fornecidas no contexto;
-- pode mencionar referências não verificadas acompanhadas de alerta;
-- será integrado futuramente a uma pesquisa jurídica confiável.
-
-Direção atual: não pesquisar externamente e nunca apresentar processo, julgado
-ou citação como confirmado sem fonte fornecida. Referências duvidosas devem
-aparecer separadamente como item de verificação.
-
-Critério de fechamento: política no prompt e no produto, exemplos de teste e
-mensagem clara ao usuário.
+Critério de fechamento: baseline do modelo e prompt do MVP executada,
+resultados preservados e relatório aprovado por responsável jurídico. A suíte
+validada, isoladamente, não fecha o ponto.
 
 ## Segurança e validação
 

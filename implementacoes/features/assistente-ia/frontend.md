@@ -131,6 +131,12 @@ separação de parágrafos e títulos. Marcas visuais não necessárias não ent
 MVP. A interface apresenta contagem aproximada e o nome de cada fonte de
 contexto antes do envio.
 
+No MVP, a interface também informa que o assistente não realiza pesquisa
+jurídica externa. Não deve existir botão, estado ou texto que sugira consulta ao
+scraper. Alertas `REFERENCIA_NAO_VERIFICADA` permanecem visíveis junto da
+resposta e antes da aplicação. Consulte o
+[Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md).
+
 ### Validade da âncora
 
 Antes de habilitar “Substituir” ou “Inserir após”:

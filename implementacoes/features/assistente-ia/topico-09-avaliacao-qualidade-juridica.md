@@ -2,9 +2,11 @@
 
 > **Estado da decisão:** metodologia aprovada
 >
-> **Estado da implementação:** não iniciada
+> **Estado da implementação:** parcial — suíte e executor implementados
 >
 > **Data da decisão:** 2026-09-27
+>
+> **Última atualização:** 2026-09-28
 >
 > **Ponto relacionado:** `PA-09` permanece aberto
 
@@ -12,13 +14,19 @@ Este documento define a avaliação mínima de qualidade e segurança jurídica 
 assistente. O objetivo é detectar regressões antes que uma mudança de modelo,
 prompt ou montagem de contexto chegue aos usuários.
 
-Definir a metodologia não encerra o `PA-09`. O ponto só poderá ser fechado
-quando a suíte versionada existir, os 30 casos tiverem sido executados e o
-resultado tiver sido revisado e aprovado.
+Os casos da categoria Fontes devem aplicar a política aprovada no
+[Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md):
+sem pesquisa externa, sem scraper no fluxo e sem referência concreta inventada.
+
+A suíte versionada já existe em
+[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md),
+com validação estrutural e verificações automáticas iniciais. Isso não encerra
+o `PA-09`: os 30 casos ainda precisam ser executados com o modelo real, e o
+resultado precisa ser revisado e aprovado.
 
 ## 1. Escopo inicial da suíte
 
-O MVP terá 30 casos inteiramente fictícios, distribuídos igualmente:
+O MVP possui 30 casos inteiramente fictícios, distribuídos igualmente:
 
 | Categoria principal | Quantidade | Comportamentos avaliados |
 |---|---:|---|
@@ -167,21 +175,22 @@ No MVP, uma execução completa por configuração é o mínimo. Repetições pa
 medir variabilidade e avaliação automática parcial serão adicionadas depois,
 sem substituir a revisão humana dos casos críticos.
 
-## 7. Artefatos versionados
+## 7. Implementação da suíte e artefatos
 
-Estrutura planejada:
+Estrutura implementada:
 
 ```text
 avaliacoes/qualidade-juridica/
 ├── README.md
 ├── rubric.md
+├── suite.json
 ├── casos/
-│   ├── reescrita/
-│   ├── redacao/
-│   ├── analise/
-│   ├── fatos/
-│   ├── fontes/
-│   └── preservacao/
+│   ├── reescrita.json
+│   ├── redacao.json
+│   ├── analise.json
+│   ├── fatos.json
+│   ├── fontes.json
+│   └── preservacao.json
 └── execucoes/
     └── <data>-<modelo>-<promptVersion>/
         ├── manifest.json
@@ -189,7 +198,26 @@ avaliacoes/qualidade-juridica/
         └── relatorio.md
 ```
 
-O manifesto da execução deve registrar pelo menos:
+O executor está em `tools/JuridicoAI.QualityEvals`. A validação local e em
+testes não usa rede nem API key:
+
+```bash
+dotnet run --project tools/JuridicoAI.QualityEvals -- validate
+```
+
+A baseline real exige configuração explícita da API e uma confirmação no
+comando para evitar custo acidental:
+
+```bash
+dotnet run --project tools/JuridicoAI.QualityEvals -- \
+  run --confirm-real-run
+```
+
+O runner usa o mesmo provider e a mesma política de prompt do backend, executa
+sequencialmente e envia `store=false`. As execuções ficam ignoradas pelo Git
+até que alguém as revise e decida versionar a baseline explicitamente.
+
+O manifesto gerado automaticamente registra:
 
 ```text
 suiteVersion
@@ -197,14 +225,18 @@ applicationCommit
 promptVersion
 provider
 model
-modelConfiguration
 executedAt
-reviewedAt
-reviewers
+caseCount
 totalInputTokens
+totalCachedInputTokens
 totalOutputTokens
-estimatedCost
+reviewStatus
 ```
+
+Depois da avaliação manual, o relatório aprovado deve complementar esses dados
+com revisor, data da revisão, notas, falhas impeditivas, decisão e, quando a
+tabela de preços configurada estiver validada, custo estimado. Esses campos
+humanos não são preenchidos automaticamente pelo executor.
 
 Como todos os dados são fictícios, respostas de avaliação podem ser mantidas no
 repositório para permitir comparação e auditoria. Credenciais, IDs reais de
@@ -214,8 +246,9 @@ usuário/Organization e conteúdo de produção nunca entram nesses artefatos.
 
 Depois da primeira execução manual:
 
-- validar automaticamente preservação de datas, valores e marcadores;
-- detectar citações, processos e jurisprudência não presentes nas fontes;
+- ampliar a validação automática de preservação de datas, valores e marcadores;
+- ampliar a detecção inicial de citações, processos e jurisprudência não
+  presentes nas fontes;
 - executar a suíte em CI sob demanda, sem expor segredo em forks;
 - comparar baseline e candidato lado a lado;
 - executar múltiplas amostras dos casos de maior risco;
@@ -227,9 +260,9 @@ Depois da primeira execução manual:
 
 O `PA-09` permanece aberto até que todos os itens estejam comprovados:
 
-- [ ] Os 30 casos fictícios existem e estão versionados.
-- [ ] Existem exatamente 5 casos por categoria principal.
-- [ ] Todos os casos possuem entrada, contexto, esperado e proibições.
+- [x] Os 30 casos fictícios existem e estão versionados.
+- [x] Existem exatamente 5 casos por categoria principal.
+- [x] Todos os casos possuem entrada, contexto, esperado e proibições.
 - [ ] Rubrica e falhas impeditivas foram homologadas por responsável jurídico.
 - [ ] Uma baseline do modelo e prompt do MVP foi executada integralmente.
 - [ ] Todas as respostas e notas estão registradas.

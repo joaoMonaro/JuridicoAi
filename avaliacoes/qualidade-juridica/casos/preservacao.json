@@ -1,0 +1,107 @@
+[
+  {
+    "id": "PRESERVACAO-001",
+    "version": 1,
+    "category": "Preservacao",
+    "tags": ["valor", "data"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Reorganize o parágrafo sem alterar nenhum dado material.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "Em 21/06/2026, foi pago o montante de R$ 13.275,40, correspondente exclusivamente à entrada contratual.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar data, valor e natureza de entrada"],
+      "forbidden": ["arredondar valor", "tratar o valor como pagamento integral"],
+      "materialFacts": { "data": "21/06/2026", "valor": "R$ 13.275,40", "natureza": "entrada" }
+    },
+    "automaticFailures": ["material_amount_changed", "material_date_changed", "material_condition_changed"]
+  },
+  {
+    "id": "PRESERVACAO-002",
+    "version": 1,
+    "category": "Preservacao",
+    "tags": ["percentuais", "proporcao"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Torne o texto mais claro preservando todos os percentuais.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "O contrato previa 30% na assinatura, 40% na entrega e os 30% restantes após a instalação.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar os três percentuais e respectivos marcos"],
+      "forbidden": ["somar ou redistribuir percentuais", "trocar os marcos"],
+      "materialFacts": { "assinatura": "30%", "entrega": "40%", "instalacao": "30%" }
+    },
+    "automaticFailures": ["material_percentage_changed", "material_condition_changed"]
+  },
+  {
+    "id": "PRESERVACAO-003",
+    "version": 1,
+    "category": "Preservacao",
+    "tags": ["partes", "papeis"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Melhore a fluidez sem trocar o papel das partes.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "Alfa Fictícia Ltda. forneceu os materiais, enquanto Beta Fictícia Serviços realizou apenas a instalação.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["manter Alfa como fornecedora", "manter Beta apenas como instaladora"],
+      "forbidden": ["inverter papéis", "atribuir fabricação a qualquer parte"],
+      "materialFacts": { "fornecedora": "Alfa Fictícia Ltda.", "instaladora": "Beta Fictícia Serviços" }
+    },
+    "automaticFailures": ["party_role_changed", "material_fact_fabricated"]
+  },
+  {
+    "id": "PRESERVACAO-004",
+    "version": 1,
+    "category": "Preservacao",
+    "tags": ["prazo", "condicao"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Simplifique a cláusula sem alterar prazo ou condição inicial.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "O prazo de 15 dias úteis começa somente após a confirmação escrita do recebimento de todos os documentos exigidos.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar dias úteis", "preservar confirmação escrita e totalidade dos documentos como início"],
+      "forbidden": ["converter para dias corridos", "iniciar o prazo com envio parcial"],
+      "materialFacts": { "prazo": "15 dias úteis", "forma": "confirmação escrita" }
+    },
+    "automaticFailures": ["material_deadline_changed", "material_condition_changed"]
+  },
+  {
+    "id": "PRESERVACAO-005",
+    "version": 1,
+    "category": "Preservacao",
+    "tags": ["negacao", "qualificador"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Reescreva de modo técnico preservando as limitações da afirmação.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "Até o momento, não foi localizado comprovante de que a notificação tenha sido recebida pela destinatária.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar 'até o momento'", "preservar ausência de comprovante de recebimento"],
+      "forbidden": ["afirmar que a notificação não foi recebida", "afirmar que não foi enviada"],
+      "materialFacts": { "qualificador": "Até o momento" }
+    },
+    "automaticFailures": ["negation_scope_changed", "evidence_claim_fabricated"]
+  }
+]

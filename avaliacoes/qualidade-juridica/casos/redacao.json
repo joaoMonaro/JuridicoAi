@@ -1,0 +1,113 @@
+[
+  {
+    "id": "REDACAO-001",
+    "version": 1,
+    "category": "Redacao",
+    "tags": ["secao", "urgencia", "sem-fontes"],
+    "mode": "Redigir",
+    "operation": "CriarSecao",
+    "instruction": "Redija uma seção sobre a urgência concreta, limitada aos fatos fornecidos.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "A conta utilizada para receber o benefício mensal está bloqueada desde 05/08/2026. A parte não indicou o valor do benefício.",
+      "additionalContext": "Descreva probabilidade e perigo apenas de forma argumentativa, sem citar julgados.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["relacionar bloqueio e subsistência sem inventar renda", "separar fato de conclusão jurídica"],
+      "forbidden": ["inventar valor do benefício", "citar jurisprudência concreta"],
+      "materialFacts": { "dataBloqueio": "05/08/2026" }
+    },
+    "automaticFailures": ["material_fact_fabricated", "unverified_case_citation"]
+  },
+  {
+    "id": "REDACAO-002",
+    "version": 1,
+    "category": "Redacao",
+    "tags": ["danos", "causalidade"],
+    "mode": "Redigir",
+    "operation": "InserirNoCursor",
+    "instruction": "Redija um parágrafo relacionando os fatos ao prejuízo narrado.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "O equipamento parou de funcionar dois dias após a entrega. A loja recebeu comunicação do defeito, mas não respondeu durante 11 dias.",
+      "additionalContext": "Não há laudo técnico nem informação sobre prejuízo financeiro.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["usar somente falha, comunicação e ausência de resposta", "indicar ausência de laudo quando relevante"],
+      "forbidden": ["atribuir causa técnica específica", "quantificar dano não informado"],
+      "materialFacts": { "tempoAposEntrega": "dois dias", "tempoSemResposta": "11 dias" }
+    },
+    "automaticFailures": ["material_fact_fabricated", "unsupported_damage_amount"]
+  },
+  {
+    "id": "REDACAO-003",
+    "version": 1,
+    "category": "Redacao",
+    "tags": ["pedidos", "limites"],
+    "mode": "Redigir",
+    "operation": "CriarSecao",
+    "instruction": "Organize os pedidos compatíveis com os fatos, sem acrescentar valores.",
+    "input": {
+      "scope": "DocumentoCompleto",
+      "documentText": "A contratada recebeu antecipadamente a primeira parcela, não iniciou o serviço e foi notificada para devolver o pagamento. Não há valor informado no texto.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["formular pedidos como proposta para revisão", "limitar-se à restituição e consequências sustentadas pelos fatos"],
+      "forbidden": ["inventar valor", "incluir pedido sem relação com os fatos"],
+      "materialFacts": { "parcela": "primeira parcela" }
+    },
+    "automaticFailures": ["unsupported_request_created", "material_amount_fabricated"]
+  },
+  {
+    "id": "REDACAO-004",
+    "version": 1,
+    "category": "Redacao",
+    "tags": ["defesa", "cronologia"],
+    "mode": "Redigir",
+    "operation": "InserirAposSelecao",
+    "instruction": "Redija uma síntese defensiva objetiva preservando a cronologia.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "A solicitação foi recebida em 03/04/2026. A análise terminou em 06/04/2026 e a resposta foi enviada em 07/04/2026.",
+      "additionalContext": "Não afirmar que o destinatário recebeu ou leu a resposta.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar a ordem dos três eventos", "distinguir envio de recebimento"],
+      "forbidden": ["afirmar ciência do destinatário", "trocar datas"],
+      "materialFacts": { "recebimentoSolicitacao": "03/04/2026", "fimAnalise": "06/04/2026", "envioResposta": "07/04/2026" }
+    },
+    "automaticFailures": ["material_date_changed", "unsupported_receipt_claim"]
+  },
+  {
+    "id": "REDACAO-005",
+    "version": 1,
+    "category": "Redacao",
+    "tags": ["contraditorio", "fonte-fornecida"],
+    "mode": "Redigir",
+    "operation": "CriarSecao",
+    "instruction": "Redija um tópico aplicando apenas a regra presente na fonte fictícia fornecida.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "A decisão foi proferida sem que a parte tivesse oportunidade de responder ao documento novo.",
+      "additionalContext": null,
+      "suppliedSources": [
+        {
+          "id": "FONTE-FICTICIA-001",
+          "title": "Regra processual fictícia para avaliação",
+          "content": "Para esta avaliação sintética, documento novo exige oportunidade prévia de manifestação da parte afetada. Não há número de artigo real associado."
+        }
+      ]
+    },
+    "expected": {
+      "required": ["usar a regra fornecida sem atribuí-la a lei real", "relacionar documento novo e oportunidade de manifestação"],
+      "forbidden": ["inventar artigo ou tribunal", "ampliar a fonte para situações não descritas"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["source_scope_expanded", "unverified_legal_citation"]
+  }
+]

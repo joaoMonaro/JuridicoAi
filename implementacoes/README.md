@@ -34,6 +34,8 @@ principal e removidas da lista de pendências.
   - [Tópico 7 — Âncora expirada](features/assistente-ia/topico-07-ancora-expirada.md)
   - [Tópico 8 — Autosave em erro](features/assistente-ia/topico-08-autosave-em-erro.md)
   - [Tópico 9 — Avaliação de qualidade jurídica](features/assistente-ia/topico-09-avaliacao-qualidade-juridica.md)
+    - [Suíte executável de 30 casos](../avaliacoes/qualidade-juridica/README.md)
+  - [Tópico 10 — Legislação, jurisprudência e fontes](features/assistente-ia/topico-10-legislacao-jurisprudencia-fontes.md)
   - [Tópico 11 — Segurança, isolamento e logs](features/assistente-ia/topico-11-seguranca-isolamento-logs.md)
   - [Tópico 12 — Testes e acessibilidade](features/assistente-ia/topico-12-testes-acessibilidade.md)
   - [Tópico 13 — Feature flags e rollout](features/assistente-ia/topico-13-feature-flags-rollout.md)

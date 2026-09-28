@@ -180,6 +180,12 @@ data: {"sugestao":{"id":"0c31dd95-fcc7-44b4-ab86-28f04fe6dd90","modo":"Redigir",
 linha vazia e convertidos pelo frontend em nós TipTap válidos. HTML retornado
 pelo provedor nunca é injetado diretamente no DOM ou no editor.
 
+`REFERENCIA_NAO_VERIFICADA` indica que a referência não estava nas fontes
+fornecidas e precisa ser conferida oficialmente. Esse alerta nunca transforma
+jurisprudência concreta inventada em conteúdo aceitável. O endpoint não aciona
+pesquisa externa ou scraper; consulte o
+[Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
+
 No modo `Revisar`, a sugestão também contém `achados` estruturados, sem exigir
 que o frontend interprete bullets produzidos livremente:
 

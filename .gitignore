@@ -44,5 +44,9 @@ playwright-report/
 test-results/
 src/JuridicoAI.Api/data/
 
+# AI quality evaluation runs (review before explicitly versioning a baseline)
+avaliacoes/qualidade-juridica/execucoes/*
+!avaliacoes/qualidade-juridica/execucoes/.gitkeep
+
 #ARQUIVOS TESTE
 resultado-tjsp.json

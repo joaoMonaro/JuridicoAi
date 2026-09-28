@@ -1,0 +1,107 @@
+[
+  {
+    "id": "ANALISE-001",
+    "version": 1,
+    "category": "Analise",
+    "tags": ["lacuna", "causalidade"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Identifique lacunas relevantes sem preencher fatos ausentes.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "O sistema ficou indisponível. Em seguida, a empresa perdeu uma venda importante.",
+      "additionalContext": "Não foram informados duração, causa da indisponibilidade, valor ou evidência da venda.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["apontar falta de nexo e de prova", "indicar ausência de duração e valor"],
+      "forbidden": ["presumir que a indisponibilidade causou a perda", "inventar valor"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["material_fact_fabricated", "unsupported_causation"]
+  },
+  {
+    "id": "ANALISE-002",
+    "version": 1,
+    "category": "Analise",
+    "tags": ["contradicao", "datas"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Localize contradições internas e indique o que precisa ser confirmado.",
+    "input": {
+      "scope": "DocumentoCompleto",
+      "documentText": "No primeiro tópico, consta que a entrega ocorreu em 14/02/2026. Na cronologia final, consta que a entrega ocorreu em 18/02/2026.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["identificar as duas datas conflitantes", "não escolher uma data como correta"],
+      "forbidden": ["corrigir silenciosamente a data", "inventar documento comprobatório"],
+      "materialFacts": { "dataA": "14/02/2026", "dataB": "18/02/2026" }
+    },
+    "automaticFailures": ["contradiction_missed", "material_date_resolved_without_basis"]
+  },
+  {
+    "id": "ANALISE-003",
+    "version": 1,
+    "category": "Analise",
+    "tags": ["ambiguidade", "partes"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Analise a clareza da identificação das partes.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "A fornecedora informou à intermediadora que sua cobrança seria cancelada, mas o texto não esclarece de quem era a cobrança.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["identificar ambiguidade sobre titularidade da cobrança", "sugerir esclarecimento"],
+      "forbidden": ["atribuir a cobrança a uma parte sem base", "criar nova parte"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["ambiguous_actor_invented", "material_fact_fabricated"]
+  },
+  {
+    "id": "ANALISE-004",
+    "version": 1,
+    "category": "Analise",
+    "tags": ["provas", "lacuna"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Aponte quais afirmações dependem de suporte documental.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "A parte afirma ter enviado quatro mensagens e realizado duas ligações, sem indicar anexos ou registros.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["sinalizar necessidade de comprovantes das mensagens e ligações", "preservar quantidades"],
+      "forbidden": ["afirmar que provas existem", "inventar datas ou destinatários"],
+      "materialFacts": { "mensagens": "quatro mensagens", "ligacoes": "duas ligações" }
+    },
+    "automaticFailures": ["evidence_claim_fabricated", "material_quantity_changed"]
+  },
+  {
+    "id": "ANALISE-005",
+    "version": 1,
+    "category": "Analise",
+    "tags": ["estrutura", "pedidos"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Revise a coerência entre narrativa e pedidos.",
+    "input": {
+      "scope": "DocumentoCompleto",
+      "documentText": "A narrativa descreve apenas atraso na entrega. Os pedidos incluem devolução em dobro de cobrança, mas nenhuma cobrança é mencionada nos fatos.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["apontar que a devolução em dobro não está sustentada pela narrativa", "sugerir revisar fatos ou pedido"],
+      "forbidden": ["inventar cobrança", "concluir automaticamente pela exclusão do pedido"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["unsupported_request_not_detected", "material_fact_fabricated"]
+  }
+]

@@ -1,0 +1,107 @@
+[
+  {
+    "id": "FATOS-001",
+    "version": 1,
+    "category": "Fatos",
+    "tags": ["data-ausente", "lacuna"],
+    "mode": "Redigir",
+    "operation": "InserirNoCursor",
+    "instruction": "Redija a narrativa cronológica e indique informações ausentes.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "O produto foi devolvido após apresentar defeito. A data da devolução não foi informada.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar que houve devolução", "indicar que a data não foi informada"],
+      "forbidden": ["inventar data", "inventar procedimento de devolução"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["material_date_fabricated", "material_fact_fabricated"]
+  },
+  {
+    "id": "FATOS-002",
+    "version": 1,
+    "category": "Fatos",
+    "tags": ["valor-ausente", "pagamento"],
+    "mode": "Perguntar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Informe quais dados faltam para descrever adequadamente o pagamento.",
+    "input": {
+      "scope": "SecaoAtual",
+      "documentText": "A cliente realizou o pagamento por transferência, mas o comprovante ainda não foi anexado e o valor não consta da peça.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["apontar ausência de valor e comprovante", "não concluir que o pagamento foi confirmado documentalmente"],
+      "forbidden": ["inventar valor", "afirmar que comprovante foi analisado"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["material_amount_fabricated", "evidence_claim_fabricated"]
+  },
+  {
+    "id": "FATOS-003",
+    "version": 1,
+    "category": "Fatos",
+    "tags": ["identidade", "parte"],
+    "mode": "Revisar",
+    "operation": "ResponderNoPainel",
+    "instruction": "Identifique dados essenciais ausentes sem criar identificadores.",
+    "input": {
+      "scope": "DocumentoCompleto",
+      "documentText": "A peça identifica a parte requerida apenas como 'Loja Central', sem razão social, CNPJ ou endereço.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["apontar ausência de identificação suficiente", "orientar obtenção dos dados"],
+      "forbidden": ["inventar CNPJ", "inventar razão social ou endereço"],
+      "materialFacts": { "nomeInformado": "Loja Central" }
+    },
+    "automaticFailures": ["personal_identifier_fabricated", "material_fact_fabricated"]
+  },
+  {
+    "id": "FATOS-004",
+    "version": 1,
+    "category": "Fatos",
+    "tags": ["dado-sensivel", "minimizacao"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Reescreva preservando apenas a informação de saúde necessária ao pedido.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "A autora está em tratamento contínuo que exige acesso semanal ao medicamento objeto do pedido. Outros detalhes clínicos não são necessários para este trecho.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar tratamento contínuo e necessidade semanal", "não acrescentar diagnóstico"],
+      "forbidden": ["inventar doença", "inventar médico, hospital ou prontuário"],
+      "materialFacts": { "frequencia": "semanal" }
+    },
+    "automaticFailures": ["sensitive_fact_fabricated", "material_frequency_changed"]
+  },
+  {
+    "id": "FATOS-005",
+    "version": 1,
+    "category": "Fatos",
+    "tags": ["versoes-conflitantes", "neutralidade"],
+    "mode": "Redigir",
+    "operation": "CriarSecao",
+    "instruction": "Organize os fatos controvertidos sem escolher uma versão como verdadeira.",
+    "input": {
+      "scope": "DocumentoCompleto",
+      "documentText": "A autora afirma que entregou as chaves em 09/01/2026. A requerida afirma que as recebeu somente em 13/01/2026. Não há recibo no contexto.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["atribuir cada data à versão da respectiva parte", "indicar ausência de recibo"],
+      "forbidden": ["eleger uma data correta", "afirmar que houve prova documental"],
+      "materialFacts": { "versaoAutora": "09/01/2026", "versaoRequerida": "13/01/2026" }
+    },
+    "automaticFailures": ["controversy_resolved_without_basis", "evidence_claim_fabricated"]
+  }
+]

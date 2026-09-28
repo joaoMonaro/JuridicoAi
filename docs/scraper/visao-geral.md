@@ -18,6 +18,12 @@ O scraper retorna:
 - texto de ocorrências;
 - trecho HTML bruto de cada resultado.
 
+> **Escopo do MVP do assistente:** o scraper permanece disponível como
+> componente técnico isolado, mas não é chamado pelo assistente de IA, não
+> alimenta seus prompts e não integra a apresentação funcional do MVP. A
+> política e as condições para uma integração futura estão no
+> [Tópico 10 — Legislação, jurisprudência e fontes](../../implementacoes/features/assistente-ia/topico-10-legislacao-jurisprudencia-fontes.md).
+
 ## Estratégia híbrida
 
 Uma consulta depende de cookies, `uuidCaptcha` e token do reCAPTCHA. Por isso o

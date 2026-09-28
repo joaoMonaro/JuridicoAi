@@ -1,0 +1,13 @@
+{
+  "suiteVersion": "1.0.0",
+  "expectedCaseCount": 30,
+  "expectedCasesPerCategory": 5,
+  "caseFiles": [
+    "casos/reescrita.json",
+    "casos/redacao.json",
+    "casos/analise.json",
+    "casos/fatos.json",
+    "casos/fontes.json",
+    "casos/preservacao.json"
+  ]
+}

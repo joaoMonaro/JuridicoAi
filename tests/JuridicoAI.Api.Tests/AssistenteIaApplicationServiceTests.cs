@@ -102,6 +102,8 @@ public sealed class AssistenteIaApplicationServiceTests
         await setup.Service.FinalizarAsync(execution);
 
         Assert.NotNull(setup.Provider.LastRequest);
+        Assert.Contains("não possui pesquisa jurídica externa", setup.Provider.LastRequest.Instructions);
+        Assert.Contains("REFERENCIA_NAO_VERIFICADA", setup.Provider.LastRequest.Instructions);
         Assert.Contains("Maria de Souza", setup.Provider.LastRequest.Input);
         Assert.Contains("Aposentada", setup.Provider.LastRequest.Input);
         Assert.Contains("O bloqueio persiste há quinze dias.", setup.Provider.LastRequest.Input);
