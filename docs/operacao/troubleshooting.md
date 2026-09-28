@@ -8,8 +8,7 @@ Sintoma comum:
 Configure Mongo:ConnectionString ou a variavel Mongo__ConnectionString.
 ```
 
-Defina a conexão antes de usar ingestão, consulta, reprocessamento ou geração
-de petições:
+Defina a conexão antes de usar ingestão, consulta ou reprocessamento:
 
 ```bash
 export Mongo__ConnectionString="mongodb://usuario:senha@localhost:27017/?authSource=admin"

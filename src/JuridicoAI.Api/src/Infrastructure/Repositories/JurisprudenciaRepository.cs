@@ -68,9 +68,4 @@ public sealed class JurisprudenciaRepository
         return _collection.Find(filtro).SortByDescending(x => x.DataJulgamento)
             .Limit(Math.Clamp(query.Limite, 1, 200)).ToListAsync(cancellationToken);
     }
-
-    public async Task<IReadOnlyList<string>> ObterEmentasAsync(CancellationToken cancellationToken = default) =>
-        await _collection.Find(Builders<Jurisprudencia>.Filter.Empty)
-            .SortByDescending(x => x.Classificacao.Confianca).Limit(30)
-            .Project(x => x.Ementa).ToListAsync(cancellationToken);
 }
