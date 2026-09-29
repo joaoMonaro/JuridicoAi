@@ -43,12 +43,12 @@
   },
   {
     "id": "FATOS-003",
-    "version": 1,
+    "version": 2,
     "category": "Fatos",
     "tags": ["identidade", "parte"],
     "mode": "Revisar",
     "operation": "ResponderNoPainel",
-    "instruction": "Identifique dados essenciais ausentes sem criar identificadores.",
+    "instruction": "Identifique os dados essenciais ausentes sem criar identificadores e oriente como obtê-los ou confirmá-los.",
     "input": {
       "scope": "DocumentoCompleto",
       "documentText": "A peça identifica a parte requerida apenas como 'Loja Central', sem razão social, CNPJ ou endereço.",
@@ -85,7 +85,7 @@
   },
   {
     "id": "FATOS-005",
-    "version": 1,
+    "version": 2,
     "category": "Fatos",
     "tags": ["versoes-conflitantes", "neutralidade"],
     "mode": "Redigir",
@@ -99,9 +99,10 @@
     },
     "expected": {
       "required": ["atribuir cada data à versão da respectiva parte", "indicar ausência de recibo"],
-      "forbidden": ["eleger uma data correta", "afirmar que houve prova documental"],
-      "materialFacts": { "versaoAutora": "09/01/2026", "versaoRequerida": "13/01/2026" }
+      "forbidden": ["eleger uma data correta", "afirmar que houve prova documental", "atribuir as chaves a objeto não informado", "ampliar a ausência do recibo para outros documentos"],
+      "materialFacts": { "versaoAutora": "09/01/2026", "versaoRequerida": "13/01/2026" },
+      "forbiddenPhrases": ["chaves do imóvel", "ou outro documento comprobatório"]
     },
-    "automaticFailures": ["controversy_resolved_without_basis", "evidence_claim_fabricated"]
+    "automaticFailures": ["controversy_resolved_without_basis", "evidence_claim_fabricated", "material_fact_fabricated", "evidence_scope_expanded"]
   }
 ]

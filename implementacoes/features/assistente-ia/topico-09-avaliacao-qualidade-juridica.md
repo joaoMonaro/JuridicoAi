@@ -257,6 +257,21 @@ sem falha de execução ou falha automática, com 21.288 tokens de entrada e
 `pending_manual_review`: a aprovação das rodadas anteriores não é transferida
 automaticamente para esta nova amostra do modelo.
 
+A revisão comparativa dessa baseline encontrou uma falha impeditiva em
+`FATOS-005`: a resposta atribuiu as chaves a um imóvel e ampliou a ausência de
+recibo para a ausência de outros documentos. Também foi identificada uma
+inconsistência entre instrução e resultado esperado no `FATOS-003`. As correções
+formam a suíte candidata `1.0.3`: `FATOS-003` passou à versão 2 e agora solicita
+expressamente orientação para obtenção dos dados; `FATOS-005` passou à versão 2
+e ganhou proibições semânticas e determinísticas para as regressões observadas.
+
+O prompt `assistente-juridico-v3` passou a proibir inferência sobre a natureza
+de objetos e ampliação da ausência de uma prova específica. O
+`avaliador-juridico-v4` também considera alertas estruturados ao verificar fatos
+materiais. Execuções isoladas dos dois casos terminaram sem falhas automáticas
+e foram aprovadas na triagem técnica. Uma nova baseline integral da configuração
+candidata continua necessária após o commit dessas alterações.
+
 O manifesto gerado automaticamente registra:
 
 ```text

@@ -18,7 +18,7 @@ public sealed class QualityEvaluationSuiteTests
         var errors = EvaluationSuiteLoader.Validate(suite);
 
         Assert.Empty(errors);
-        Assert.Equal("1.0.2", suite.Definition.SuiteVersion);
+        Assert.Equal("1.0.3", suite.Definition.SuiteVersion);
         Assert.Equal(30, suite.Cases.Count);
         foreach (var category in Enum.GetValues<EvaluationCategory>())
             Assert.Equal(5, suite.Cases.Count(x => x.Category == category));
@@ -64,6 +64,81 @@ public sealed class QualityEvaluationSuiteTests
         Assert.Contains("não realizou a restituição", item.Input.DocumentText, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("somente o pedido de restituição", item.Instruction, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Não acrescente pedidos", item.Input.AdditionalContext!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CasosDeFatos_AlinhamOrientacaoELimitamInferencias()
+    {
+        var suite = await EvaluationSuiteLoader.LoadAsync(GetSuitePath());
+
+        var identificacao = Assert.Single(suite.Cases, x => x.Id == "FATOS-003");
+        var controversia = Assert.Single(suite.Cases, x => x.Id == "FATOS-005");
+
+        Assert.Equal(2, identificacao.Version);
+        Assert.Contains("oriente como obtê-los", identificacao.Instruction, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(2, controversia.Version);
+        Assert.Contains("chaves do imóvel", controversia.Expected.ForbiddenPhrases!);
+        Assert.Contains("ou outro documento comprobatório", controversia.Expected.ForbiddenPhrases!);
+        Assert.Contains("evidence_scope_expanded", controversia.AutomaticFailures);
+    }
+
+    [Fact]
+    public void PromptPolicy_ProibeInferenciaDeNaturezaEAmpliacaoDeAusenciaDeProva()
+    {
+        var instructions = new AssistentePromptPolicy().CriarInstrucoes(
+            AssistenteModo.Redigir,
+            [AssistenteOperacao.CriarSecao]);
+
+        Assert.Equal("assistente-juridico-v3", AssistentePromptPolicy.Version);
+        Assert.Contains("natureza de pessoas, objetos, relações ou documentos", instructions);
+        Assert.Contains("ausência de uma prova específica", instructions);
+    }
+
+    [Fact]
+    public async Task AutomaticEvaluation_DetectaRegressoesConhecidasDeFatos005()
+    {
+        var suite = await EvaluationSuiteLoader.LoadAsync(GetSuitePath());
+        var item = Assert.Single(suite.Cases, x => x.Id == "FATOS-005");
+        var result = new AssistenteIaProviderResult(
+            "Fatos controvertidos",
+            "A autora indica 09/01/2026 e a requerida 13/01/2026 para as chaves do imóvel. Não há recibo ou outro documento comprobatório.",
+            "Divergência preservada.",
+            AssistenteOperacao.CriarSecao,
+            [],
+            [],
+            10,
+            0,
+            5,
+            "modelo-teste");
+
+        var evaluation = AutomaticEvaluation.Evaluate(item, result);
+
+        Assert.False(evaluation.Passed);
+        Assert.Contains("forbidden_content:chaves do imóvel", evaluation.Failures);
+        Assert.Contains("forbidden_content:ou outro documento comprobatório", evaluation.Failures);
+    }
+
+    [Fact]
+    public async Task AutomaticEvaluation_AceitaFatoMaterialPreservadoEmAlerta()
+    {
+        var suite = await EvaluationSuiteLoader.LoadAsync(GetSuitePath());
+        var item = Assert.Single(suite.Cases, x => x.Id == "FATOS-003");
+        var result = new AssistenteIaProviderResult(
+            "Qualificação incompleta",
+            "",
+            "A identificação da requerida está incompleta.",
+            AssistenteOperacao.ResponderNoPainel,
+            [new AssistenteAlertaDto("DADOS_INCOMPLETOS", "Consta apenas a denominação Loja Central.")],
+            [],
+            10,
+            0,
+            5,
+            "modelo-teste");
+
+        var evaluation = AutomaticEvaluation.Evaluate(item, result);
+
+        Assert.True(evaluation.Passed);
+        Assert.Empty(evaluation.Failures);
     }
 
     [Fact]
@@ -228,7 +303,7 @@ public sealed class QualityEvaluationSuiteTests
             Assert.Equal("awaiting_manual_review", recheckedResult.Status);
             Assert.Empty(recheckedResult.AutomaticFailures);
             Assert.Equal("1.0.0", recheckManifest!.SourceSuiteVersion);
-            Assert.Equal("1.0.2", recheckManifest.RecheckSuiteVersion);
+            Assert.Equal("1.0.3", recheckManifest.RecheckSuiteVersion);
             Assert.Equal(AutomaticEvaluation.Version, recheckManifest.EvaluatorVersion);
         }
         finally

@@ -24,7 +24,8 @@ qualidade-juridica/
 Cada arquivo possui cinco casos. `expected.required` e `expected.forbidden`
 são critérios semânticos para revisão humana. `materialFacts`, alertas
 obrigatórios, recusa de pesquisa externa e `forbiddenPhrases` permitem algumas
-verificações determinísticas, mas não substituem avaliação jurídica.
+verificações determinísticas, mas não substituem avaliação jurídica. A busca de
+fatos materiais considera texto, resumo, alertas estruturados e achados.
 
 ## Validar sem API key
 

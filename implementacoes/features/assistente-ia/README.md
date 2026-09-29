@@ -289,7 +289,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Aceita; refinamento de UX e testes pendentes |
 | 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
-| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Baseline `1.0.2` executada no commit `bffe744`; revisão jurídica e homologação pendentes |
+| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Baseline `1.0.2` reprovada na triagem; correções `1.0.3` validadas isoladamente e nova baseline pendente |
 | 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; interface e casos de avaliação pendentes |
 | 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Política aceita; implementação e evidências pendentes |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Estratégia aceita; suíte e execução pendentes |

@@ -5,13 +5,16 @@ namespace JuridicoAI.QualityEvals;
 
 public static partial class AutomaticEvaluation
 {
-    public const string Version = "avaliador-juridico-v3";
+    public const string Version = "avaliador-juridico-v4";
 
     public static AutomaticCheckResult Evaluate(EvaluationCase item, AssistenteIaProviderResult result)
     {
         var failures = new List<string>();
         var warnings = new List<string>();
-        var combined = string.Join('\n', result.Texto, result.Resumo,
+        var combined = string.Join('\n',
+            result.Texto,
+            result.Resumo,
+            string.Join('\n', result.Alertas.Select(x => $"{x.Codigo} {x.Mensagem}")),
             string.Join('\n', result.Achados.Select(x => $"{x.Titulo} {x.Descricao}")));
 
         foreach (var fact in item.Expected.MaterialFacts)

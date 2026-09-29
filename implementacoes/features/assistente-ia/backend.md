@@ -165,10 +165,12 @@ O prompt de sistema é código versionado em:
 src/JuridicoAI.Api/src/Application/Services/AssistentePromptPolicy.cs
 ```
 
-A versão atual é `assistente-juridico-v2`. Ela explicita que o modelo não tem
-pesquisa externa, proíbe referência jurisprudencial concreta sem fonte e exige
-`REFERENCIA_NAO_VERIFICADA` para legislação não fornecida. A política completa
-está no [Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
+A versão atual é `assistente-juridico-v3`. Ela explicita que o modelo não tem
+pesquisa externa, proíbe referência jurisprudencial concreta sem fonte, exige
+`REFERENCIA_NAO_VERIFICADA` para legislação não fornecida e impede inferir a
+natureza de objetos ou ampliar a ausência de uma prova para outros documentos.
+A política completa está no
+[Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
 
 Cada solicitação registra ao menos `promptVersion`, provider lógico, modelo,
 latência, contagem de entrada/saída, estado final e IDs técnicos. Alterar regras
