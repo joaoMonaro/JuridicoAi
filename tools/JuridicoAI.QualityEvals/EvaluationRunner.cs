@@ -54,7 +54,7 @@ public sealed class EvaluationRunner(
         await WriteJsonAsync(Path.Combine(executionDirectory, "resultados.json"), results, cancellationToken);
         await File.WriteAllTextAsync(
             Path.Combine(executionDirectory, "relatorio.md"),
-            CreateReport(manifest, results),
+            EvaluationReport.Create(manifest, results),
             cancellationToken);
         return executionDirectory;
     }
@@ -66,7 +66,7 @@ public sealed class EvaluationRunner(
         var startedAt = Stopwatch.GetTimestamp();
         try
         {
-            var allowedOperations = AllowedOperations(item.Mode);
+            IReadOnlyList<AssistenteOperacao> allowedOperations = [item.Operation];
             var request = new AssistenteIaProviderRequest(
                 promptPolicy.CriarInstrucoes(item.Mode, allowedOperations),
                 BuildInput(item),
@@ -144,15 +144,6 @@ public sealed class EvaluationRunner(
         return builder.ToString();
     }
 
-    private static IReadOnlyList<AssistenteOperacao> AllowedOperations(AssistenteModo mode) => mode switch
-    {
-        AssistenteModo.Perguntar => [AssistenteOperacao.ResponderNoPainel],
-        AssistenteModo.Redigir => [AssistenteOperacao.InserirNoCursor, AssistenteOperacao.InserirAposSelecao, AssistenteOperacao.CriarSecao],
-        AssistenteModo.Reescrever => [AssistenteOperacao.SubstituirSelecao],
-        AssistenteModo.Revisar => [AssistenteOperacao.ResponderNoPainel],
-        _ => throw new ArgumentOutOfRangeException(nameof(mode))
-    };
-
     private static int MaxOutputTokens(AssistenteModo mode) => mode switch
     {
         AssistenteModo.Perguntar or AssistenteModo.Reescrever => 2_000,
@@ -168,35 +159,6 @@ public sealed class EvaluationRunner(
 
     private static async Task WriteJsonAsync<T>(string path, T value, CancellationToken cancellationToken) =>
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(value, JsonOptions), cancellationToken);
-
-    private static string CreateReport(
-        EvaluationExecutionManifest manifest,
-        IReadOnlyList<EvaluationExecutionResult> results)
-    {
-        var builder = new StringBuilder()
-            .AppendLine("# Relatório de avaliação jurídica")
-            .AppendLine()
-            .AppendLine($"- Suíte: `{manifest.SuiteVersion}`")
-            .AppendLine($"- Commit: `{manifest.ApplicationCommit}`")
-            .AppendLine($"- Prompt: `{manifest.PromptVersion}`")
-            .AppendLine($"- Modelo: `{manifest.Model}`")
-            .AppendLine($"- Execução UTC: `{manifest.ExecutedAt:O}`")
-            .AppendLine()
-            .AppendLine("## Resultado automático")
-            .AppendLine()
-            .AppendLine("| Caso | Categoria | Estado | Falhas automáticas |")
-            .AppendLine("|---|---|---|---|");
-        foreach (var result in results)
-            builder.AppendLine($"| {result.CaseId} | {result.Category} | {result.Status} | {string.Join(", ", result.AutomaticFailures)} |");
-        builder.AppendLine().AppendLine("## Rubrica manual")
-            .AppendLine()
-            .AppendLine("Preencher de 0 a 2 para atendimento, correção jurídica, preservação, clareza e fontes.")
-            .AppendLine("Qualquer falha impeditiva reprova a execução independentemente da média.")
-            .AppendLine()
-            .AppendLine("**Responsável jurídico:** pendente")
-            .AppendLine().AppendLine("**Decisão:** pendente");
-        return builder.ToString();
-    }
 
     private static string GetGitCommit()
     {

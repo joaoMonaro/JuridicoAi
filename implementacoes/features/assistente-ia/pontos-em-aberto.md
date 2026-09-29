@@ -28,8 +28,8 @@ homologação registrados no documento do tópico.
 ## Ordem recomendada de decisão
 
 1. Submeter `PA-17` à revisão jurídica e contratual.
-2. Executar e homologar a baseline de `PA-09`, usando a suíte já implementada e
-   a política de fontes aprovada no `PA-10`.
+2. Revisar juridicamente e homologar a primeira rodada de `PA-09`, já executada
+   com a suíte implementada e a política de fontes aprovada no `PA-10`.
 3. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
 4. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
    autosave registrada no `PA-08`.
@@ -113,7 +113,9 @@ tenants reprova a execução independentemente da média.
 A suíte, a validação estrutural, as verificações automáticas iniciais e o
 executor estão em
 [`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
-Ainda falta executar os 30 casos com o modelo real e revisar as respostas.
+A primeira rodada dos 30 casos com o modelo real foi executada e reavaliada com
+a suíte `1.0.1`: os 30 aguardam revisão manual, sem falha automática. Ainda
+falta pontuar, revisar juridicamente e homologar as respostas.
 
 Critério de fechamento: baseline do modelo e prompt do MVP executada,
 resultados preservados e relatório aprovado por responsável jurídico. A suíte

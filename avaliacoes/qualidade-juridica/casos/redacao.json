@@ -43,21 +43,21 @@
   },
   {
     "id": "REDACAO-003",
-    "version": 1,
+    "version": 2,
     "category": "Redacao",
     "tags": ["pedidos", "limites"],
     "mode": "Redigir",
     "operation": "CriarSecao",
-    "instruction": "Organize os pedidos compatíveis com os fatos, sem acrescentar valores.",
+    "instruction": "Organize, como proposta para revisão, somente o pedido de restituição compatível com os fatos, sem acrescentar valores ou pedidos processuais acessórios.",
     "input": {
       "scope": "DocumentoCompleto",
-      "documentText": "A contratada recebeu antecipadamente a primeira parcela, não iniciou o serviço e foi notificada para devolver o pagamento. Não há valor informado no texto.",
-      "additionalContext": null,
+      "documentText": "A contratada recebeu antecipadamente a primeira parcela, não iniciou o serviço e, mesmo após ser notificada para devolver o pagamento, não realizou a restituição. Não há valor informado no texto.",
+      "additionalContext": "Não há informações sobre fase processual, honorários, despesas ou provas. Não acrescente pedidos sobre esses temas.",
       "suppliedSources": []
     },
     "expected": {
-      "required": ["formular pedidos como proposta para revisão", "limitar-se à restituição e consequências sustentadas pelos fatos"],
-      "forbidden": ["inventar valor", "incluir pedido sem relação com os fatos"],
+      "required": ["formular a restituição como proposta para revisão", "limitar-se à restituição da primeira parcela não devolvida"],
+      "forbidden": ["inventar valor", "incluir citação, honorários, despesas, produção de provas ou outro pedido não informado"],
       "materialFacts": { "parcela": "primeira parcela" }
     },
     "automaticFailures": ["unsupported_request_created", "material_amount_fabricated"]

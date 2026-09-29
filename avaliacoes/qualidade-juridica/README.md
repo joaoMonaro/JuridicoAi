@@ -56,7 +56,34 @@ dotnet run --project tools/JuridicoAI.QualityEvals -- \
 ```
 
 `--confirm-real-run` é obrigatório para impedir chamadas e custos acidentais.
-O runner é sequencial e usa `store=false` por meio do provider existente.
+O runner é sequencial e usa `store=false` por meio do provider existente. Cada
+caso envia somente sua operação declarada como permitida. O avaliador também
+reprova a resposta com `unexpected_suggested_operation` se o provider devolver
+uma operação diferente.
+
+## Reavaliar resultados salvos sem usar a API
+
+Quando uma regra determinística do avaliador for corrigida, os resultados já
+salvos podem ser processados novamente sem repetir as chamadas ao modelo:
+
+```bash
+dotnet run --project tools/JuridicoAI.QualityEvals -- \
+  recheck --execution avaliacoes/qualidade-juridica/execucoes/<execucao>
+```
+
+O comando não carrega API key e não chama o provedor. Os arquivos originais
+permanecem intactos, e a nova avaliação é criada em:
+
+```text
+<execucao>/rechecks/<data>-<versaoDoAvaliador>/
+├── manifest.json
+├── resultados.json
+└── relatorio.md
+```
+
+O manifesto da reavaliação referencia a execução de origem e registra as
+versões da suíte original, da suíte atual e do avaliador utilizado. A revisão
+jurídica manual continua obrigatória.
 
 Cada execução cria:
 

@@ -257,7 +257,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 
 ### F3 — endurecimento e lançamento
 
-- [ ] Executar e aprovar a suíte de qualidade jurídica do Tópico 9.
+- [ ] Revisar e aprovar a primeira rodada da suíte de qualidade jurídica do Tópico 9.
 - [ ] Testes de isolamento, prompt injection e vazamento em logs.
 - [ ] Implementar e comprovar o gate de segurança do Tópico 11.
 - [ ] Limites por usuário/Organization e orçamento operacional.
@@ -288,7 +288,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Aceita; refinamento de UX e testes pendentes |
 | 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
-| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Suíte e executor implementados; baseline real e homologação pendentes |
+| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Primeira rodada real executada e reavaliada; revisão jurídica e homologação pendentes |
 | 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; interface e casos de avaliação pendentes |
 | 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Política aceita; implementação e evidências pendentes |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Estratégia aceita; suíte e execução pendentes |

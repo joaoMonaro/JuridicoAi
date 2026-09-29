@@ -1,5 +1,5 @@
 {
-  "suiteVersion": "1.0.0",
+  "suiteVersion": "1.0.2",
   "expectedCaseCount": 30,
   "expectedCasesPerCategory": 5,
   "caseFiles": [

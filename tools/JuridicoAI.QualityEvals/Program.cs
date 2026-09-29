@@ -24,7 +24,27 @@ if (command == "validate")
     return 0;
 }
 
-if (command != "run" || !args.Contains("--confirm-real-run", StringComparer.OrdinalIgnoreCase))
+if (command == "recheck")
+{
+    var executionDirectory = GetArgument(args, "--execution");
+    if (string.IsNullOrWhiteSpace(executionDirectory))
+    {
+        Console.Error.WriteLine("Informe a execução original: recheck --execution CAMINHO");
+        return 2;
+    }
+
+    var recheckOutput = await new EvaluationRechecker().RecheckAsync(suite, executionDirectory);
+    Console.WriteLine($"Reavaliação concluída sem chamadas ao provedor. Artefatos: {recheckOutput}");
+    return 0;
+}
+
+if (command != "run")
+{
+    Console.Error.WriteLine("Comandos disponíveis: validate, run e recheck.");
+    return 2;
+}
+
+if (!args.Contains("--confirm-real-run", StringComparer.OrdinalIgnoreCase))
 {
     Console.Error.WriteLine("Para executar chamadas reais, use: run --confirm-real-run [--case ID]");
     return 2;

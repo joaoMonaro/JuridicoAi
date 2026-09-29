@@ -88,3 +88,18 @@ public sealed record EvaluationExecutionManifest(
     int? TotalCachedInputTokens,
     int? TotalOutputTokens,
     string ReviewStatus);
+
+public sealed record EvaluationRecheckManifest(
+    string SourceSuiteVersion,
+    string RecheckSuiteVersion,
+    string SourceApplicationCommit,
+    string SourcePromptVersion,
+    string Provider,
+    string Model,
+    DateTime SourceExecutedAt,
+    string EvaluatorVersion,
+    DateTime RecheckedAt,
+    int CaseCount,
+    int AutomaticFailureCount,
+    int ExecutionFailureCount,
+    string SourceResultsFile);

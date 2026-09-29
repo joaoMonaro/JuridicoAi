@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** metodologia aprovada
 >
-> **Estado da implementação:** parcial — suíte e executor implementados
+> **Estado da implementação:** parcial — suíte, executor e primeira rodada implementados
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -20,9 +20,9 @@ sem pesquisa externa, sem scraper no fluxo e sem referência concreta inventada.
 
 A suíte versionada já existe em
 [`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md),
-com validação estrutural e verificações automáticas iniciais. Isso não encerra
-o `PA-09`: os 30 casos ainda precisam ser executados com o modelo real, e o
-resultado precisa ser revisado e aprovado.
+com validação estrutural e verificações automáticas iniciais. Uma rodada com os
+30 casos e o modelo real já foi executada. Isso não encerra o `PA-09`: o
+resultado ainda precisa ser revisado e aprovado por responsável jurídico.
 
 ## 1. Escopo inicial da suíte
 
@@ -217,6 +217,38 @@ O runner usa o mesmo provider e a mesma política de prompt do backend, executa
 sequencialmente e envia `store=false`. As execuções ficam ignoradas pelo Git
 até que alguém as revise e decida versionar a baseline explicitamente.
 
+Regras automáticas corrigidas podem ser reaplicadas aos resultados salvos sem
+nova chamada ao modelo e sem consumo de tokens:
+
+```bash
+dotnet run --project tools/JuridicoAI.QualityEvals -- \
+  recheck --execution avaliacoes/qualidade-juridica/execucoes/<execucao>
+```
+
+O comando preserva os artefatos originais e grava uma nova pasta em `rechecks`,
+com manifesto próprio e as versões das suítes de origem e reavaliação e do
+avaliador. Alertas estruturados do provider são a evidência principal para
+limitações conhecidas, como pesquisa externa indisponível; correspondência
+textual permanece apenas como alternativa. Um critério que aceita paráfrase,
+como preservar o qualificador “até o momento”, fica na rubrica semântica e não
+deve exigir uma cadeia literal idêntica.
+
+Em 2026-09-28, a primeira rodada integral foi executada com
+`gpt-5.6-terra` e `assistente-juridico-v2`. Após corrigir duas regras que
+geravam falsos positivos, a reavaliação com a suíte `1.0.1` e o avaliador
+`avaliador-juridico-v2` deixou os 30 casos aguardando revisão manual, sem falha
+automática. Esse resultado comprova somente os controles determinísticos; não
+equivale à homologação da qualidade jurídica.
+
+Durante a revisão manual, o `REDACAO-003` revelou contexto insuficiente sobre a
+devolução da primeira parcela e escopo excessivamente aberto para pedidos. O
+caso foi corrigido, elevado à versão 2 e a suíte passou a `1.0.2`. A execução
+isolada posterior preservou os fatos, limitou-se à restituição e não criou
+valor. Também foi corrigido o executor: cada caso agora permite somente sua
+operação declarada, e o `avaliador-juridico-v3` reprova qualquer divergência com
+`unexpected_suggested_operation`. Uma nova execução isolada confirmou
+`CriarSecao` para o `REDACAO-003`, sem falhas automáticas.
+
 O manifesto gerado automaticamente registra:
 
 ```text
@@ -264,12 +296,12 @@ O `PA-09` permanece aberto até que todos os itens estejam comprovados:
 - [x] Existem exatamente 5 casos por categoria principal.
 - [x] Todos os casos possuem entrada, contexto, esperado e proibições.
 - [ ] Rubrica e falhas impeditivas foram homologadas por responsável jurídico.
-- [ ] Uma baseline do modelo e prompt do MVP foi executada integralmente.
+- [x] Uma baseline do modelo e prompt do MVP foi executada integralmente.
 - [ ] Todas as respostas e notas estão registradas.
 - [ ] Nenhuma falha impeditiva foi encontrada.
 - [ ] Os limites mínimos aprovados foram atingidos.
 - [ ] Existe relatório final assinado ou aprovado pelo responsável jurídico.
-- [ ] O commit, a versão do prompt e a configuração avaliados são rastreáveis.
+- [x] O commit, a versão do prompt e a configuração avaliados são rastreáveis.
 
 Somente depois dessas evidências o ponto deve ser movido para “Pontos
 resolvidos”.

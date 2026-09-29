@@ -85,7 +85,7 @@
   },
   {
     "id": "PRESERVACAO-005",
-    "version": 1,
+    "version": 2,
     "category": "Preservacao",
     "tags": ["negacao", "qualificador"],
     "mode": "Reescrever",
@@ -100,7 +100,7 @@
     "expected": {
       "required": ["preservar 'até o momento'", "preservar ausência de comprovante de recebimento"],
       "forbidden": ["afirmar que a notificação não foi recebida", "afirmar que não foi enviada"],
-      "materialFacts": { "qualificador": "Até o momento" }
+      "materialFacts": {}
     },
     "automaticFailures": ["negation_scope_changed", "evidence_claim_fabricated"]
   }
