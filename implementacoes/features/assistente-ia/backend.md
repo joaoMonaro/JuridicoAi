@@ -179,8 +179,8 @@ O gate mínimo para mudanças de prompt ou modelo está definido no
 [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
 A suíte de 30 casos e seu executor já existem em
 [`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
-Enquanto a primeira rodada real já executada não for revisada e homologada, o
-`PA-09` continua bloqueando a produção.
+Enquanto a baseline atual já executada não for revisada e homologada, o `PA-09`
+continua bloqueando a produção.
 
 O formato final deve ser estruturado pelo recurso nativo do provedor quando
 disponível. Mesmo assim, o backend revalida tudo; esquema do provedor não é uma

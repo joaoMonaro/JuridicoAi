@@ -113,9 +113,10 @@ tenants reprova a execução independentemente da média.
 A suíte, a validação estrutural, as verificações automáticas iniciais e o
 executor estão em
 [`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
-A primeira rodada dos 30 casos com o modelo real foi executada e reavaliada com
-a suíte `1.0.1`: os 30 aguardam revisão manual, sem falha automática. Ainda
-falta pontuar, revisar juridicamente e homologar as respostas.
+A baseline atual dos 30 casos foi executada no commit `bffe744`, com a suíte
+`1.0.2` e o avaliador `avaliador-juridico-v3`: os 30 aguardam revisão manual,
+sem falha automática. Ainda falta pontuar, revisar juridicamente e homologar as
+respostas desta execução.
 
 Critério de fechamento: baseline do modelo e prompt do MVP executada,
 resultados preservados e relatório aprovado por responsável jurídico. A suíte

@@ -249,6 +249,14 @@ operação declarada, e o `avaliador-juridico-v3` reprova qualquer divergência 
 `unexpected_suggested_operation`. Uma nova execução isolada confirmou
 `CriarSecao` para o `REDACAO-003`, sem falhas automáticas.
 
+Após o commit `bffe744`, foi executada uma nova baseline integral com a suíte
+`1.0.2`, o avaliador `avaliador-juridico-v3`, o prompt
+`assistente-juridico-v2` e o modelo `gpt-5.6-terra`. Os 30 casos terminaram
+sem falha de execução ou falha automática, com 21.288 tokens de entrada e
+4.893 tokens de saída. O manifesto permanece com `reviewStatus` igual a
+`pending_manual_review`: a aprovação das rodadas anteriores não é transferida
+automaticamente para esta nova amostra do modelo.
+
 O manifesto gerado automaticamente registra:
 
 ```text
