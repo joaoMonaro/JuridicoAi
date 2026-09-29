@@ -224,7 +224,8 @@ Não haverá rollout percentual. A sequência será:
 
 - flags habilitadas apenas em ambiente local/controlado;
 - provider fake nos testes e chave real somente em ambiente autorizado;
-- PA-09, PA-11 e PA-12 ainda podem estar em construção, sem uso de cliente.
+- PA-11 e PA-12 ainda podem estar em construção, sem uso de cliente; o gate
+  técnico do PA-09 deve permanecer válido para a configuração em execução.
 
 ### 2. Tenant interno
 

@@ -2,7 +2,7 @@
 
 > **Estado:** decisões pendentes
 >
-> **Última atualização:** 2026-09-28
+> **Última atualização:** 2026-09-29
 >
 > **Documento principal:** [Assistente de IA](README.md)
 
@@ -16,7 +16,6 @@ homologação registrados no documento do tópico.
 
 | ID | Tema | Prioridade | Bloqueia produção |
 |---|---|---:|:---:|
-| `PA-09` | Avaliação de qualidade jurídica | Crítica | Sim |
 | `PA-11` | Segurança, isolamento e logs | Crítica | Sim |
 | `PA-12` | Testes e acessibilidade do frontend | Alta | Sim |
 | `PA-13` | Feature flag e rollout | Alta | Sim |
@@ -27,15 +26,14 @@ homologação registrados no documento do tópico.
 
 ## Ordem recomendada de decisão
 
-1. Submeter `PA-17` à revisão jurídica e contratual.
-2. Revisar juridicamente e homologar a primeira rodada de `PA-09`, já executada
-   com a suíte implementada e a política de fontes aprovada no `PA-10`.
-3. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
-4. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
+1. Submeter `PA-17` à revisão jurídica e contratual, incluindo a homologação
+   jurídica formal da qualidade das respostas antes da comercialização.
+2. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
+3. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
    autosave registrada no `PA-08`.
-5. Preparar operação e lançamento com `PA-13` e `PA-14`.
-6. Definir o fluxo de geração integral em `PA-16`.
-7. Tratar a melhoria não bloqueante de bundle em `PA-15`.
+4. Preparar operação e lançamento com `PA-13` e `PA-14`.
+5. Definir o fluxo de geração integral em `PA-16`.
+6. Tratar a melhoria não bloqueante de bundle em `PA-15`.
 
 ## Pontos resolvidos
 
@@ -49,6 +47,7 @@ homologação registrados no documento do tópico.
 | `PA-06` | Histórico persistente por Caso no JuridicoAI, com exclusão independente e sem usar o provider como fonte primária. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
 | `PA-07` | Âncora expirada bloqueia aplicação; o usuário seleciona outro trecho e gera novamente ou descarta. Inserção no cursor atual não é fallback do MVP. | Produto / proprietário do projeto | [Tópico 7](topico-07-ancora-expirada.md) |
 | `PA-08` | Edição manual continua disponível, mas sugestões da IA só podem ser aplicadas quando o autosave está em `SALVO`. | Produto / proprietário do projeto | [Tópico 8](topico-08-autosave-em-erro.md) |
+| `PA-09` | A suíte fictícia de 30 casos, o executor e o gate automático foram implementados; a baseline `1.0.3` com prompt `assistente-juridico-v3` foi aceita como referência técnica congelada do MVP. | Produto / proprietário do projeto | [Tópico 9](topico-09-avaliacao-qualidade-juridica.md) |
 | `PA-10` | O MVP não pesquisa externamente; somente fontes fornecidas no contexto podem ser tratadas como confirmadas. O scraper fica fora do fluxo e da apresentação. | Produto / proprietário do projeto | [Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md) |
 
 ## Privacidade e dados
@@ -64,6 +63,8 @@ As decisões técnicas de `PA-03`, `PA-04`, `PA-05` e `PA-06` estão registradas
 - mecanismo de transferência internacional;
 - governança de fornecedores e suboperadores;
 - direitos dos titulares, incidentes e hipóteses excepcionais de conservação.
+- homologação jurídica formal da rubrica, dos limites e da qualidade das
+  respostas da IA para uso comercial.
 
 Critério de fechamento: revisão jurídica formal, documentos aprovados,
 configuração do provider verificada e autorização expressa para comercialização.
@@ -89,40 +90,6 @@ contrato que diferencie trecho, seção e documento completo.
 Critério de fechamento: fluxo de produto aprovado, contrato tipado, protótipo
 homologado e testes que comprovem que cancelar, rejeitar ou falhar não altera a
 Peça.
-
-## Qualidade jurídica
-
-### PA-09 — Avaliação de qualidade jurídica
-
-A metodologia está definida no
-[Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
-Foram criados 30 casos inteiramente fictícios, com 5 casos em cada grupo:
-
-- reescrita;
-- redação;
-- análise;
-- fatos;
-- fontes;
-- preservação.
-
-Cada caso deve possuir entrada, contexto, resultado semântico esperado,
-proibições e rubrica. Inventar jurisprudência ou fato material, alterar data ou
-valor relevante sem base, alegar verificação inexistente ou vazar dados entre
-tenants reprova a execução independentemente da média.
-
-A suíte, a validação estrutural, as verificações automáticas iniciais e o
-executor estão em
-[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
-A baseline dos 30 casos executada no commit `bffe744`, com a suíte `1.0.2`,
-passou nos controles automáticos, mas a revisão comparativa identificou uma
-falha impeditiva em `FATOS-005`. A suíte candidata `1.0.3`, o prompt
-`assistente-juridico-v3` e o avaliador `avaliador-juridico-v4` corrigem o caso e
-também alinham o `FATOS-003`. As validações isoladas passaram; ainda falta
-executar e homologar uma nova baseline integral após o commit das correções.
-
-Critério de fechamento: baseline do modelo e prompt do MVP executada,
-resultados preservados e relatório aprovado por responsável jurídico. A suíte
-validada, isoladamente, não fecha o ponto.
 
 ## Segurança e validação
 

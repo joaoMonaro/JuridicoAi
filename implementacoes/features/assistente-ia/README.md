@@ -2,7 +2,7 @@
 
 > **Estado:** primeira fatia vertical implementada no backend e no frontend
 >
-> **Última atualização:** 2026-09-27
+> **Última atualização:** 2026-09-29
 >
 > **Implementação atual:** geração, streaming, revisão e aplicação explícita
 > integrados; validação funcional ponta a ponta e endurecimento continuam pendentes
@@ -13,11 +13,11 @@
 > [Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md),
 > [Tópico 3 — Retenção, exclusão e LGPD](topico-03-retencao-exclusao-lgpd.md),
 > [Tópico 7 — Âncora expirada](topico-07-ancora-expirada.md) e
-> [Tópico 8 — Autosave em erro](topico-08-autosave-em-erro.md) e
+> [Tópico 8 — Autosave em erro](topico-08-autosave-em-erro.md),
+> [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md) e
 > [Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md)
 >
 > Planos ainda abertos:
-> [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md),
 > [Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md),
 > [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md),
 > [Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md)
@@ -226,10 +226,11 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Escolher OpenAI como primeiro provider, preservando abstração para troca.
 - [x] Escolher `gpt-5.6-terra` como modelo inicial por configuração.
 - [x] Definir limites iniciais de entrada, saída, orçamento e requisições.
-- [ ] Validar custo e qualidade com amostras jurídicas representativas.
+- [ ] Validar o custo operacional com amostras jurídicas representativas.
 - [x] Criar e validar estruturalmente os 30 casos fictícios do Tópico 9.
 - [x] Executar a baseline real dos 30 casos com suíte, avaliador e commit rastreáveis.
-- [ ] Obter homologação jurídica da baseline real.
+- [x] Aceitar a baseline `1.0.3` como referência técnica congelada do MVP.
+- [ ] Obter homologação jurídica formal da qualidade da IA em `PA-17` antes da comercialização.
 - [x] Definir retenção, exclusão, minimização e aviso inicial do MVP.
 - [x] Definir política de fontes e pausar o scraper no fluxo do assistente.
 - [ ] Obter validação jurídica e contratual de `PA-17` antes da comercialização.
@@ -258,7 +259,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 
 ### F3 — endurecimento e lançamento
 
-- [ ] Revisar e aprovar a baseline atual da suíte de qualidade jurídica do Tópico 9.
+- [x] Revisar e aceitar tecnicamente a baseline atual da suíte do Tópico 9.
 - [ ] Testes de isolamento, prompt injection e vazamento em logs.
 - [ ] Implementar e comprovar o gate de segurança do Tópico 11.
 - [ ] Limites por usuário/Organization e orçamento operacional.
@@ -289,8 +290,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Aceita; refinamento de UX e testes pendentes |
 | 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
-| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Baseline `1.0.2` reprovada na triagem; correções `1.0.3` validadas isoladamente e nova baseline pendente |
-| 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; interface e casos de avaliação pendentes |
+| 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Encerrado tecnicamente com a baseline `1.0.3` no commit `f6376df`; homologação jurídica formal permanece em `PA-17` |
+| 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; casos incorporados à baseline técnica e interface pendente |
 | 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Política aceita; implementação e evidências pendentes |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Estratégia aceita; suíte e execução pendentes |
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Estratégia aceita; implementação e rollout pendentes |

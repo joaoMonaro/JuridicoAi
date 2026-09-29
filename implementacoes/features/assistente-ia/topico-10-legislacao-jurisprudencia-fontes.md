@@ -6,8 +6,8 @@
 >
 > **Data da decisão:** 2026-09-27
 >
-> **Ponto relacionado:** `PA-10` encerrado como decisão; testes e homologação
-> permanecem vinculados ao `PA-09`
+> **Ponto relacionado:** `PA-10` encerrado como decisão; gate técnico executado
+> em `PA-09` e homologação jurídica formal mantida em `PA-17`
 
 Este documento define como o assistente jurídico trata fontes no MVP. O
 objetivo é impedir que conhecimento provável do modelo seja apresentado como
@@ -199,8 +199,8 @@ confirmação dependerá da evidência recuperada e exibida ao usuário.
 - [x] Prompt declara que não possui pesquisa externa.
 - [ ] Interface exibe a limitação e os alertas de forma persistente.
 - [x] Cinco casos de fontes existem na suíte do `PA-09`.
-- [ ] Os cinco casos de fontes foram executados e homologados.
-- [ ] Comportamento foi homologado por responsável jurídico.
+- [x] Os cinco casos de fontes foram executados e aprovados na revisão técnica.
+- [ ] Comportamento foi homologado formalmente por responsável jurídico em `PA-17`.
 
 O `PA-10` está fechado como decisão de produto. Os itens ainda desmarcados são
 evidências de implementação e qualidade necessárias para o piloto, sem reabrir

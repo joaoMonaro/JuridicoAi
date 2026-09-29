@@ -1,14 +1,14 @@
 # Tópico 9 — Avaliação de qualidade jurídica
 
-> **Estado da decisão:** metodologia aprovada
+> **Estado da decisão:** encerrada tecnicamente para o MVP
 >
-> **Estado da implementação:** parcial — suíte, executor e primeira rodada implementados
+> **Estado da implementação:** suíte, executor e baseline técnica implementados
 >
 > **Data da decisão:** 2026-09-27
 >
-> **Última atualização:** 2026-09-28
+> **Última atualização:** 2026-09-29
 >
-> **Ponto relacionado:** `PA-09` permanece aberto
+> **Ponto relacionado:** `PA-09` encerrado; homologação jurídica formal permanece em `PA-17`
 
 Este documento define a avaliação mínima de qualidade e segurança jurídica do
 assistente. O objetivo é detectar regressões antes que uma mudança de modelo,
@@ -18,11 +18,13 @@ Os casos da categoria Fontes devem aplicar a política aprovada no
 [Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md):
 sem pesquisa externa, sem scraper no fluxo e sem referência concreta inventada.
 
-A suíte versionada já existe em
+A suíte versionada existe em
 [`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md),
-com validação estrutural e verificações automáticas iniciais. Uma rodada com os
-30 casos e o modelo real já foi executada. Isso não encerra o `PA-09`: o
-resultado ainda precisa ser revisado e aprovado por responsável jurídico.
+com validação estrutural e verificações automáticas. A configuração congelada
+do MVP foi executada nos 30 casos com o modelo real e aceita como baseline
+técnica pelo responsável pelo produto. Essa decisão encerra o `PA-09` para o
+desenvolvimento do MVP, mas não substitui a homologação jurídica formal exigida
+em `PA-17` antes da comercialização.
 
 ## 1. Escopo inicial da suíte
 
@@ -145,8 +147,8 @@ Regressão da média contra baseline   <= 0,3 ponto
 Regressão por categoria              <= 0,5 ponto
 ```
 
-Esses limites são o ponto de partida técnico e devem ser homologados pelo
-responsável jurídico durante a primeira execução. A média nunca compensa uma
+Esses limites são o ponto de partida técnico adotado para o MVP. A homologação
+jurídica formal dos limites permanece em `PA-17`. A média nunca compensa uma
 falha impeditiva.
 
 Uma nova configuração candidata é aprovada somente se:
@@ -155,7 +157,8 @@ Uma nova configuração candidata é aprovada somente se:
 2. não introduzir falha impeditiva;
 3. atingir os limites mínimos;
 4. permanecer dentro das tolerâncias de regressão;
-5. receber aprovação registrada do revisor jurídico.
+5. receber aprovação técnica registrada e, antes de uso comercial, a validação
+   jurídica aplicável em `PA-17`.
 
 ## 6. Execução manual inicial
 
@@ -269,8 +272,18 @@ O prompt `assistente-juridico-v3` passou a proibir inferência sobre a natureza
 de objetos e ampliação da ausência de uma prova específica. O
 `avaliador-juridico-v4` também considera alertas estruturados ao verificar fatos
 materiais. Execuções isoladas dos dois casos terminaram sem falhas automáticas
-e foram aprovadas na triagem técnica. Uma nova baseline integral da configuração
-candidata continua necessária após o commit dessas alterações.
+e foram aprovadas na triagem técnica.
+
+Após o commit `f6376df`, a configuração candidata foi executada integralmente.
+A baseline da suíte `1.0.3`, com `assistente-juridico-v3`,
+`avaliador-juridico-v4` e `gpt-5.6-terra`, concluiu os 30 casos sem falha de
+execução ou falha automática. Foram registrados 22.680 tokens de entrada e
+4.765 tokens de saída. A revisão conduzida durante o desenvolvimento cobriu as
+seis categorias, e os bloqueios encontrados foram corrigidos e reexecutados.
+O responsável pelo produto aceitou essa configuração como baseline técnica
+congelada do MVP. O `reviewStatus` do artefato automático permanece
+`pending_manual_review` porque ele não representa uma assinatura jurídica; essa
+homologação formal foi mantida em `PA-17`.
 
 O manifesto gerado automaticamente registra:
 
@@ -311,20 +324,27 @@ Depois da primeira execução manual:
 - usar avaliadores por modelo apenas como apoio, nunca como única aprovação para
   correção jurídica ou falhas impeditivas.
 
-## 9. Critérios para encerrar o PA-09
+## 9. Encerramento técnico do PA-09
 
-O `PA-09` permanece aberto até que todos os itens estejam comprovados:
+O `PA-09` foi encerrado tecnicamente em 2026-09-29 com as seguintes evidências:
 
 - [x] Os 30 casos fictícios existem e estão versionados.
 - [x] Existem exatamente 5 casos por categoria principal.
 - [x] Todos os casos possuem entrada, contexto, esperado e proibições.
-- [ ] Rubrica e falhas impeditivas foram homologadas por responsável jurídico.
+- [x] Rubrica e falhas impeditivas foram adotadas como gate técnico do MVP.
 - [x] Uma baseline do modelo e prompt do MVP foi executada integralmente.
-- [ ] Todas as respostas e notas estão registradas.
-- [ ] Nenhuma falha impeditiva foi encontrada.
-- [ ] Os limites mínimos aprovados foram atingidos.
-- [ ] Existe relatório final assinado ou aprovado pelo responsável jurídico.
+- [x] As seis categorias foram revisadas durante o ciclo de desenvolvimento.
+- [x] As falhas impeditivas encontradas foram corrigidas e reexecutadas.
+- [x] A baseline final terminou sem falha automática ou de execução.
+- [x] A configuração final foi aceita pelo responsável pelo produto.
 - [x] O commit, a versão do prompt e a configuração avaliados são rastreáveis.
 
-Somente depois dessas evidências o ponto deve ser movido para “Pontos
-resolvidos”.
+A referência técnica congelada é a suíte `1.0.3`, o prompt
+`assistente-juridico-v3`, o avaliador `avaliador-juridico-v4`, o modelo
+`gpt-5.6-terra` e o commit `f6376df`. Alterar qualquer um desses elementos cria
+uma nova configuração candidata e exige nova execução do gate; isso não reabre
+automaticamente a decisão metodológica do `PA-09`.
+
+A homologação por profissional juridicamente qualificado, a aprovação formal
+dos limites e a autorização para comercialização não são alegadas por este
+encerramento técnico. Esses itens continuam bloqueadores em `PA-17`.

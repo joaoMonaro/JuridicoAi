@@ -101,12 +101,16 @@ entradas são fictícias. Isso evita versionar por engano uma resposta que tenha
 introduzido dado externo. Chaves e variáveis de ambiente nunca são gravadas.
 
 O comando `validate` e os testes automatizados comprovam a estrutura da suíte,
-mas não avaliam a qualidade jurídica das respostas. O `PA-09` só pode ser
-encerrado após uma execução real integral e a revisão descrita abaixo.
+mas não avaliam sozinhos a qualidade jurídica das respostas. O `PA-09` foi
+encerrado tecnicamente após execução integral, revisão das seis categorias,
+correção dos bloqueios encontrados e aceitação da configuração congelada pelo
+responsável pelo produto. A homologação jurídica formal continua em `PA-17`.
 
 ## Aprovação
 
-A automação detecta somente sinais objetivos. Um profissional juridicamente
-qualificado deve preencher a rubrica, registrar falhas impeditivas e aprovar ou
-reprovar a configuração. Consulte [rubric.md](rubric.md) e o
+A automação detecta somente sinais objetivos. A revisão técnica deve preencher
+a rubrica, registrar falhas impeditivas e aprovar ou reprovar cada nova
+configuração. Antes da comercialização, um profissional juridicamente
+qualificado ainda deve homologar os critérios e a qualidade conforme `PA-17`.
+Consulte [rubric.md](rubric.md) e o
 [Tópico 9](../../implementacoes/features/assistente-ia/topico-09-avaliacao-qualidade-juridica.md).
