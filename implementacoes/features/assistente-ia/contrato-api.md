@@ -155,6 +155,7 @@ branco.
 ### `solicitacao.iniciada`
 
 ```text
+id: 9bdfaf6b-6c57-43ef-86ee-65b614dc9051:1
 event: solicitacao.iniciada
 data: {"solicitacaoId":"9bdfaf6b-6c57-43ef-86ee-65b614dc9051","clientRequestId":"f79cd150-fca4-491e-9018-7f3a7f177af4","correlationId":"15e86af9-a82f-4890-a1d4-99c7d81e0d71"}
 ```
@@ -165,6 +166,7 @@ Pode ocorrer várias vezes. Serve apenas para apresentação progressiva; o text
 canônico é o evento final.
 
 ```text
+id: 9bdfaf6b-6c57-43ef-86ee-65b614dc9051:2
 event: conteudo.delta
 data: {"delta":"A tutela de urgência é cabível quando "}
 ```
@@ -172,6 +174,7 @@ data: {"delta":"A tutela de urgência é cabível quando "}
 ### `solicitacao.concluida`
 
 ```text
+id: 9bdfaf6b-6c57-43ef-86ee-65b614dc9051:3
 event: solicitacao.concluida
 data: {"sugestao":{"id":"0c31dd95-fcc7-44b4-ab86-28f04fe6dd90","modo":"Redigir","operacaoSugerida":"InserirNoCursor","titulo":"Da tutela de urgência","texto":"Diante da probabilidade do direito...","resumo":"Estrutura os requisitos e relaciona o bloqueio ao perigo de dano.","alertas":[{"codigo":"REFERENCIA_NAO_VERIFICADA","mensagem":"Confirme os dispositivos legais antes do protocolo."}],"ancora":{"from":null,"to":null,"posicao":312,"revisaoEditor":18,"textoOriginal":null}},"uso":{"entradaTokens":1420,"saidaTokens":380},"modelo":"configurado-no-servidor"}
 ```
@@ -213,6 +216,7 @@ escopos explicitamente escolhidos. Um achado nunca é inserido automaticamente.
 Depois que o stream começou, erros são enviados no próprio stream:
 
 ```text
+id: 9bdfaf6b-6c57-43ef-86ee-65b614dc9051:2
 event: solicitacao.falhou
 data: {"code":"AI_PROVIDER_TIMEOUT","message":"A IA demorou mais que o esperado. Tente novamente.","retryable":true,"requestId":"00-a1b2"}
 ```
@@ -220,13 +224,26 @@ data: {"code":"AI_PROVIDER_TIMEOUT","message":"A IA demorou mais que o esperado.
 O stream termina após `solicitacao.concluida`, `solicitacao.falhou` ou
 cancelamento da conexão. O frontend ignora qualquer sugestão sem evento final.
 
-Para fechar o `PA-12`, cada evento deverá receber ID ou sequência monotônica
-estável dentro da solicitação. O frontend ignorará repetições da mesma sequência
-e qualquer evento posterior ao primeiro terminal. Comparar o texto do delta não
-é uma estratégia válida de deduplicação. O marcador `[DONE]`, se recebido, é
-ignorado para compatibilidade e não substitui `solicitacao.concluida` ou
-`solicitacao.falhou`. Essa evolução ainda não está implementada; consulte o
-[Tópico 12 — Testes e acessibilidade](./topico-12-testes-acessibilidade.md).
+Todos os eventos do produto possuem o campo SSE padrão `id` no formato:
+
+```text
+<solicitacaoId>:<sequencia>
+```
+
+A sequência começa em `1` no evento `solicitacao.iniciada` e cresce sem lacunas.
+Se não houver delta, o terminal recebe a sequência `2`. O frontend:
+
+- ignora retransmissões da mesma sequência e eventos antigos já superados;
+- aceita texto idêntico em sequências diferentes, pois pode ser repetição
+  legítima do conteúdo;
+- rejeita ausência de ID, lacuna de sequência ou mistura de IDs de solicitação
+  como `AI_STREAM_INVALID`;
+- ignora qualquer evento posterior ao primeiro terminal.
+
+Comparar somente o texto do delta não é uma estratégia válida de deduplicação.
+O marcador `[DONE]`, se recebido, é ignorado para compatibilidade e não
+substitui `solicitacao.concluida` ou `solicitacao.falhou`. Reconexão automática
+e retomada por `Last-Event-ID` permanecem fora do MVP.
 
 ## Operações
 

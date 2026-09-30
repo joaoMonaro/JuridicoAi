@@ -220,6 +220,37 @@ public sealed class AssistenteIaHttpSecurityTests
     }
 
     [Fact]
+    public async Task Http_StreamPublicaIdsMonotonicosPorSolicitacao()
+    {
+        await using var api = await TestApi.CreateAsync();
+        var organizationId = Guid.NewGuid();
+        var caso = CreateCaso(organizationId, "Caso A");
+        var peca = CreatePeca(caso.Id, organizationId, "Peça A");
+        api.Repository.Casos.Add(caso);
+        api.Repository.Pecas.Add(peca);
+        using var client = api.CreateClient(organizationId);
+
+        var response = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadAsStringAsync();
+        var ids = body.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith("id: ", StringComparison.Ordinal))
+            .Select(line => line[4..])
+            .ToArray();
+
+        Assert.Equal(3, ids.Length);
+        var solicitationIds = ids.Select(id => id[..id.LastIndexOf(':')]).Distinct().ToArray();
+        Assert.Single(solicitationIds);
+        Assert.True(Guid.TryParse(solicitationIds[0], out _));
+        Assert.Equal(
+            new[] { 1, 2, 3 },
+            ids.Select(id => int.Parse(id[(id.LastIndexOf(':') + 1)..])).ToArray());
+    }
+
+    [Fact]
     public async Task Http_PayloadExcessivoRetorna413AntesDoController()
     {
         await using var api = await TestApi.CreateAsync(settings => settings.MaxRequestBodyBytes = 100);
@@ -404,6 +435,16 @@ public sealed class AssistenteIaHttpSecurityTests
         var failureStream = await timedOut.Content.ReadAsStringAsync();
         Assert.Contains("event: solicitacao.falhou", failureStream, StringComparison.Ordinal);
         Assert.Contains("AI_PROVIDER_TIMEOUT", failureStream, StringComparison.Ordinal);
+        var failureIds = failureStream.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith("id: ", StringComparison.Ordinal))
+            .Select(line => line[4..])
+            .ToArray();
+        Assert.Equal(2, failureIds.Length);
+        Assert.Equal(
+            failureIds[0][..failureIds[0].LastIndexOf(':')],
+            failureIds[1][..failureIds[1].LastIndexOf(':')]);
+        Assert.EndsWith(":1", failureIds[0], StringComparison.Ordinal);
+        Assert.EndsWith(":2", failureIds[1], StringComparison.Ordinal);
 
         api.Provider.BlockGeneration = false;
         var retry = await client.PostAsync(

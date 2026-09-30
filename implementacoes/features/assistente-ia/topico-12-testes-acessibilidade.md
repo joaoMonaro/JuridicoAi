@@ -85,10 +85,10 @@ eventos resulta em stream incompleto.
 ### Deduplicação
 
 Não é seguro deduplicar deltas comparando apenas o texto, pois repetições podem
-ser conteúdo legítimo. Antes de considerar esse cenário entregue, o contrato
-SSE deve fornecer identidade estável ou sequência monotônica por evento. O
-frontend mantém as sequências já processadas e ignora repetição da mesma
-solicitação.
+ser conteúdo legítimo. O contrato usa o campo SSE `id` no formato
+`<solicitacaoId>:<sequencia>`. O frontend ignora uma sequência repetida ou antiga,
+aceita textos iguais em sequências diferentes e rejeita lacunas, ausência de ID
+ou troca de solicitação como protocolo inválido.
 
 Reconexão automática e retomada por `Last-Event-ID` ficam fora do MVP. Mesmo sem
 reconexão, eventos terminais repetidos não podem executar callbacks ou alterar
@@ -293,10 +293,11 @@ Entregas iniciais concluídas no frontend:
   por papel e nome acessível, interação real com user-event e matchers de DOM;
 - parser SSE extraído do cliente HTTP para `sse-parser.ts`, separando leitura
   incremental, interpretação do protocolo e despacho dos eventos do assistente;
-- onze testes do stream cobrem evento completo, múltiplos eventos, fragmentação
+- quinze testes do stream cobrem evento completo, múltiplos eventos, fragmentação
   byte a byte, UTF-8 dividido, `LF`, `CRLF`, múltiplas linhas `data:`, evento
   desconhecido, falha tipada, cancelamento, `[DONE]`, JSON inválido, terminal
-  duplicado e encerramento no meio;
+  duplicado, delta duplicado, repetição textual legítima, sequência antiga,
+  lacuna, mistura de solicitação, ausência de ID e encerramento no meio;
 - encerramento sem `solicitacao.concluida` ou `solicitacao.falhou` retorna
   `AI_STREAM_INCOMPLETE`, e um evento parcial nunca se torna sugestão aplicável;
 - dezoito testes com uma instância real do TipTap cobrem cursor, seleção,
@@ -357,22 +358,21 @@ Entregas iniciais concluídas no frontend:
   foram registradas no
   [checklist manual de acessibilidade](checklist-manual-acessibilidade.md);
 - `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
-- teste, lint e build executados com sucesso: `52/52` testes Vitest e `22/22`
-  testes Playwright aprovados; o E2E crítico principal, os cinco cenários de
-  resiliência, os seis scans de acessibilidade e os cinco fluxos de teclado
-  e os cinco fluxos de integridade passaram em três execuções consecutivas.
+- teste, lint e build executados com sucesso: `56/56` testes Vitest, `104/104`
+  testes do backend e `22/22` testes Playwright aprovados; o E2E crítico
+  principal, os cinco cenários de resiliência, os seis scans de acessibilidade,
+  os cinco fluxos de teclado e os cinco fluxos de integridade passaram em três
+  execuções consecutivas.
 
 Continuam pendentes nesta infraestrutura: scan do estado de confirmação de
 contexto e execução do checklist manual de teclado físico, foco visual,
-contraste e leitor de tela. A deduplicação de delta também permanece pendente
-porque o contrato atual ainda não fornece ID ou sequência por evento; comparar
-somente o texto poderia remover uma repetição jurídica legítima.
+contraste e leitor de tela.
 
 ## 11. Critérios para encerrar o PA-12
 
 - [x] Vitest, React Testing Library, Playwright e axe-core estão configurados.
 - [x] Existe comando único e não interativo para a suíte de CI.
-- [ ] Todos os cenários SSE obrigatórios existem e passam.
+- [x] Todos os cenários SSE obrigatórios existem e passam.
 - [x] TipTap possui testes de seleção, âncora, aplicação, undo, redo e transação
       única.
 - [x] O fluxo E2E principal comprova aplicação, autosave e persistência após

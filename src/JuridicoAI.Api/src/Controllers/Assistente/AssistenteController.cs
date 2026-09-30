@@ -26,6 +26,7 @@ public sealed class AssistenteController(
         CancellationToken cancellationToken)
     {
         var execution = await service.PrepararAsync(pecaId, request, cancellationToken);
+        var sequence = 0;
         try
         {
             Response.StatusCode = StatusCodes.Status200OK;
@@ -38,13 +39,25 @@ public sealed class AssistenteController(
                     execution.SolicitacaoId,
                     execution.ClientRequestId,
                     execution.CorrelationId),
+                execution.SolicitacaoId,
+                ++sequence,
                 cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
 
             var result = await service.GerarAsync(execution, cancellationToken);
             if (!string.IsNullOrEmpty(result.Sugestao.Texto))
-                await WriteEventAsync("conteudo.delta", new { delta = result.Sugestao.Texto }, cancellationToken);
-            await WriteEventAsync("solicitacao.concluida", result, cancellationToken);
+                await WriteEventAsync(
+                    "conteudo.delta",
+                    new { delta = result.Sugestao.Texto },
+                    execution.SolicitacaoId,
+                    ++sequence,
+                    cancellationToken);
+            await WriteEventAsync(
+                "solicitacao.concluida",
+                result,
+                execution.SolicitacaoId,
+                ++sequence,
+                cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -62,7 +75,13 @@ public sealed class AssistenteController(
                 execution.PecaId,
                 ex.Code,
                 ex.Retryable);
-            await WriteFailureAsync(ex.Code, ex.Message, ex.Retryable, cancellationToken);
+            await WriteFailureAsync(
+                ex.Code,
+                ex.Message,
+                ex.Retryable,
+                execution.SolicitacaoId,
+                ++sequence,
+                cancellationToken);
         }
         catch (Exception)
         {
@@ -74,6 +93,8 @@ public sealed class AssistenteController(
                 "AI_PROVIDER_ERROR",
                 "Não foi possível concluir a solicitação de IA.",
                 retryable: true,
+                execution.SolicitacaoId,
+                ++sequence,
                 cancellationToken);
         }
         finally
@@ -86,20 +107,31 @@ public sealed class AssistenteController(
         string code,
         string message,
         bool retryable,
+        Guid solicitacaoId,
+        int sequence,
         CancellationToken cancellationToken)
     {
         if (cancellationToken.IsCancellationRequested) return;
         await WriteEventAsync(
             "solicitacao.falhou",
             new AssistenteSolicitacaoFalhouDto(code, message, retryable, HttpContext.TraceIdentifier),
+            solicitacaoId,
+            sequence,
             cancellationToken);
         await Response.Body.FlushAsync(cancellationToken);
     }
 
-    private async Task WriteEventAsync(string eventName, object data, CancellationToken cancellationToken)
+    private async Task WriteEventAsync(
+        string eventName,
+        object data,
+        Guid solicitacaoId,
+        int sequence,
+        CancellationToken cancellationToken)
     {
         var json = JsonSerializer.Serialize(data, JsonOptions);
-        await Response.WriteAsync($"event: {eventName}\ndata: {json}\n\n", cancellationToken);
+        await Response.WriteAsync(
+            $"id: {solicitacaoId:D}:{sequence}\nevent: {eventName}\ndata: {json}\n\n",
+            cancellationToken);
     }
 
     private static JsonSerializerOptions CreateJsonOptions()

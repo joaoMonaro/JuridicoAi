@@ -224,6 +224,8 @@ JSON. O parser deve:
 - processar múltiplos eventos em um mesmo chunk;
 - ignorar comentários/keep-alive;
 - validar `event` e JSON antes de atualizar estado;
+- validar o `id` `<solicitacaoId>:<sequencia>`, ignorar sequências repetidas ou
+  antigas e rejeitar lacunas ou mistura de solicitações;
 - considerar apenas `solicitacao.concluida` como resultado aplicável;
 - mapear `ProblemDetails` quando a resposta nem chegar a iniciar o SSE;
 - abortar por `AbortController` ao cancelar ou trocar de Peça.
