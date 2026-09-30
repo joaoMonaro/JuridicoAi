@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** não iniciada
+> **Estado da implementação:** iniciada — infraestrutura unitária e de componentes configurada
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -275,6 +275,27 @@ No momento da decisão:
 - os eventos não possuem ID/sequência para deduplicar deltas.
 
 Portanto, nenhuma caixa de entrega pode ser marcada apenas com base neste plano.
+
+### Situação atual — 2026-09-30
+
+Primeira entrega concluída no frontend:
+
+- Vitest `5`, jsdom `29`, React Testing Library, jest-dom e user-event
+  instalados como dependências de desenvolvimento;
+- configuração isolada em `vitest.config.ts`, com ambiente jsdom, alias `@`,
+  limpeza de mocks e setup comum;
+- `src/test/setup.ts` registra os matchers de DOM e limpa a renderização após
+  cada teste;
+- scripts `test`, `test:run` e `test:ci` disponíveis; nesta etapa,
+  `test:ci` executa somente a suíte Vitest e será ampliado quando o Playwright
+  for configurado;
+- teste inicial do componente `Button` comprova renderização React, consulta
+  por papel e nome acessível, interação real com user-event e matchers de DOM;
+- teste, lint e build executados com sucesso: `1/1` teste aprovado.
+
+Continuam pendentes nesta infraestrutura: Playwright, axe-core e os projetos
+específicos de E2E e acessibilidade. A cobertura funcional começa na próxima
+entrega pela extração e teste do parser SSE.
 
 ## 11. Critérios para encerrar o PA-12
 
