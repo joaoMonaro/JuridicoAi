@@ -278,7 +278,7 @@ Portanto, nenhuma caixa de entrega pode ser marcada apenas com base neste plano.
 
 ### Situação atual — 2026-09-30
 
-Primeira entrega concluída no frontend:
+Entregas iniciais concluídas no frontend:
 
 - Vitest `5`, jsdom `29`, React Testing Library, jest-dom e user-event
   instalados como dependências de desenvolvimento;
@@ -299,7 +299,26 @@ Primeira entrega concluída no frontend:
   duplicado e encerramento no meio;
 - encerramento sem `solicitacao.concluida` ou `solicitacao.falhou` retorna
   `AI_STREAM_INCOMPLETE`, e um evento parcial nunca se torna sugestão aplicável;
-- teste, lint e build executados com sucesso: `12/12` testes aprovados; a
+- dezoito testes com uma instância real do TipTap cobrem cursor, seleção,
+  seção atual, documento completo determinístico, revisão e validade da âncora,
+  limites de posição, substituição, inserção, texto literal sem interpretação
+  de HTML, transação única, undo e redo;
+- aplicação da sugestão agora também valida âncora, revisão e estado de
+  sincronização dentro da própria função de edição, e não apenas no botão do
+  painel;
+- `SALVANDO`, `NAO_SALVO`, `ERRO` e `CONFLITO` bloqueiam aplicação sem criar
+  transação; `SALVO` permite quando as demais condições forem válidas;
+- o painel informa o motivo do bloqueio para todos os estados não sincronizados,
+  corrigindo a implementação anterior que verificava apenas `CONFLITO`;
+- quatorze testes de componente com React Testing Library cobrem abertura e
+  fechamento, validação, envio com e sem seleção, contexto compartilhado,
+  streaming, conclusão, falha, cancelamento, edição e aplicação explícita,
+  cópia, regeneração, rejeição, âncora expirada e bloqueios do autosave;
+- instrução e contexto adicional permanecem preenchidos após erro recuperável,
+  e alertas da sugestão continuam visíveis para revisão humana;
+- a região viva anuncia somente o estado da geração, sem anunciar cada delta,
+  e a conclusão é comunicada uma única vez por `role="status"`;
+- teste, lint e build executados com sucesso: `44/44` testes aprovados; a
   suíte final passou em três execuções consecutivas.
 
 Continuam pendentes nesta infraestrutura: Playwright, axe-core e os projetos
@@ -312,7 +331,7 @@ comparar somente o texto poderia remover uma repetição jurídica legítima.
 - [ ] Vitest, React Testing Library, Playwright e axe-core estão configurados.
 - [ ] Existe comando único e não interativo para a suíte de CI.
 - [ ] Todos os cenários SSE obrigatórios existem e passam.
-- [ ] TipTap possui testes de seleção, âncora, aplicação, undo, redo e transação
+- [x] TipTap possui testes de seleção, âncora, aplicação, undo, redo e transação
       única.
 - [ ] O fluxo E2E principal comprova aplicação, autosave e persistência após
       reload.
