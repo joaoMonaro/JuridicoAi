@@ -321,10 +321,10 @@ Entregas iniciais concluídas no frontend:
 - Playwright configurado inicialmente para Chromium, com trace, screenshot e
   vídeo preservados somente em falha e diretórios de artefatos ignorados pelo
   Git;
-- servidor HTTP fake local fornece Caso, Peça, capacidades, SSE fragmentado e
-  persistência em memória, sem chamar backend externo ou OpenAI; cenários
-  configuráveis simulam resposta lenta, erro `503`, falha de autosave e
-  conflito `409`;
+- servidor HTTP fake local fornece Caso, duas Peças, respostas por operação,
+  capacidades, SSE fragmentado e persistência em memória, sem chamar backend
+  externo ou OpenAI; cenários configuráveis simulam resposta lenta, erro `503`,
+  falha de autosave e conflito `409`;
 - o E2E principal abre a Peça, seleciona texto, recebe o stream fragmentado,
   revisa e aplica a sugestão, observa o `PATCH` do autosave e confirma a
   persistência após reload;
@@ -347,21 +347,26 @@ Entregas iniciais concluídas no frontend:
 - o painel agora aguarda as capacidades carregarem antes de focar o campo de
   instrução; atalhos repetidos são ignorados e o rótulo mostra `Ctrl` ou `Cmd`
   conforme a plataforma;
+- cinco E2E de integridade completam a seção 6: pergunta sem seleção não altera
+  a Peça, troca de Peça aborta o stream, sugestão não é aplicada duas vezes,
+  undo/redo geram um único autosave e uma única nova versão, e reload com
+  alteração não salva apresenta o aviso nativo antes do descarte;
+- o editor registra proteção `beforeunload` enquanto estiver em `NAO_SALVO`,
+  `SALVANDO`, `ERRO` ou `CONFLITO`, removendo-a quando retorna a `SALVO`;
 - as verificações que exigem hardware, sistema e tecnologia assistiva reais
   foram registradas no
   [checklist manual de acessibilidade](checklist-manual-acessibilidade.md);
 - `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
-- teste, lint e build executados com sucesso: `52/52` testes Vitest e `17/17`
+- teste, lint e build executados com sucesso: `52/52` testes Vitest e `22/22`
   testes Playwright aprovados; o E2E crítico principal, os cinco cenários de
   resiliência, os seis scans de acessibilidade e os cinco fluxos de teclado
-  passaram em três execuções consecutivas.
+  e os cinco fluxos de integridade passaram em três execuções consecutivas.
 
-Continuam pendentes nesta infraestrutura: os demais cenários E2E listados na
-seção 6, scan do estado de confirmação de contexto e execução do checklist
-manual de teclado físico, foco visual, contraste e leitor de tela. A
-deduplicação de delta também permanece pendente porque o contrato atual ainda
-não fornece ID ou sequência por evento; comparar somente o texto poderia
-remover uma repetição jurídica legítima.
+Continuam pendentes nesta infraestrutura: scan do estado de confirmação de
+contexto e execução do checklist manual de teclado físico, foco visual,
+contraste e leitor de tela. A deduplicação de delta também permanece pendente
+porque o contrato atual ainda não fornece ID ou sequência por evento; comparar
+somente o texto poderia remover uma repetição jurídica legítima.
 
 ## 11. Critérios para encerrar o PA-12
 
