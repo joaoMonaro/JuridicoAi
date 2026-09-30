@@ -291,11 +291,21 @@ Primeira entrega concluída no frontend:
   for configurado;
 - teste inicial do componente `Button` comprova renderização React, consulta
   por papel e nome acessível, interação real com user-event e matchers de DOM;
-- teste, lint e build executados com sucesso: `1/1` teste aprovado.
+- parser SSE extraído do cliente HTTP para `sse-parser.ts`, separando leitura
+  incremental, interpretação do protocolo e despacho dos eventos do assistente;
+- onze testes do stream cobrem evento completo, múltiplos eventos, fragmentação
+  byte a byte, UTF-8 dividido, `LF`, `CRLF`, múltiplas linhas `data:`, evento
+  desconhecido, falha tipada, cancelamento, `[DONE]`, JSON inválido, terminal
+  duplicado e encerramento no meio;
+- encerramento sem `solicitacao.concluida` ou `solicitacao.falhou` retorna
+  `AI_STREAM_INCOMPLETE`, e um evento parcial nunca se torna sugestão aplicável;
+- teste, lint e build executados com sucesso: `12/12` testes aprovados; a
+  suíte final passou em três execuções consecutivas.
 
 Continuam pendentes nesta infraestrutura: Playwright, axe-core e os projetos
-específicos de E2E e acessibilidade. A cobertura funcional começa na próxima
-entrega pela extração e teste do parser SSE.
+específicos de E2E e acessibilidade. A deduplicação de delta também permanece
+pendente porque o contrato atual ainda não fornece ID ou sequência por evento;
+comparar somente o texto poderia remover uma repetição jurídica legítima.
 
 ## 11. Critérios para encerrar o PA-12
 
