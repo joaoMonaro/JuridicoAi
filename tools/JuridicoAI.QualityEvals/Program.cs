@@ -20,7 +20,11 @@ if (validationErrors.Count > 0)
 
 if (command == "validate")
 {
-    Console.WriteLine($"Suíte {suite.Definition.SuiteVersion} válida: {suite.Cases.Count} casos, 5 por categoria.");
+    var distribution = string.Join(", ", suite.Cases
+        .GroupBy(x => x.Category)
+        .OrderBy(x => x.Key)
+        .Select(x => $"{x.Key}={x.Count()}"));
+    Console.WriteLine($"Suíte {suite.Definition.SuiteVersion} válida: {suite.Cases.Count} casos ({distribution}).");
     return 0;
 }
 

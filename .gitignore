@@ -47,6 +47,8 @@ src/JuridicoAI.Api/data/
 # AI quality evaluation runs (review before explicitly versioning a baseline)
 avaliacoes/qualidade-juridica/execucoes/*
 !avaliacoes/qualidade-juridica/execucoes/.gitkeep
+avaliacoes/seguranca-ia/execucoes/*
+!avaliacoes/seguranca-ia/execucoes/.gitkeep
 
 #ARQUIVOS TESTE
 resultado-tjsp.json

@@ -247,24 +247,37 @@ Já existe:
 - caso `FONTES-005` de prompt injection executado na baseline técnica `1.0.3`;
 - teste comprovando que a rejeição por tokens libera a vaga de concorrência e
   permite reutilizar o `clientRequestId`;
-- oito testes HTTP sobre a aplicação ASP.NET real cobrindo autenticação,
+- doze testes HTTP sobre a aplicação ASP.NET real cobrindo autenticação,
   isolamento de Caso, Peça, Contexto, Documento, arquivo e assistente, erros
-  413/429, `Retry-After`, timeout SSE, desconexão do cliente e ausência de
-  segredo em resposta e log;
+  413/429, `Retry-After`, limites de contexto e upload, saída inválida, timeout
+  SSE, desconexão do cliente e ausência de segredo em resposta e log;
+- cobertura HTTP de envolvidos, endereços, listagens e contexto completo em
+  tentativa de acesso cruzado;
+- matriz automatizada com seis classes de prompt injection comprovando a
+  separação entre instruções, dados não confiáveis e operação permitida;
+- suíte real `seguranca-ia` `1.0.0` executada com seis ataques no
+  `gpt-5.6-terra` e `assistente-juridico-v3`, sem falha automática, mudança de
+  operação, marcador proibido ou alegação indevida de acesso externo, e
+  aprovada tecnicamente pelo responsável pelo produto em 2026-09-30;
 - erros anteriores ao stream preservando `application/problem+json`;
-- 90 testes automatizados aprovados após esta etapa do PA-11.
+- 103 testes automatizados aprovados após esta etapa do PA-11.
 
 Ainda falta implementar ou comprovar:
 
 - coordenação distribuída dos limitadores antes de executar mais de uma
   instância da API;
 - cobertura das entidades futuras de conversa, mensagem e sugestão;
-- ampliar os testes HTTP para envolvidos, endereços, listagens e entidades
-  futuras de conversa, mensagem e sugestão;
-- ampliação dos testes de prompt injection para todas as tentativas da seção 9;
-- inspeção de logs de infraestrutura, proxy e APM e dos cenários HTTP ainda não
-  cobertos;
-- validação da configuração de proxy, APM e produção.
+- adicionar cobertura HTTP quando forem criadas as entidades futuras de
+  conversa, mensagem e sugestão;
+- executar no ambiente do piloto a inspeção de logs de infraestrutura, proxy,
+  hospedagem e APM com os marcadores sintéticos previstos no
+  [roteiro de segurança operacional](seguranca-operacional-producao.md);
+- validar o produto e a configuração reais de proxy e APM, que ainda não
+  existem neste repositório.
+
+A configuração `appsettings.Production.json` da própria API foi revisada para
+reduzir logs automáticos de request, HTTP e comandos SQL. Isso não substitui a
+homologação dos componentes externos descrita no roteiro.
 
 ## 8. Plano de implementação
 
@@ -324,12 +337,12 @@ Ainda falta implementar ou comprovar:
 ## 10. Critérios para encerrar o PA-11
 
 - [ ] Todos os recursos atuais e planejados possuem escopo de tenant explícito.
-- [ ] Testes com duas Organizations comprovam ausência de leitura e escrita
+- [x] Testes com duas Organizations comprovam ausência de leitura e escrita
       cruzadas.
-- [ ] Casos de prompt injection foram executados e aprovados.
+- [x] Casos de prompt injection foram executados e aprovados tecnicamente.
 - [ ] Logs de todos os cenários foram inspecionados sem conteúdo proibido.
 - [x] Limites de usuário e Organization estão implementados e configuráveis.
-- [ ] Limites de payload, upload, tokens e timeout estão ativos e testados.
+- [x] Limites de payload, upload, tokens e timeout estão ativos e testados.
 - [x] Cancelamento e falha liberam vagas de concorrência.
 - [ ] Proxy, APM e configuração de produção foram revisados.
 - [ ] As evidências estão registradas e aprovadas antes do piloto.

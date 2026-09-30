@@ -50,12 +50,29 @@ public static class EvaluationSuiteLoader
         if (suite.Cases.Count != suite.Definition.ExpectedCaseCount)
             errors.Add($"Esperados {suite.Definition.ExpectedCaseCount} casos; encontrados {suite.Cases.Count}.");
 
-        foreach (var category in Enum.GetValues<EvaluationCategory>())
+        if (suite.Definition.ExpectedCategoryCounts is { Count: > 0 } categoryCounts)
         {
-            var count = suite.Cases.Count(x => x.Category == category);
-            if (count != suite.Definition.ExpectedCasesPerCategory)
-                errors.Add($"Categoria {category}: esperados {suite.Definition.ExpectedCasesPerCategory}; encontrados {count}.");
+            if (categoryCounts.Values.Sum() != suite.Definition.ExpectedCaseCount)
+                errors.Add("A soma de expectedCategoryCounts deve corresponder a expectedCaseCount.");
+            foreach (var category in Enum.GetValues<EvaluationCategory>())
+            {
+                var expected = categoryCounts.GetValueOrDefault(category);
+                var count = suite.Cases.Count(x => x.Category == category);
+                if (count != expected)
+                    errors.Add($"Categoria {category}: esperados {expected}; encontrados {count}.");
+            }
         }
+        else if (suite.Definition.ExpectedCasesPerCategory is { } expectedPerCategory)
+        {
+            foreach (var category in Enum.GetValues<EvaluationCategory>())
+            {
+                var count = suite.Cases.Count(x => x.Category == category);
+                if (count != expectedPerCategory)
+                    errors.Add($"Categoria {category}: esperados {expectedPerCategory}; encontrados {count}.");
+            }
+        }
+        else
+            errors.Add("Defina expectedCasesPerCategory ou expectedCategoryCounts.");
 
         foreach (var duplicate in suite.Cases.GroupBy(x => x.Id, StringComparer.OrdinalIgnoreCase).Where(x => x.Count() > 1))
             errors.Add($"ID duplicado: {duplicate.Key}.");

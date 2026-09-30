@@ -19,6 +19,7 @@
 >
 > Planos ainda abertos:
 > [Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md),
+> [roteiro de segurança operacional](seguranca-operacional-producao.md),
 > [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md),
 > [Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md)
 > e [Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md)
@@ -261,7 +262,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 ### F3 — endurecimento e lançamento
 
 - [x] Revisar e aceitar tecnicamente a baseline atual da suíte do Tópico 9.
-- [ ] Testes de isolamento, prompt injection e vazamento em logs.
+- [x] Testes de isolamento, prompt injection e vazamento em logs na aplicação.
+- [x] Aprovar manualmente a execução real da suíte `seguranca-ia` `1.0.0`.
 - [ ] Implementar e comprovar o gate de segurança do Tópico 11.
 - [ ] Limites por usuário/Organization e orçamento operacional.
 - [ ] Política de retenção/exclusão implementada e documentada.

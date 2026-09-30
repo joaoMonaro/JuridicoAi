@@ -110,15 +110,16 @@ Foram aprovados:
 
 Ainda precisam de evidência específica:
 
-- ampliar o caso real `FONTES-005` e o teste de separação de prompt para as
-  demais tentativas de prompt injection previstas;
-- ampliar a cobertura HTTP de acesso cruzado para envolvidos, endereços,
-  listagens e entidades futuras; a suíte HTTP já cobre Caso, Peça, Contexto,
-  Documento, arquivo e assistente, sem leitura do arquivo físico alheio;
+- a suíte real `seguranca-ia` `1.0.0` foi aprovada tecnicamente em 2026-09-30,
+  sem falhas automáticas nos seis casos; novas versões de modelo, prompt ou
+  suíte exigem nova execução e aprovação;
+- adicionar cobertura HTTP quando forem criadas conversa, mensagem e sugestão;
+  os recursos atuais, inclusive envolvidos, endereços e listagens, já possuem
+  cenários de acesso cruzado;
 - inspeção de logs e telemetria de infraestrutura para conteúdo, CPF/CNPJ, JWT
   e API keys; logs automáticos do cliente OpenAI foram desabilitados e os
   caminhos de erro da aplicação já possuem testes com marcadores sensíveis;
-- respostas inválidas do modelo em nível HTTP; payload e tokens excessivos,
+- payload, tokens, contexto e upload excessivos, resposta inválida do modelo,
   timeout, desconexão, quatro limitadores, `Retry-After` e liberação da lease
   possuem cobertura automatizada;
 - coordenação distribuída dos limitadores antes de múltiplas instâncias;

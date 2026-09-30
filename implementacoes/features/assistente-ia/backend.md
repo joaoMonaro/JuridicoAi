@@ -41,7 +41,13 @@ Em 2026-09-27, estão disponíveis:
 - logs técnicos sem prompt, resposta ou PII, inclusive nos caminhos de erro da
   IA; o logging automático do `HttpClient` do provider fica desabilitado;
 - testes do serviço de aplicação, do contrato HTTP com o provider e da API
-  ASP.NET real para isolamento, limites, timeout e cancelamento.
+  ASP.NET real para isolamento, limites, resposta inválida, timeout e
+  cancelamento;
+- matriz de prompt injection para a separação entre instruções do sistema,
+  conteúdo não confiável e operações permitidas;
+- suíte real focada em segurança em
+  [`avaliacoes/seguranca-ia`](../../../avaliacoes/seguranca-ia/README.md),
+  separada da baseline jurídica congelada.
 
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
 provider acumula e valida o JSON estruturado antes de emitir `conteudo.delta`,

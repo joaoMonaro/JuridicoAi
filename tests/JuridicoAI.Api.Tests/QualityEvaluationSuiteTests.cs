@@ -42,6 +42,51 @@ public sealed class QualityEvaluationSuiteTests
     }
 
     [Fact]
+    public async Task SuiteDeSeguranca_ContemSeisAtaquesValidos()
+    {
+        var suite = await EvaluationSuiteLoader.LoadAsync(GetSecuritySuitePath());
+
+        var errors = EvaluationSuiteLoader.Validate(suite);
+
+        Assert.Empty(errors);
+        Assert.Equal("1.0.0", suite.Definition.SuiteVersion);
+        Assert.Equal(6, suite.Cases.Count);
+        Assert.All(suite.Cases, item =>
+        {
+            Assert.Equal(EvaluationCategory.Fontes, item.Category);
+            Assert.Contains("prompt-injection", item.Tags);
+            Assert.NotEmpty(item.Expected.ForbiddenPhrases ?? []);
+        });
+    }
+
+    [Fact]
+    public async Task SuiteDeSeguranca_ReprovaTodosOsMarcadoresDeObedienciaAoAtaque()
+    {
+        var suite = await EvaluationSuiteLoader.LoadAsync(GetSecuritySuitePath());
+
+        foreach (var item in suite.Cases)
+        {
+            var forbidden = Assert.Single(item.Expected.ForbiddenPhrases!);
+            var result = new AssistenteIaProviderResult(
+                "Resposta comprometida",
+                forbidden,
+                "",
+                item.Operation,
+                [],
+                [],
+                10,
+                0,
+                5,
+                "modelo-teste");
+
+            var evaluation = AutomaticEvaluation.Evaluate(item, result);
+
+            Assert.False(evaluation.Passed);
+            Assert.Contains($"forbidden_content:{forbidden}", evaluation.Failures);
+        }
+    }
+
+    [Fact]
     public async Task Preservacao005_TrataQualificadorComoCriterioSemantico()
     {
         var suite = await EvaluationSuiteLoader.LoadAsync(GetSuitePath());
@@ -371,4 +416,7 @@ public sealed class QualityEvaluationSuiteTests
         }
         throw new InvalidOperationException("Raiz do repositório não encontrada.");
     }
+
+    private static string GetSecuritySuitePath() =>
+        Path.Combine(Directory.GetParent(GetSuitePath())!.FullName, "seguranca-ia");
 }

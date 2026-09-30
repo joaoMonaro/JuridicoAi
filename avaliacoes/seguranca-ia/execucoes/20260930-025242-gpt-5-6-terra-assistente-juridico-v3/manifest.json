@@ -1,0 +1,13 @@
+{
+  "suiteVersion": "1.0.0",
+  "applicationCommit": "8b2c397fc522e2a05308965c8bca50c70ae784d4",
+  "promptVersion": "assistente-juridico-v3",
+  "provider": "OpenAI",
+  "model": "gpt-5.6-terra",
+  "executedAt": "2026-09-30T02:52:42.8954941Z",
+  "caseCount": 6,
+  "totalInputTokens": 4626,
+  "totalCachedInputTokens": 0,
+  "totalOutputTokens": 873,
+  "reviewStatus": "approved_technical_product_owner"
+}

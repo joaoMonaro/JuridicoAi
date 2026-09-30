@@ -113,6 +113,77 @@ public sealed class AssistenteIaHttpSecurityTests
     }
 
     [Fact]
+    public async Task Http_OrganizationANaoAcessaEnvolvidosEnderecosNemListagensDaOrganizationB()
+    {
+        await using var api = await TestApi.CreateAsync();
+        var organizationA = Guid.NewGuid();
+        var organizationB = Guid.NewGuid();
+        var casoB = CreateCaso(organizationB, "CASO-LISTAGEM-PRIVADA-B");
+        var envolvidoB = new EnvolvidoCaso
+        {
+            Id = Guid.NewGuid(),
+            CasoId = casoB.Id,
+            Nome = "ENVOLVIDO-PRIVADO-B",
+            Tipo = TipoEnvolvidoCasoEnum.Cliente,
+            Natureza = NaturezaPessoaEnum.PessoaFisica
+        };
+        var enderecoB = new EnderecoEnvolvidoCaso
+        {
+            Id = Guid.NewGuid(),
+            EnvolvidoCasoId = envolvidoB.Id,
+            Tipo = TipoEnderecoEnum.Residencial,
+            Logradouro = "ENDERECO-PRIVADO-B",
+            Cidade = "Cidade B"
+        };
+        api.Repository.Casos.Add(casoB);
+        api.Repository.Envolvidos.Add(envolvidoB);
+        api.Repository.Enderecos.Add(enderecoB);
+        using var client = api.CreateClient(organizationA);
+
+        var responses = new[]
+        {
+            await client.GetAsync($"casos/{casoB.Id}/envolvidos"),
+            await client.GetAsync($"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}"),
+            await client.PutAsync(
+                $"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}",
+                JsonBody(new AtualizarEnvolvidoCasoRequest(
+                    "Tentativa",
+                    TipoEnvolvidoCasoEnum.Cliente,
+                    NaturezaPessoaEnum.PessoaFisica))),
+            await client.DeleteAsync($"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}"),
+            await client.GetAsync($"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}/enderecos"),
+            await client.GetAsync($"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}/enderecos/{enderecoB.Id}"),
+            await client.PatchAsync(
+                $"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}/enderecos/{enderecoB.Id}",
+                JsonBody(new AtualizarEnderecoEnvolvidoRequest(
+                    TipoEnderecoEnum.Residencial,
+                    false,
+                    null,
+                    "Rua tentativa",
+                    null,
+                    null,
+                    null,
+                    "Cidade tentativa",
+                    "SP",
+                    null))),
+            await client.DeleteAsync($"casos/{casoB.Id}/envolvidos/{envolvidoB.Id}/enderecos/{enderecoB.Id}"),
+            await client.GetAsync($"casos/{casoB.Id}/contextos"),
+            await client.GetAsync($"casos/{casoB.Id}/documentos"),
+            await client.GetAsync($"casos/{casoB.Id}/pecas"),
+            await client.GetAsync($"casos/{casoB.Id}/contexto-completo")
+        };
+
+        foreach (var response in responses)
+        {
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("PRIVADO-B", body, StringComparison.Ordinal);
+        }
+        Assert.Equal("ENVOLVIDO-PRIVADO-B", envolvidoB.Nome);
+        Assert.Equal("ENDERECO-PRIVADO-B", enderecoB.Logradouro);
+    }
+
+    [Fact]
     public async Task Http_EntradaAcimaDoLimiteRetorna413AntesDoSseELiberaSolicitacao()
     {
         await using var api = await TestApi.CreateAsync();
@@ -163,6 +234,46 @@ public sealed class AssistenteIaHttpSecurityTests
         Assert.Contains("AI_REQUEST_TOO_LARGE", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
         Assert.Equal(0, api.Provider.CountCalls);
         Assert.Equal(0, api.Provider.GenerateCalls);
+    }
+
+    [Fact]
+    public async Task Http_ContextoExcessivoRetorna413AntesDoProvider()
+    {
+        await using var api = await TestApi.CreateAsync(settings => settings.MaxTotalContextCharacters = 40);
+        var organizationId = Guid.NewGuid();
+        var caso = CreateCaso(organizationId, "Caso A");
+        var peca = CreatePeca(caso.Id, organizationId, "Peça A");
+        api.Repository.Casos.Add(caso);
+        api.Repository.Pecas.Add(peca);
+        using var client = api.CreateClient(organizationId);
+
+        var response = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Contains("AI_CONTEXT_TOO_LARGE", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Equal(0, api.Provider.CountCalls);
+        Assert.Equal(0, api.Provider.GenerateCalls);
+    }
+
+    [Fact]
+    public async Task Http_UploadExcessivoRetorna413AntesDoStorage()
+    {
+        await using var api = await TestApi.CreateAsync(maxUploadBytes: 3);
+        var organizationId = Guid.NewGuid();
+        var caso = CreateCaso(organizationId, "Caso A");
+        api.Repository.Casos.Add(caso);
+        using var client = api.CreateClient(organizationId);
+        using var multipart = new MultipartFormDataContent();
+        using var file = new ByteArrayContent([1, 2, 3, 4]);
+        file.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        multipart.Add(file, "Arquivo", "grande.txt");
+
+        var response = await client.PostAsync($"casos/{caso.Id}/documentos", multipart);
+
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, response.StatusCode);
+        Assert.Equal(0, api.Storage.SaveCalls);
     }
 
     [Fact]
@@ -222,6 +333,50 @@ public sealed class AssistenteIaHttpSecurityTests
         Assert.DoesNotContain(api.Logs.Messages, message =>
             message.Contains(sensitiveMarker, StringComparison.Ordinal));
         Assert.Equal(0, api.Provider.GenerateCalls);
+    }
+
+    [Fact]
+    public async Task Http_SaidaInvalidaDoModeloRetornaEventoSeguroELiberaConcorrencia()
+    {
+        await using var api = await TestApi.CreateAsync(settings =>
+            settings.ConcurrentRequestsPerUser = 1);
+        var organizationId = Guid.NewGuid();
+        var caso = CreateCaso(organizationId, "Caso A");
+        var peca = CreatePeca(caso.Id, organizationId, "Peça A");
+        api.Repository.Casos.Add(caso);
+        api.Repository.Pecas.Add(peca);
+        const string invalidOutputMarker = "CONTEUDO-INVALIDO-DO-MODELO";
+        api.Provider.Result = api.Provider.Result with
+        {
+            Texto = invalidOutputMarker,
+            OperacaoSugerida = AssistenteOperacao.SubstituirSelecao
+        };
+        using var client = api.CreateClient(organizationId);
+
+        var invalid = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+
+        Assert.Equal(HttpStatusCode.OK, invalid.StatusCode);
+        var failureStream = await invalid.Content.ReadAsStringAsync();
+        Assert.Contains("event: solicitacao.falhou", failureStream, StringComparison.Ordinal);
+        Assert.Contains("AI_PROVIDER_ERROR", failureStream, StringComparison.Ordinal);
+        Assert.DoesNotContain(invalidOutputMarker, failureStream, StringComparison.Ordinal);
+        Assert.DoesNotContain(api.Logs.Messages, message =>
+            message.Contains(invalidOutputMarker, StringComparison.Ordinal));
+
+        api.Provider.Result = api.Provider.Result with
+        {
+            Texto = "Conteúdo seguro",
+            OperacaoSugerida = AssistenteOperacao.ResponderNoPainel
+        };
+        var retry = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+
+        Assert.Equal(HttpStatusCode.OK, retry.StatusCode);
+        Assert.Contains("event: solicitacao.concluida", await retry.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Equal(2, api.Provider.GenerateCalls);
     }
 
     [Fact]
@@ -362,7 +517,9 @@ public sealed class AssistenteIaHttpSecurityTests
         public TestProvider Provider { get; }
         public CaptureLoggerProvider Logs { get; }
 
-        public static async Task<TestApi> CreateAsync(Action<AssistenteIaSettings>? configure = null)
+        public static async Task<TestApi> CreateAsync(
+            Action<AssistenteIaSettings>? configure = null,
+            long maxUploadBytes = 20 * 1024 * 1024)
         {
             var settings = new AssistenteIaSettings
             {
@@ -403,7 +560,7 @@ public sealed class AssistenteIaHttpSecurityTests
             builder.Services.AddSingleton<IOptionsMonitor<AssistenteIaSettings>>(
                 new StaticOptionsMonitor<AssistenteIaSettings>(settings));
             builder.Services.AddSingleton<IOptions<DocumentStorageSettings>>(
-                Options.Create(new DocumentStorageSettings()));
+                Options.Create(new DocumentStorageSettings { MaxFileSizeBytes = maxUploadBytes }));
             builder.Services.AddSingleton(repository);
             builder.Services.AddSingleton<IPecaRepository>(repository);
             builder.Services.AddSingleton<ICasoRepository>(repository);
@@ -494,6 +651,8 @@ public sealed class AssistenteIaHttpSecurityTests
     {
         public List<Caso> Casos { get; } = [];
         public List<Peca> Pecas { get; } = [];
+        public List<EnvolvidoCaso> Envolvidos { get; } = [];
+        public List<EnderecoEnvolvidoCaso> Enderecos { get; } = [];
         public List<ContextoCaso> Contextos { get; } = [];
         public List<DocumentoCaso> Documentos { get; } = [];
 
@@ -530,7 +689,10 @@ public sealed class AssistenteIaHttpSecurityTests
 
         public Task<IReadOnlyList<EnvolvidoCaso>> ListarEnvolvidosAsync(
             Guid casoId, Guid organizationId, CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<EnvolvidoCaso>>([]);
+            Task.FromResult<IReadOnlyList<EnvolvidoCaso>>(
+                Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId)
+                    ? Envolvidos.Where(x => x.CasoId == casoId).ToList()
+                    : []);
 
         public Task<bool> CasoExisteAsync(Guid casoId, Guid organizationId, CancellationToken ct) =>
             Task.FromResult(Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId));
@@ -540,13 +702,29 @@ public sealed class AssistenteIaHttpSecurityTests
         public Task<bool> AtualizarCasoAsync(Caso caso, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<bool> ArquivarCasoAsync(Guid id, Guid organizationId, Guid updatedById, DateTime dataAtualizacao, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<EnvolvidoCaso> CriarEnvolvidoAsync(EnvolvidoCaso envolvido, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<EnvolvidoCaso?> ObterEnvolvidoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
+            Task.FromResult(Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId)
+                ? Envolvidos.SingleOrDefault(x => x.Id == id && x.CasoId == casoId)
+                : null);
         public Task<bool> AtualizarEnvolvidoAsync(EnvolvidoCaso envolvido, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<bool> RemoverEnvolvidoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<EnderecoEnvolvidoCaso> CriarEnderecoAsync(Guid casoId, Guid organizationId, EnderecoEnvolvidoCaso endereco, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosAsync(Guid casoId, Guid envolvidoId, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosCasoAsync(Guid casoId, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<EnderecoEnvolvidoCaso?> ObterEnderecoAsync(Guid casoId, Guid envolvidoId, Guid id, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosAsync(Guid casoId, Guid envolvidoId, Guid organizationId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<EnderecoEnvolvidoCaso>>(
+                Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId) &&
+                Envolvidos.Any(x => x.Id == envolvidoId && x.CasoId == casoId)
+                    ? Enderecos.Where(x => x.EnvolvidoCasoId == envolvidoId).ToList()
+                    : []);
+        public Task<IReadOnlyList<EnderecoEnvolvidoCaso>> ListarEnderecosCasoAsync(Guid casoId, Guid organizationId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<EnderecoEnvolvidoCaso>>(
+                Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId)
+                    ? Enderecos.Where(x => Envolvidos.Any(e => e.CasoId == casoId && e.Id == x.EnvolvidoCasoId)).ToList()
+                    : []);
+        public Task<EnderecoEnvolvidoCaso?> ObterEnderecoAsync(Guid casoId, Guid envolvidoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
+            Task.FromResult(Casos.Any(x => x.Id == casoId && x.OrganizationId == organizationId) &&
+                            Envolvidos.Any(x => x.Id == envolvidoId && x.CasoId == casoId)
+                ? Enderecos.SingleOrDefault(x => x.Id == id && x.EnvolvidoCasoId == envolvidoId)
+                : null);
         public Task<bool> AtualizarEnderecoAsync(Guid casoId, Guid organizationId, EnderecoEnvolvidoCaso endereco, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<bool> RemoverEnderecoAsync(Guid casoId, Guid envolvidoId, Guid id, Guid organizationId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<ContextoCaso> CriarContextoAsync(ContextoCaso contexto, CancellationToken cancellationToken) => throw new NotSupportedException();
@@ -580,9 +758,14 @@ public sealed class AssistenteIaHttpSecurityTests
 
     private sealed class TestFileStorage : IFileStorage
     {
+        public int SaveCalls { get; private set; }
         public int ReadCalls { get; private set; }
         public int DeleteCalls { get; private set; }
-        public Task SaveAsync(string storageId, Stream content, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task SaveAsync(string storageId, Stream content, CancellationToken cancellationToken)
+        {
+            SaveCalls++;
+            return Task.CompletedTask;
+        }
         public Task<Stream> GetAsync(string storageId, CancellationToken cancellationToken)
         {
             ReadCalls++;
@@ -602,6 +785,17 @@ public sealed class AssistenteIaHttpSecurityTests
         public int GenerateCalls { get; private set; }
         public Exception? CountError { get; set; }
         public bool BlockGeneration { get; set; }
+        public AssistenteIaProviderResult Result { get; set; } = new(
+            "Resposta",
+            "Conteúdo seguro",
+            "Resumo",
+            AssistenteOperacao.ResponderNoPainel,
+            [],
+            [],
+            100,
+            0,
+            20,
+            "modelo-http-teste");
         public TaskCompletionSource<bool> GenerationStarted { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         public TaskCompletionSource<bool> GenerationCancelled { get; } =
@@ -635,17 +829,7 @@ public sealed class AssistenteIaHttpSecurityTests
                     throw;
                 }
             }
-            return new AssistenteIaProviderResult(
-                "Resposta",
-                "Conteúdo seguro",
-                "Resumo",
-                AssistenteOperacao.ResponderNoPainel,
-                [],
-                [],
-                InputTokens,
-                0,
-                20,
-                "modelo-http-teste");
+            return Result with { EntradaTokens = InputTokens };
         }
     }
 

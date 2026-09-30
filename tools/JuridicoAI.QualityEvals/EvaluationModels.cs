@@ -15,8 +15,9 @@ public enum EvaluationCategory
 public sealed record EvaluationSuiteDefinition(
     string SuiteVersion,
     int ExpectedCaseCount,
-    int ExpectedCasesPerCategory,
-    IReadOnlyList<string> CaseFiles);
+    int? ExpectedCasesPerCategory,
+    IReadOnlyList<string> CaseFiles,
+    IReadOnlyDictionary<EvaluationCategory, int>? ExpectedCategoryCounts = null);
 
 public sealed record EvaluationCase(
     string Id,
