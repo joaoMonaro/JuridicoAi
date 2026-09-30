@@ -47,10 +47,10 @@ public sealed class AssistenteUsageRecorder(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogError(
-                ex,
-                "Falha ao registrar consumo de IA. SolicitacaoId={SolicitacaoId} CorrelationId={CorrelationId}",
+                "Falha ao registrar consumo de IA. SolicitacaoId={SolicitacaoId} CorrelationId={CorrelationId} ErrorType={ErrorType}",
                 record.SolicitacaoId,
-                record.CorrelationId);
+                record.CorrelationId,
+                ex.GetType().Name);
         }
     }
 

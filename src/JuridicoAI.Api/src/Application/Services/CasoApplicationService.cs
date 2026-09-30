@@ -230,7 +230,7 @@ public sealed class CasoApplicationService(
         existente.Titulo = NormalizarOpcional(request.Titulo);
         existente.Conteudo = request.Conteudo.Trim();
         existente.DataAtualizacao = DateTime.UtcNow;
-        if (!await repository.AtualizarContextoAsync(existente, cancellationToken))
+        if (!await repository.AtualizarContextoAsync(existente, auth.OrganizationId, cancellationToken))
             throw NaoEncontrado("Contexto", id);
         return existente;
     }

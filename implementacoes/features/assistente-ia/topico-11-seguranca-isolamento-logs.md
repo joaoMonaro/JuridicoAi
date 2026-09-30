@@ -6,6 +6,8 @@
 >
 > **Data da decisão:** 2026-09-27
 >
+> **Última atualização:** 2026-09-29
+>
 > **Ponto relacionado:** `PA-11` permanece aberto e bloqueia produção
 
 Este documento define a fronteira de segurança do assistente de IA. A política
@@ -223,6 +225,7 @@ Já existe:
 - validação do token contra sessão, usuário, membership e Organization ativos;
 - `IAuthContext.OrganizationId` obtido da identidade autenticada;
 - consultas de Caso, Peça, Documento e contextos filtradas por Organization;
+- atualização de contexto condicionada por `ContextoId + CasoId + OrganizationId`;
 - resposta `404` para Peça de outra Organization no fluxo de IA;
 - contexto externo delimitado como `dado_nao_confiavel`;
 - política de prompt que proíbe obedecer comandos encontrados no conteúdo;
@@ -230,21 +233,31 @@ Já existe:
 - logs do assistente limitados a IDs e metadados técnicos no fluxo principal;
 - limite configurável de upload, corpo JSON da IA, contexto por caracteres,
   saída e timeout;
+- contagem exata do payload pelo endpoint oficial `responses/input_tokens` e
+  bloqueio HTTP 413 acima de `MaxInputTokens=60000` antes de abrir o stream;
 - rate limit de 10/minuto e concorrência 2 por usuário;
 - rate limit de 30/minuto e concorrência 6 por Organization;
-- testes unitários de limite de payload, isolamento de Peça/flags e marcador
-  sensível ausente dos logs do fluxo principal.
+- `Retry-After` nas recusas por janela de frequência;
+- logging automático do `HttpClient` da OpenAI desabilitado;
+- caminhos de erro da IA registrando apenas código, tipo e IDs permitidos, sem
+  anexar objetos de exceção;
+- teste com duas Organizations cobrindo Caso, Peça, Contexto, Documento,
+  endereço e flags, inclusive sem leitura do arquivo físico alheio;
+- teste unitário da separação entre prompt do sistema e conteúdo malicioso;
+- caso `FONTES-005` de prompt injection executado na baseline técnica `1.0.3`;
+- 82 testes automatizados aprovados após esta etapa do PA-11.
+- teste comprovando que a rejeição por tokens libera a vaga de concorrência e
+  permite reutilizar o `clientRequestId`.
 
 Ainda falta implementar ou comprovar:
 
-- contagem real e limite de 60.000 tokens;
 - coordenação distribuída dos limitadores antes de executar mais de uma
   instância da API;
-- header `Retry-After` nas recusas locais;
 - cobertura das entidades futuras de conversa, mensagem e sugestão;
 - testes HTTP de acesso cruzado para todos os recursos;
-- testes de prompt injection e exfiltração do prompt;
-- inspeção de logs de infraestrutura, proxy, APM e caminhos de erro;
+- ampliação dos testes de prompt injection para todas as tentativas da seção 9;
+- inspeção de logs de infraestrutura, proxy e APM e dos cenários HTTP ainda não
+  cobertos;
 - validação da configuração de proxy, APM e produção.
 
 ## 8. Plano de implementação
@@ -309,7 +322,7 @@ Ainda falta implementar ou comprovar:
       cruzadas.
 - [ ] Casos de prompt injection foram executados e aprovados.
 - [ ] Logs de todos os cenários foram inspecionados sem conteúdo proibido.
-- [ ] Limites de usuário e Organization estão implementados e configuráveis.
+- [x] Limites de usuário e Organization estão implementados e configuráveis.
 - [ ] Limites de payload, upload, tokens e timeout estão ativos e testados.
 - [ ] Cancelamento e falha liberam vagas de concorrência.
 - [ ] Proxy, APM e configuração de produção foram revisados.

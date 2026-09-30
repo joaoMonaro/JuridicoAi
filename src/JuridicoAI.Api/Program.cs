@@ -31,7 +31,7 @@ builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSec
 builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.GetSection("AssistenteIa"))
     .Validate(x => x.TimeoutSeconds > 0 && x.MaxInstructionCharacters > 0 &&
                    x.MaxDocumentContextCharacters > 0 && x.MaxAdditionalContextCharacters > 0 &&
-                   x.MaxTotalContextCharacters > 0 && x.MaxOutputCharacters > 0 &&
+                   x.MaxTotalContextCharacters > 0 && x.MaxInputTokens > 0 && x.MaxOutputCharacters > 0 &&
                    x.MaxOutputTokens > 0 && x.MaxRequestBodyBytes > 0 &&
                    x.RequestsPerUserPerMinute > 0 && x.ConcurrentRequestsPerUser > 0 &&
                    x.RequestsPerOrganizationPerMinute > 0 && x.ConcurrentRequestsPerOrganization > 0 &&
@@ -181,8 +181,10 @@ builder.Services.AddHttpClient<OpenAiAssistenteIaProvider>((services, client) =>
     var settings = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AssistenteIaSettings>>().Value;
     client.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
     client.Timeout = Timeout.InfiniteTimeSpan;
-});
+}).RemoveAllLoggers();
 builder.Services.AddScoped<IAssistenteIaProvider>(services =>
+    services.GetRequiredService<OpenAiAssistenteIaProvider>());
+builder.Services.AddScoped<IAssistenteTokenCounter>(services =>
     services.GetRequiredService<OpenAiAssistenteIaProvider>());
 var app = builder.Build();
 

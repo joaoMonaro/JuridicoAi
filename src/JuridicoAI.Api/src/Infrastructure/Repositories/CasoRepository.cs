@@ -168,8 +168,12 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
     public Task<ContextoCaso?> ObterContextoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
         context.ContextosCaso.AsNoTracking().SingleOrDefaultAsync(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId), cancellationToken);
 
-    public async Task<bool> AtualizarContextoAsync(ContextoCaso contexto, CancellationToken cancellationToken) =>
-        await context.ContextosCaso.Where(x => x.CasoId == contexto.CasoId && x.Id == contexto.Id)
+    public async Task<bool> AtualizarContextoAsync(
+        ContextoCaso contexto,
+        Guid organizationId,
+        CancellationToken cancellationToken) =>
+        await context.ContextosCaso.Where(x => x.CasoId == contexto.CasoId && x.Id == contexto.Id &&
+            context.Casos.Any(c => c.Id == contexto.CasoId && c.OrganizationId == organizationId))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(x => x.Tipo, contexto.Tipo)
                 .SetProperty(x => x.Titulo, contexto.Titulo)

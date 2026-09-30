@@ -12,11 +12,51 @@ namespace JuridicoAI.Api.Infrastructure.AI;
 
 public sealed class OpenAiAssistenteIaProvider(
     HttpClient httpClient,
-    IOptions<AssistenteIaSettings> options) : IAssistenteIaProvider
+    IOptions<AssistenteIaSettings> options) : IAssistenteIaProvider, IAssistenteTokenCounter
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private static readonly JsonElement OutputSchema = CreateOutputSchema();
     private readonly AssistenteIaSettings _settings = options.Value;
+
+    public async Task<int> ContarTokensEntradaAsync(
+        AssistenteIaProviderRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(HttpMethod.Post, "responses/input_tokens");
+        message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
+        message.Content = JsonContent.Create(CreateInputPayload(request));
+
+        try
+        {
+            using var response = await httpClient.SendAsync(message, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+                throw CreateHttpException(response.StatusCode);
+
+            using var document = await JsonDocument.ParseAsync(
+                await response.Content.ReadAsStreamAsync(cancellationToken),
+                cancellationToken: cancellationToken);
+            if (!document.RootElement.TryGetProperty("input_tokens", out var inputTokens) ||
+                !inputTokens.TryGetInt32(out var count) || count < 0)
+                throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false);
+            return count;
+        }
+        catch (AssistenteIaProviderException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new AssistenteIaProviderException("AI_UNAVAILABLE", retryable: true, innerException: ex);
+        }
+        catch (JsonException ex)
+        {
+            throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false, innerException: ex);
+        }
+    }
 
     public async Task<AssistenteIaProviderResult> GerarAsync(
         AssistenteIaProviderRequest request,
@@ -25,26 +65,12 @@ public sealed class OpenAiAssistenteIaProvider(
         using var message = new HttpRequestMessage(HttpMethod.Post, "responses");
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
-        message.Content = JsonContent.Create(new Dictionary<string, object?>
-        {
-            ["model"] = _settings.Model,
-            ["instructions"] = request.Instructions,
-            ["input"] = request.Input,
-            ["stream"] = true,
-            ["store"] = false,
-            ["max_output_tokens"] = request.MaxOutputTokens,
-            ["truncation"] = "disabled",
-            ["text"] = new Dictionary<string, object?>
-            {
-                ["format"] = new Dictionary<string, object?>
-                {
-                    ["type"] = "json_schema",
-                    ["name"] = "assistente_juridico_response",
-                    ["strict"] = true,
-                    ["schema"] = OutputSchema
-                }
-            }
-        });
+        var payload = CreateInputPayload(request);
+        payload["stream"] = true;
+        payload["store"] = false;
+        payload["max_output_tokens"] = request.MaxOutputTokens;
+        payload["truncation"] = "disabled";
+        message.Content = JsonContent.Create(payload);
 
         try
         {
@@ -156,6 +182,23 @@ public sealed class OpenAiAssistenteIaProvider(
         element.TryGetProperty(propertyName, out var value) && value.TryGetInt32(out var result)
             ? result
             : null;
+
+    private Dictionary<string, object?> CreateInputPayload(AssistenteIaProviderRequest request) => new()
+    {
+        ["model"] = _settings.Model,
+        ["instructions"] = request.Instructions,
+        ["input"] = request.Input,
+        ["text"] = new Dictionary<string, object?>
+        {
+            ["format"] = new Dictionary<string, object?>
+            {
+                ["type"] = "json_schema",
+                ["name"] = "assistente_juridico_response",
+                ["strict"] = true,
+                ["schema"] = OutputSchema
+            }
+        }
+    };
 
     private static JsonSerializerOptions CreateJsonOptions()
     {

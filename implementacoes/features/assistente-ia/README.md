@@ -243,7 +243,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Endpoint autenticado com SSE e cancelamento.
 - [x] Resposta por JSON Schema, política de prompt e códigos de erro.
 - [ ] Completar limites por Organization, orçamento e métricas operacionais.
-- [ ] Implementar limites por tokens/operação e retry definidos no Tópico 1.
+- [x] Implementar limite exato de 60.000 tokens de entrada.
+- [ ] Implementar perfis de saída por operação e retry definidos no Tópico 1.
 - [x] Testes unitários do serviço, isolamento e adapter OpenAI.
 
 ### F2 — frontend vertical
@@ -292,7 +293,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
 | 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Encerrado tecnicamente com a baseline `1.0.3` no commit `f6376df`; homologação jurídica formal permanece em `PA-17` |
 | 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; casos incorporados à baseline técnica e interface pendente |
-| 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Política aceita; implementação e evidências pendentes |
+| 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Em implementação; tenancy de Contexto reforçada, logs de erro protegidos, `Retry-After` e testes dos limitadores entregues |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Estratégia aceita; suíte e execução pendentes |
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Estratégia aceita; implementação e rollout pendentes |
 | 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |

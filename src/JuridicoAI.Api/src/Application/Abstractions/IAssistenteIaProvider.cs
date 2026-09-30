@@ -28,6 +28,13 @@ public interface IAssistenteIaProvider
         CancellationToken cancellationToken);
 }
 
+public interface IAssistenteTokenCounter
+{
+    Task<int> ContarTokensEntradaAsync(
+        AssistenteIaProviderRequest request,
+        CancellationToken cancellationToken);
+}
+
 public sealed class AssistenteIaProviderException(
     string code,
     bool retryable,

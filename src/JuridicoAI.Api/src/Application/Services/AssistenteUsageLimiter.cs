@@ -66,12 +66,16 @@ public sealed class AssistenteUsageLimiter(IOptionsMonitor<AssistenteIaSettings>
         var lease = await limiter.AcquireAsync(1, cancellationToken);
         if (!lease.IsAcquired)
         {
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var value)
+                ? value
+                : (TimeSpan?)null;
             lease.Dispose();
             throw new AssistenteIaException(
                 StatusCodes.Status429TooManyRequests,
                 code,
                 message,
-                retryable: true);
+                retryable: true,
+                retryAfter: retryAfter);
         }
         acquired.Add(lease);
     }

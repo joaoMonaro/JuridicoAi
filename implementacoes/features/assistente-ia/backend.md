@@ -31,11 +31,15 @@ Em 2026-09-27, estão disponíveis:
 - deduplicação de `clientRequestId` enquanto uma geração está em andamento;
 - prompt versionado em código e saída validada por JSON Schema;
 - adapter OpenAI Responses com `store: false`, timeout e cancelamento;
+- contador exato de entrada pelo endpoint `responses/input_tokens`, com bloqueio
+  configurável antes da geração;
 - rate limit e concorrência cumulativos por usuário e Organization;
+- `Retry-After` nas recusas por janela dos limitadores locais;
 - `CorrelationId` validado/gerado pelo backend e devolvido no header e no SSE;
 - limite próprio de payload para a rota de IA;
 - ledger técnico persistente de tokens, custo estimado, duração e estado final;
-- logs técnicos sem prompt, resposta ou PII;
+- logs técnicos sem prompt, resposta ou PII, inclusive nos caminhos de erro da
+  IA; o logging automático do `HttpClient` do provider fica desabilitado;
 - testes do serviço de aplicação e do contrato HTTP com o provider.
 
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
@@ -358,8 +362,9 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [x] Adicionar feature flags por Organization e kill switch global.
 - [x] Adicionar `CorrelationId`, limite de payload e ledger inicial de custo.
 - [ ] Adicionar bloqueio e alertas de orçamento por Organization.
-- [ ] Implementar perfis de saída, contagem de tokens, concorrência e retry do
+- [x] Implementar contagem exata de entrada e concorrência do
       [Tópico 1](topico-01-modelo-e-operacao.md).
+- [ ] Implementar perfis de saída e retry do Tópico 1.
 - [ ] Implementar histórico, exclusão, retenção, minimização e transparência do
       [Tópico 3](topico-03-retencao-exclusao-lgpd.md).
 - [x] Atualizar Swagger, `.env.example`, user-secrets e documentação operacional.

@@ -64,10 +64,9 @@ public sealed class AssistenteController(
                 ex.Retryable);
             await WriteFailureAsync(ex.Code, ex.Message, ex.Retryable, cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             logger.LogError(
-                ex,
                 "Erro inesperado após início do stream de IA. SolicitacaoId={SolicitacaoId} PecaId={PecaId}",
                 execution.SolicitacaoId,
                 execution.PecaId);

@@ -12,6 +12,35 @@ namespace JuridicoAI.Api.Tests;
 public sealed class OpenAiAssistenteIaProviderTests
 {
     [Fact]
+    public async Task ContarTokensEntrada_UsaEndpointOficialComOMesmoInput()
+    {
+        var handler = new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"object":"response.input_tokens","input_tokens":1234}""")
+        });
+        var provider = CreateProvider(handler);
+        var request = new AssistenteIaProviderRequest(
+            "Instruções seguras",
+            "Contexto jurídico",
+            AssistenteModo.Perguntar,
+            [AssistenteOperacao.ResponderNoPainel],
+            1_000);
+
+        var result = await provider.ContarTokensEntradaAsync(request, default);
+
+        Assert.Equal(1234, result);
+        Assert.Equal("/v1/responses/input_tokens", handler.RequestPath);
+        Assert.NotNull(handler.RequestBody);
+        using var body = JsonDocument.Parse(handler.RequestBody);
+        Assert.Equal("modelo-teste", body.RootElement.GetProperty("model").GetString());
+        Assert.Equal("Instruções seguras", body.RootElement.GetProperty("instructions").GetString());
+        Assert.Equal("Contexto jurídico", body.RootElement.GetProperty("input").GetString());
+        Assert.Equal("json_schema", body.RootElement.GetProperty("text").GetProperty("format").GetProperty("type").GetString());
+        Assert.False(body.RootElement.TryGetProperty("store", out _));
+        Assert.False(body.RootElement.TryGetProperty("stream", out _));
+    }
+
+    [Fact]
     public async Task Gerar_UsaResponsesSemRetencaoELeStreamEstruturado()
     {
         var structured = JsonSerializer.Serialize(new
@@ -105,12 +134,14 @@ public sealed class OpenAiAssistenteIaProviderTests
     {
         public string? RequestBody { get; private set; }
         public string? AuthorizationScheme { get; private set; }
+        public string? RequestPath { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             AuthorizationScheme = request.Headers.Authorization?.Scheme;
+            RequestPath = request.RequestUri?.AbsolutePath;
             RequestBody = request.Content is null
                 ? null
                 : await request.Content.ReadAsStringAsync(cancellationToken);

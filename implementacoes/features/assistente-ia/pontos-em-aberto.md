@@ -110,13 +110,18 @@ Foram aprovados:
 
 Ainda precisam de evidência específica:
 
-- testes de prompt injection em Peça e contexto do Caso;
+- ampliar o caso real `FONTES-005` e o teste de separação de prompt para as
+  demais tentativas de prompt injection previstas;
 - testes HTTP abrangentes de acesso cruzado entre Organizations; a camada de
-  aplicação já possui cobertura de Peça e flags;
+  aplicação já possui cobertura de Caso, Peça, Contexto, Documento, endereço e
+  flags, sem leitura do arquivo físico alheio;
 - inspeção de logs e telemetria de infraestrutura para conteúdo, CPF/CNPJ, JWT
-  e API keys; o fluxo principal já possui teste com marcador sensível;
-- cancelamento, timeout e respostas inválidas; payload excessivo já possui
-  limite e teste unitário;
+  e API keys; logs automáticos do cliente OpenAI foram desabilitados e os
+  caminhos de erro da aplicação já possuem testes com marcadores sensíveis;
+- cancelamento, timeout e respostas inválidas em nível HTTP; payload excessivo,
+  contagem exata de tokens, quatro limitadores, `Retry-After` e liberação da
+  lease possuem testes unitários;
+- coordenação distribuída dos limitadores antes de múltiplas instâncias;
 - validação das configurações de produção.
 
 Critério de fechamento: controles implementados, suíte automatizada executada,

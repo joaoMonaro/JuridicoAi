@@ -1,3 +1,4 @@
+using System.Globalization;
 using JuridicoAI.Api.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -11,6 +12,11 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         try { await next(context); }
         catch (ApiException ex)
         {
+            if (ex is AssistenteIaException { RetryAfter: { } retryAfter })
+            {
+                var seconds = Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds));
+                context.Response.Headers["Retry-After"] = seconds.ToString(CultureInfo.InvariantCulture);
+            }
             await WriteProblemAsync(context, ex.StatusCode, ex.Message,
                 ex switch
                 {
@@ -23,9 +29,7 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         }
         catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
         {
-            var isAiRequest = context.Request.Path.Value?.Contains(
-                "/assistente/solicitacoes",
-                StringComparison.OrdinalIgnoreCase) == true;
+            var isAiRequest = IsAiRequest(context);
             await WriteProblemAsync(
                 context,
                 ex.StatusCode,
@@ -34,10 +38,20 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Erro inesperado ao processar {Method} {Path}", context.Request.Method, context.Request.Path);
+            if (IsAiRequest(context))
+                logger.LogError(
+                    "Erro inesperado no fluxo de IA. Method={Method} Path={Path} CorrelationId={CorrelationId}",
+                    context.Request.Method,
+                    context.Request.Path,
+                    context.TraceIdentifier);
+            else
+                logger.LogError(ex, "Erro inesperado ao processar {Method} {Path}", context.Request.Method, context.Request.Path);
             await WriteProblemAsync(context, StatusCodes.Status500InternalServerError, "Ocorreu um erro inesperado.");
         }
     }
+
+    private static bool IsAiRequest(HttpContext context) =>
+        context.Request.Path.Value?.Contains("/assistente/", StringComparison.OrdinalIgnoreCase) == true;
 
     private static Task WriteProblemAsync(
         HttpContext context,

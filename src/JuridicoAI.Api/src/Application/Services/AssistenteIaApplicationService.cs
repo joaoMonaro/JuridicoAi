@@ -17,6 +17,8 @@ public sealed record AssistenteIaExecucao(
     AssistenteModo Modo,
     AssistenteAncoraDto Ancora,
     AssistenteIaProviderRequest ProviderRequest,
+    int? InputTokensContados,
+    long StartedAtTimestamp,
     IAsyncDisposable UsageLease);
 
 public sealed class AssistenteIaApplicationService(
@@ -24,6 +26,7 @@ public sealed class AssistenteIaApplicationService(
     ICasoRepository casoRepository,
     IAuthContext authContext,
     IAssistenteIaProvider provider,
+    IAssistenteTokenCounter tokenCounter,
     AssistenteContextBuilder contextBuilder,
     AssistentePromptPolicy promptPolicy,
     AssistenteRequestRegistry requestRegistry,
@@ -129,21 +132,8 @@ public sealed class AssistenteIaApplicationService(
             operacoesPermitidas,
             Settings.MaxOutputTokens);
         var solicitationId = Guid.NewGuid();
-
-        logger.LogInformation(
-            "Solicitação de IA preparada. SolicitacaoId={SolicitacaoId} ClientRequestId={ClientRequestId} OrganizationId={OrganizationId} UserId={UserId} PecaId={PecaId} Modo={Modo} Escopo={Escopo} VersaoCliente={VersaoCliente} VersaoServidor={VersaoServidor} PromptVersion={PromptVersion}",
-            solicitationId,
-            request.ClientRequestId,
-            authContext.OrganizationId,
-            authContext.UserId,
-            pecaId,
-            request.Modo,
-            documento.Escopo,
-            request.VersaoPeca,
-            peca.Versao,
-            AssistentePromptPolicy.Version);
-
-        return new AssistenteIaExecucao(
+        var startedAt = TimeProvider.System.GetTimestamp();
+        var execution = new AssistenteIaExecucao(
             solicitationId,
             request.ClientRequestId,
             authContext.OrganizationId,
@@ -153,21 +143,109 @@ public sealed class AssistenteIaApplicationService(
             request.Modo,
             anchor,
             providerRequest,
-            usageLease);
+            InputTokensContados: null,
+            StartedAtTimestamp: startedAt,
+            UsageLease: usageLease);
+
+        try
+        {
+            using var timeout = CreateTimeout(cancellationToken, startedAt);
+            var inputTokens = await tokenCounter.ContarTokensEntradaAsync(providerRequest, timeout.Token);
+            execution = execution with { InputTokensContados = inputTokens };
+            if (inputTokens > Settings.MaxInputTokens)
+                throw InputTooLarge("O contexto selecionado ultrapassa o limite de tokens permitido.");
+
+            logger.LogInformation(
+                "Solicitação de IA preparada. SolicitacaoId={SolicitacaoId} ClientRequestId={ClientRequestId} OrganizationId={OrganizationId} UserId={UserId} PecaId={PecaId} Modo={Modo} Escopo={Escopo} VersaoCliente={VersaoCliente} VersaoServidor={VersaoServidor} PromptVersion={PromptVersion} EntradaTokens={EntradaTokens}",
+                solicitationId,
+                request.ClientRequestId,
+                authContext.OrganizationId,
+                authContext.UserId,
+                pecaId,
+                request.Modo,
+                documento.Escopo,
+                request.VersaoPeca,
+                peca.Versao,
+                AssistentePromptPolicy.Version,
+                inputTokens);
+
+            return execution;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+                "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
+            await FinalizarAsync(execution);
+            throw;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning(
+                "Timeout na contagem de tokens da IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId);
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+                "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
+            await FinalizarAsync(execution);
+            throw new AssistenteIaException(
+                StatusCodes.Status504GatewayTimeout,
+                "AI_PROVIDER_TIMEOUT",
+                "A IA demorou mais que o esperado. Tente novamente.",
+                retryable: true);
+        }
+        catch (AssistenteIaProviderException ex)
+        {
+            logger.LogWarning(
+                "Falha na contagem de tokens da IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} Code={Code} ProviderStatusCode={ProviderStatusCode}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId,
+                ex.Code,
+                ex.ProviderStatusCode);
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+            await FinalizarAsync(execution);
+            throw MapProviderException(ex);
+        }
+        catch (AssistenteIaException ex)
+        {
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+            await FinalizarAsync(execution);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                "Falha inesperada na contagem de tokens da IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} ErrorType={ErrorType}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId,
+                ex.GetType().Name);
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+                "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
+            await FinalizarAsync(execution);
+            throw new AssistenteIaException(
+                StatusCodes.Status502BadGateway,
+                "AI_PROVIDER_ERROR",
+                "Não foi possível preparar a solicitação de IA.",
+                retryable: true);
+        }
     }
 
     public async Task<AssistenteSolicitacaoConcluidaDto> GerarAsync(
         AssistenteIaExecucao execution,
         CancellationToken cancellationToken)
     {
-        var startedAt = TimeProvider.System.GetTimestamp();
+        var startedAt = execution.StartedAtTimestamp;
         AssistenteIaProviderResult? providerResult = null;
         try
         {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(Settings.TimeoutSeconds));
+            using var timeout = CreateTimeout(cancellationToken, startedAt);
             var result = providerResult = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
             ValidateProviderResult(result, execution.Modo, execution.ProviderRequest.OperacoesPermitidas);
+            var inputTokens = result.EntradaTokens ?? execution.InputTokensContados;
 
             var suggestion = new AssistenteSugestaoDto(
                 Guid.NewGuid(),
@@ -184,11 +262,11 @@ public sealed class AssistenteIaApplicationService(
                 "Solicitação de IA concluída. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} UserId={UserId} PecaId={PecaId} Modo={Modo} Modelo={Modelo} EntradaTokens={EntradaTokens} SaidaTokens={SaidaTokens} DuracaoMs={DuracaoMs}",
                 execution.SolicitacaoId,
                 execution.OrganizationId,
-                authContext.UserId,
+                execution.UserId,
                 execution.PecaId,
                 execution.Modo,
                 result.Modelo,
-                result.EntradaTokens,
+                inputTokens,
                 result.SaidaTokens,
                 TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds);
 
@@ -196,7 +274,7 @@ public sealed class AssistenteIaApplicationService(
                 execution,
                 result.OperacaoSugerida,
                 result.Modelo,
-                result.EntradaTokens,
+                inputTokens,
                 result.EntradaTokensEmCache,
                 result.SaidaTokens,
                 "succeeded",
@@ -205,12 +283,12 @@ public sealed class AssistenteIaApplicationService(
 
             return new AssistenteSolicitacaoConcluidaDto(
                 suggestion,
-                new AssistenteUsoDto(result.EntradaTokens, result.SaidaTokens, result.EntradaTokensEmCache),
+                new AssistenteUsoDto(inputTokens, result.SaidaTokens, result.EntradaTokensEmCache),
                 result.Modelo);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
                 "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
             throw;
         }
@@ -221,7 +299,7 @@ public sealed class AssistenteIaApplicationService(
                 execution.SolicitacaoId,
                 execution.OrganizationId,
                 execution.PecaId);
-            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
                 "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
             throw new AssistenteIaException(
                 StatusCodes.Status504GatewayTimeout,
@@ -232,28 +310,31 @@ public sealed class AssistenteIaApplicationService(
         catch (AssistenteIaProviderException ex)
         {
             logger.LogWarning(
-                ex,
                 "Falha no provider de IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} Code={Code} ProviderStatusCode={ProviderStatusCode}",
                 execution.SolicitacaoId,
                 execution.OrganizationId,
                 execution.PecaId,
                 ex.Code,
                 ex.ProviderStatusCode);
-            await RecordUsageAsync(execution, null, Settings.Model, null, null, null,
+            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
                 "failed", ex.Code, ElapsedMilliseconds(startedAt));
             throw MapProviderException(ex);
         }
         catch (AssistenteIaException ex)
         {
             await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
-                providerResult?.EntradaTokens, providerResult?.EntradaTokensEmCache, providerResult?.SaidaTokens,
+                providerResult?.EntradaTokens ?? execution.InputTokensContados,
+                providerResult?.EntradaTokensEmCache,
+                providerResult?.SaidaTokens,
                 "failed", ex.Code, ElapsedMilliseconds(startedAt));
             throw;
         }
         catch (Exception)
         {
             await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
-                providerResult?.EntradaTokens, providerResult?.EntradaTokensEmCache, providerResult?.SaidaTokens,
+                providerResult?.EntradaTokens ?? execution.InputTokensContados,
+                providerResult?.EntradaTokensEmCache,
+                providerResult?.SaidaTokens,
                 "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
             throw;
         }
@@ -402,6 +483,9 @@ public sealed class AssistenteIaApplicationService(
     private static AssistenteIaException TooLarge(string message) =>
         new(StatusCodes.Status413PayloadTooLarge, "AI_CONTEXT_TOO_LARGE", message);
 
+    private static AssistenteIaException InputTooLarge(string message) =>
+        new(StatusCodes.Status413PayloadTooLarge, "AI_INPUT_TOO_LARGE", message);
+
     private static AssistenteIaException ProviderOutputInvalid(string message) =>
         new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", message);
 
@@ -437,4 +521,13 @@ public sealed class AssistenteIaApplicationService(
 
     private static long ElapsedMilliseconds(long startedAt) =>
         (long)TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds;
+
+    private CancellationTokenSource CreateTimeout(CancellationToken cancellationToken, long startedAt)
+    {
+        var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var remaining = TimeSpan.FromSeconds(Settings.TimeoutSeconds) -
+                        TimeProvider.System.GetElapsedTime(startedAt);
+        timeout.CancelAfter(remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero);
+        return timeout;
+    }
 }

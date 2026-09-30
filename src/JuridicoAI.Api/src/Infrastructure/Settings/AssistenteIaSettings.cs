@@ -12,6 +12,7 @@ public sealed class AssistenteIaSettings
     public int MaxDocumentContextCharacters { get; set; } = 60_000;
     public int MaxAdditionalContextCharacters { get; set; } = 8_000;
     public int MaxTotalContextCharacters { get; set; } = 80_000;
+    public int MaxInputTokens { get; set; } = 60_000;
     public int MaxOutputCharacters { get; set; } = 20_000;
     public int MaxOutputTokens { get; set; } = 6_000;
     public long MaxRequestBodyBytes { get; set; } = 512 * 1024;

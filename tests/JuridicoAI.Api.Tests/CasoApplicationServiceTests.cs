@@ -165,6 +165,39 @@ public sealed class CasoApplicationServiceTests
     }
 
     [Fact]
+    public async Task Organization_NaoLeAlteraOuRemoveContextoEDocumentoDeOutraOrganization()
+    {
+        var repository = new InMemoryCasoRepository();
+        var storage = new InMemoryFileStorage();
+        var settings = Options.Create(new DocumentStorageSettings { MaxFileSizeBytes = 1024 });
+        var serviceA = new CasoApplicationService(
+            repository, storage, new TestAuthContext(), settings, NullLogger<CasoApplicationService>.Instance);
+        var serviceB = new CasoApplicationService(
+            repository, storage, new TestAuthContext(), settings, NullLogger<CasoApplicationService>.Instance);
+        var casoB = await serviceB.CriarCasoAsync(new CriarCasoRequest("B", null), default);
+        var contextoB = await serviceB.CriarContextoAsync(casoB.Id,
+            new CriarContextoCasoRequest(TipoContextoCasoEnum.Observacao, "Privado", "CONTEUDO-TENANT-B"), default);
+        var documentoB = await serviceB.CriarDocumentoAsync(
+            casoB.Id, "privado.txt", "text/plain", 3, null, new MemoryStream([1, 2, 3]), default);
+
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.ObterContextoAsync(casoB.Id, contextoB.Id, default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.AtualizarContextoAsync(casoB.Id, contextoB.Id,
+                new AtualizarContextoCasoRequest(TipoContextoCasoEnum.Observacao, null, "ALTERADO"), default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.RemoverContextoAsync(casoB.Id, contextoB.Id, default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.ObterArquivoAsync(casoB.Id, documentoB.Id, default));
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() =>
+            serviceA.RemoverDocumentoAsync(casoB.Id, documentoB.Id, default));
+
+        Assert.Empty(storage.Read);
+        Assert.Equal("CONTEUDO-TENANT-B", (await serviceB.ObterContextoAsync(casoB.Id, contextoB.Id, default)).Conteudo);
+        Assert.Equal(documentoB.Id, (await serviceB.ObterDocumentoAsync(casoB.Id, documentoB.Id, default)).Id);
+    }
+
+    [Fact]
     public async Task Envolvido_PessoaFisicaNormalizaIdentidadeEMascaraDocumentoNaListagem()
     {
         var (service, _, _) = CreateService();
@@ -328,6 +361,7 @@ public sealed class CasoApplicationServiceTests
     {
         public HashSet<string> Saved { get; } = [];
         public List<string> Deleted { get; } = [];
+        public List<string> Read { get; } = [];
 
         public Task SaveAsync(string storageId, Stream content, CancellationToken cancellationToken)
         {
@@ -335,8 +369,11 @@ public sealed class CasoApplicationServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<Stream> GetAsync(string storageId, CancellationToken cancellationToken) =>
-            Task.FromResult<Stream>(new MemoryStream([1]));
+        public Task<Stream> GetAsync(string storageId, CancellationToken cancellationToken)
+        {
+            Read.Add(storageId);
+            return Task.FromResult<Stream>(new MemoryStream([1]));
+        }
 
         public Task DeleteAsync(string storageId, CancellationToken cancellationToken)
         {
@@ -411,7 +448,8 @@ public sealed class CasoApplicationServiceTests
         public Task<ContextoCaso> CriarContextoAsync(ContextoCaso item, CancellationToken ct) { _contextos.Add(item.Id, item); return Task.FromResult(item); }
         public Task<IReadOnlyList<ContextoCaso>> ListarContextosAsync(Guid casoId, Guid org, CancellationToken ct) => Result(_contextos.Values.Where(x => x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org));
         public Task<ContextoCaso?> ObterContextoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_contextos.GetValueOrDefault(id) is { } x && x.CasoId == casoId && _casos.GetValueOrDefault(casoId)?.OrganizationId == org ? x : null);
-        public Task<bool> AtualizarContextoAsync(ContextoCaso item, CancellationToken ct) => Task.FromResult(_contextos.ContainsKey(item.Id));
+        public Task<bool> AtualizarContextoAsync(ContextoCaso item, Guid org, CancellationToken ct) =>
+            Task.FromResult(_contextos.ContainsKey(item.Id) && _casos.GetValueOrDefault(item.CasoId)?.OrganizationId == org);
         public Task<bool> RemoverContextoAsync(Guid casoId, Guid id, Guid org, CancellationToken ct) => Task.FromResult(_casos.GetValueOrDefault(casoId)?.OrganizationId == org && Remove(_contextos, casoId, id, x => x.CasoId));
 
         public Task<DocumentoCaso> CriarDocumentoAsync(DocumentoCaso item, CancellationToken ct)

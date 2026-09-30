@@ -2,9 +2,11 @@
 
 > **Estado da decisão:** aprovado
 >
-> **Estado da implementação:** pendente
+> **Estado da implementação:** parcial
 >
 > **Data da decisão:** 2026-09-27
+>
+> **Última atualização:** 2026-09-29
 >
 > **Pontos encerrados:** `PA-01` e `PA-02`
 
@@ -132,16 +134,16 @@ recebe erro controlado e pode iniciar uma nova solicitação manualmente.
 | Área | Estado atual | Alvo aprovado |
 |---|---|---|
 | Modelo | configurável, sem valor padrão | `gpt-5.6-terra` por configuração |
-| Entrada | limites por caracteres | limite adicional de 60.000 tokens reais |
+| Entrada | guardas por caracteres e contagem exata antes da geração | limite de 60.000 tokens reais implementado |
 | Saída | único `MaxOutputTokens=6000` | limite por perfil de 2k, 4k ou 8k |
-| Rate limit | 6 solicitações/minuto por usuário | 10 solicitações/minuto por usuário |
-| Concorrência | deduplicação por `clientRequestId` | máximo de 2 solicitações simultâneas por usuário |
-| Rate limit da Organization | não implementado | 30 solicitações/minuto por Organization |
-| Concorrência da Organization | não implementada | máximo de 6 solicitações simultâneas por Organization |
+| Rate limit | 10 solicitações/minuto por usuário | implementado |
+| Concorrência | 2 solicitações simultâneas por usuário, além da deduplicação | implementado |
+| Rate limit da Organization | 30 solicitações/minuto por Organization | implementado em memória |
+| Concorrência da Organization | 6 solicitações simultâneas por Organization | implementada em memória |
 | Orçamento | não implementado | US$ 10/mês por Organization, configurável |
 | Alertas | não implementados | 70%, 90% e bloqueio em 100% |
 | Retry | não implementado no adapter | até 2 retries transitórios, sem fallback |
-| Auditoria de custo | uso de tokens apenas em log | ledger técnico por Organization e solicitação |
+| Auditoria de custo | ledger técnico por Organization e solicitação | bloquear e alertar pelo orçamento ainda pendente |
 
 ## 3. Configuração alvo
 
@@ -199,6 +201,16 @@ orçamento.
 - manter limites de caracteres como guarda barata antes da contagem remota;
 - registrar contagem estimada, contagem retornada no uso e divergência.
 
+Em 2026-09-29, a contagem exata foi implementada pela abstração
+`IAssistenteTokenCounter` e pelo endpoint oficial
+`POST /v1/responses/input_tokens`. O contador utiliza modelo, instruções,
+entrada e schema de saída equivalentes aos da geração, compartilha a mesma vaga
+de rate limit/concorrência e o mesmo deadline da operação. Acima de 60.000
+tokens, a requisição é rejeitada com HTTP 413 e `AI_INPUT_TOO_LARGE` antes de
+abrir o stream SSE. A vaga de concorrência e o registro de deduplicação são
+liberados também nessa rejeição. Perfis de saída e a medição de divergência
+continuam pendentes.
+
 A OpenAI recomenda a contagem com o mesmo formato da Responses API porque ela
 inclui instruções e a sobrecarga estrutural. Consulte
 [Counting tokens](https://developers.openai.com/api/docs/guides/token-counting).
@@ -252,16 +264,16 @@ inclui instruções e a sobrecarga estrutural. Consulte
 
 - [ ] Todas as operações atuais enviam `gpt-5.6-terra` por configuração.
 - [ ] Cada modo/operação recebe exatamente o perfil de saída definido.
-- [ ] Payload acima de 60.000 tokens é recusado antes da geração.
-- [ ] O uso real de entrada e saída é registrado sem conteúdo jurídico.
+- [x] Payload acima de 60.000 tokens é recusado antes da geração.
+- [x] O uso real de entrada e saída é registrado sem conteúdo jurídico.
 - [ ] A 70% e 90% são produzidos alertas distintos.
 - [ ] Em 100%, nenhuma nova chamada ao provider é iniciada.
-- [ ] Cada usuário é limitado a 10 solicitações/minuto e 2 simultâneas.
-- [ ] Cada Organization é limitada a 30 solicitações/minuto e 6 simultâneas.
+- [x] Cada usuário é limitado a 10 solicitações/minuto e 2 simultâneas.
+- [x] Cada Organization é limitada a 30 solicitações/minuto e 6 simultâneas.
 - [ ] Erros transitórios executam no máximo duas novas tentativas.
 - [ ] Não há retry após delta, cancelamento ou erro não transitório.
-- [ ] Nenhum fluxo seleciona outro modelo automaticamente.
-- [ ] Falha final não altera a Peça nem descarta o pedido digitado.
+- [x] Nenhum fluxo seleciona outro modelo automaticamente.
+- [x] Falha final não altera a Peça nem descarta o pedido digitado.
 - [ ] Custos médios por operação e por Organization podem ser medidos.
 
 ## 6. Medição pós-implementação

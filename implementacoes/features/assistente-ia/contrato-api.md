@@ -264,6 +264,7 @@ atual do middleware da API.
 | 404 | `PECA_NOT_FOUND` | Peça inexistente para a Organization |
 | 409 | `AI_REQUEST_ALREADY_RUNNING` | mesmo `clientRequestId` ainda em andamento |
 | 413 | `AI_CONTEXT_TOO_LARGE` | um campo de contexto ultrapassa seu limite |
+| 413 | `AI_INPUT_TOO_LARGE` | o payload completo ultrapassa 60.000 tokens |
 | 413 | `AI_REQUEST_TOO_LARGE` | corpo HTTP ultrapassa o limite configurado |
 | 422 | `AI_CONTEXT_INCOMPATIBLE` | seleção/modo não formam uma solicitação válida |
 | 429 | `AI_USER_RATE_LIMITED` | taxa por usuário excedida |
