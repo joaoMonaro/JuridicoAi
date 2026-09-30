@@ -339,18 +339,29 @@ Entregas iniciais concluídas no frontend:
 - a primeira execução identificou e levou à correção do nome acessível do campo
   de proposta e do contraste de botões, item selecionado e alertas; depois das
   correções, os seis scans passaram sem violações críticas ou sérias;
+- oito testes unitários validam identificação de plataforma, rótulo do atalho,
+  modificador correto e rejeição de eventos repetidos ou ambíguos;
+- cinco E2E de teclado cobrem `Ctrl+Alt+A`, `Cmd+Alt+A` com plataforma simulada,
+  foco inicial, ordem principal de `Tab`/`Shift+Tab`, cancelamento e fechamento
+  com `Escape`, aplicação com `Enter`, retorno ao editor, undo e redo;
+- o painel agora aguarda as capacidades carregarem antes de focar o campo de
+  instrução; atalhos repetidos são ignorados e o rótulo mostra `Ctrl` ou `Cmd`
+  conforme a plataforma;
+- as verificações que exigem hardware, sistema e tecnologia assistiva reais
+  foram registradas no
+  [checklist manual de acessibilidade](checklist-manual-acessibilidade.md);
 - `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
-- teste, lint e build executados com sucesso: `44/44` testes Vitest e `12/12`
+- teste, lint e build executados com sucesso: `52/52` testes Vitest e `17/17`
   testes Playwright aprovados; o E2E crítico principal, os cinco cenários de
-  resiliência e os seis scans de acessibilidade passaram em três execuções
-  consecutivas.
+  resiliência, os seis scans de acessibilidade e os cinco fluxos de teclado
+  passaram em três execuções consecutivas.
 
 Continuam pendentes nesta infraestrutura: os demais cenários E2E listados na
-seção 6, scan do estado de confirmação de contexto e auditorias manuais de
-teclado, foco, contraste e leitor de tela. A deduplicação de delta também
-permanece pendente porque o contrato atual ainda não fornece ID ou sequência por
-evento; comparar somente o texto poderia remover uma repetição jurídica
-legítima.
+seção 6, scan do estado de confirmação de contexto e execução do checklist
+manual de teclado físico, foco visual, contraste e leitor de tela. A
+deduplicação de delta também permanece pendente porque o contrato atual ainda
+não fornece ID ou sequência por evento; comparar somente o texto poderia
+remover uma repetição jurídica legítima.
 
 ## 11. Critérios para encerrar o PA-12
 
