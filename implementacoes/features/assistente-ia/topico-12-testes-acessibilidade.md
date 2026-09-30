@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** iniciada — infraestrutura unitária e de componentes configurada
+> **Estado da implementação:** em andamento — unitários, componentes e E2E principal configurados
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -46,7 +46,7 @@ Scripts-alvo:
     "test": "vitest",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "test:a11y": "vitest run --project accessibility",
+    "test:a11y": "playwright test e2e/accessibility.spec.ts",
     "test:ci": "npm run test:run && npm run test:e2e"
   }
 }
@@ -318,24 +318,50 @@ Entregas iniciais concluídas no frontend:
   e alertas da sugestão continuam visíveis para revisão humana;
 - a região viva anuncia somente o estado da geração, sem anunciar cada delta,
   e a conclusão é comunicada uma única vez por `role="status"`;
-- teste, lint e build executados com sucesso: `44/44` testes aprovados; a
-  suíte final passou em três execuções consecutivas.
+- Playwright configurado inicialmente para Chromium, com trace, screenshot e
+  vídeo preservados somente em falha e diretórios de artefatos ignorados pelo
+  Git;
+- servidor HTTP fake local fornece Caso, Peça, capacidades, SSE fragmentado e
+  persistência em memória, sem chamar backend externo ou OpenAI; cenários
+  configuráveis simulam resposta lenta, erro `503`, falha de autosave e
+  conflito `409`;
+- o E2E principal abre a Peça, seleciona texto, recebe o stream fragmentado,
+  revisa e aplica a sugestão, observa o `PATCH` do autosave e confirma a
+  persistência após reload;
+- cinco E2E de resiliência comprovam que cancelamento e erro do provider mantêm
+  o documento intacto, edição concorrente expira a âncora, erro de autosave
+  bloqueia aplicação até um retry bem-sucedido e conflito de versão bloqueia a
+  sugestão com orientação para recarregar;
+- `@axe-core/playwright` integrado ao Chromium com comando dedicado
+  `test:a11y` e gate para qualquer violação crítica ou séria;
+- seis estados possuem scan automatizado: painel vazio, streaming, sugestão com
+  diff, erro do provider, erro de autosave e âncora expirada;
+- a primeira execução identificou e levou à correção do nome acessível do campo
+  de proposta e do contraste de botões, item selecionado e alertas; depois das
+  correções, os seis scans passaram sem violações críticas ou sérias;
+- `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
+- teste, lint e build executados com sucesso: `44/44` testes Vitest e `12/12`
+  testes Playwright aprovados; o E2E crítico principal, os cinco cenários de
+  resiliência e os seis scans de acessibilidade passaram em três execuções
+  consecutivas.
 
-Continuam pendentes nesta infraestrutura: Playwright, axe-core e os projetos
-específicos de E2E e acessibilidade. A deduplicação de delta também permanece
-pendente porque o contrato atual ainda não fornece ID ou sequência por evento;
-comparar somente o texto poderia remover uma repetição jurídica legítima.
+Continuam pendentes nesta infraestrutura: os demais cenários E2E listados na
+seção 6, scan do estado de confirmação de contexto e auditorias manuais de
+teclado, foco, contraste e leitor de tela. A deduplicação de delta também
+permanece pendente porque o contrato atual ainda não fornece ID ou sequência por
+evento; comparar somente o texto poderia remover uma repetição jurídica
+legítima.
 
 ## 11. Critérios para encerrar o PA-12
 
-- [ ] Vitest, React Testing Library, Playwright e axe-core estão configurados.
-- [ ] Existe comando único e não interativo para a suíte de CI.
+- [x] Vitest, React Testing Library, Playwright e axe-core estão configurados.
+- [x] Existe comando único e não interativo para a suíte de CI.
 - [ ] Todos os cenários SSE obrigatórios existem e passam.
 - [x] TipTap possui testes de seleção, âncora, aplicação, undo, redo e transação
       única.
-- [ ] O fluxo E2E principal comprova aplicação, autosave e persistência após
+- [x] O fluxo E2E principal comprova aplicação, autosave e persistência após
       reload.
-- [ ] E2E cobre conflito, erro, cancelamento e âncora expirada.
+- [x] E2E cobre conflito, erro, cancelamento e âncora expirada.
 - [ ] Axe não encontra violações críticas ou sérias nos estados definidos.
 - [ ] Auditoria de teclado, foco, ARIA e contraste está registrada.
 - [ ] Smoke test com leitor de tela está registrado.
