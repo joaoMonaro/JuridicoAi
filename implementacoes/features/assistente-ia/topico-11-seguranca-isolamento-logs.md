@@ -245,16 +245,22 @@ Já existe:
   endereço e flags, inclusive sem leitura do arquivo físico alheio;
 - teste unitário da separação entre prompt do sistema e conteúdo malicioso;
 - caso `FONTES-005` de prompt injection executado na baseline técnica `1.0.3`;
-- 82 testes automatizados aprovados após esta etapa do PA-11.
 - teste comprovando que a rejeição por tokens libera a vaga de concorrência e
-  permite reutilizar o `clientRequestId`.
+  permite reutilizar o `clientRequestId`;
+- oito testes HTTP sobre a aplicação ASP.NET real cobrindo autenticação,
+  isolamento de Caso, Peça, Contexto, Documento, arquivo e assistente, erros
+  413/429, `Retry-After`, timeout SSE, desconexão do cliente e ausência de
+  segredo em resposta e log;
+- erros anteriores ao stream preservando `application/problem+json`;
+- 90 testes automatizados aprovados após esta etapa do PA-11.
 
 Ainda falta implementar ou comprovar:
 
 - coordenação distribuída dos limitadores antes de executar mais de uma
   instância da API;
 - cobertura das entidades futuras de conversa, mensagem e sugestão;
-- testes HTTP de acesso cruzado para todos os recursos;
+- ampliar os testes HTTP para envolvidos, endereços, listagens e entidades
+  futuras de conversa, mensagem e sugestão;
 - ampliação dos testes de prompt injection para todas as tentativas da seção 9;
 - inspeção de logs de infraestrutura, proxy e APM e dos cenários HTTP ainda não
   cobertos;
@@ -324,7 +330,7 @@ Ainda falta implementar ou comprovar:
 - [ ] Logs de todos os cenários foram inspecionados sem conteúdo proibido.
 - [x] Limites de usuário e Organization estão implementados e configuráveis.
 - [ ] Limites de payload, upload, tokens e timeout estão ativos e testados.
-- [ ] Cancelamento e falha liberam vagas de concorrência.
+- [x] Cancelamento e falha liberam vagas de concorrência.
 - [ ] Proxy, APM e configuração de produção foram revisados.
 - [ ] As evidências estão registradas e aprovadas antes do piloto.
 

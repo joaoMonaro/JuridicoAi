@@ -40,7 +40,8 @@ Em 2026-09-27, estão disponíveis:
 - ledger técnico persistente de tokens, custo estimado, duração e estado final;
 - logs técnicos sem prompt, resposta ou PII, inclusive nos caminhos de erro da
   IA; o logging automático do `HttpClient` do provider fica desabilitado;
-- testes do serviço de aplicação e do contrato HTTP com o provider.
+- testes do serviço de aplicação, do contrato HTTP com o provider e da API
+  ASP.NET real para isolamento, limites, timeout e cancelamento.
 
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
 provider acumula e valida o JSON estruturado antes de emitir `conteudo.delta`,

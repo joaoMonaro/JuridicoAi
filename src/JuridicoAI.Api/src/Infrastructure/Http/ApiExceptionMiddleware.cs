@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using JuridicoAI.Api.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -7,6 +8,8 @@ namespace JuridicoAI.Api.Infrastructure.Http;
 
 public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExceptionMiddleware> logger)
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task InvokeAsync(HttpContext context)
     {
         try { await next(context); }
@@ -71,6 +74,6 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
         };
         if (code is not null) problem.Extensions["code"] = code;
         if (retryable.HasValue) problem.Extensions["retryable"] = retryable.Value;
-        return context.Response.WriteAsJsonAsync(problem);
+        return context.Response.WriteAsync(JsonSerializer.Serialize(problem, JsonOptions));
     }
 }

@@ -468,10 +468,10 @@ public sealed class AssistenteIaApplicationService(
 
     private static AssistenteIaException MapProviderException(AssistenteIaProviderException ex) => ex.Code switch
     {
-        "AI_RATE_LIMITED" => new(StatusCodes.Status429TooManyRequests, ex.Code, "O limite de uso da IA foi atingido. Tente novamente mais tarde.", true, ex),
-        "AI_PROVIDER_TIMEOUT" => new(StatusCodes.Status504GatewayTimeout, ex.Code, "A IA demorou mais que o esperado. Tente novamente.", true, ex),
-        "AI_UNAVAILABLE" => new(StatusCodes.Status503ServiceUnavailable, ex.Code, "O provedor de IA está indisponível.", true, ex),
-        _ => new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", "Não foi possível gerar uma resposta válida.", ex.Retryable, ex)
+        "AI_RATE_LIMITED" => new(StatusCodes.Status429TooManyRequests, ex.Code, "O limite de uso da IA foi atingido. Tente novamente mais tarde.", true),
+        "AI_PROVIDER_TIMEOUT" => new(StatusCodes.Status504GatewayTimeout, ex.Code, "A IA demorou mais que o esperado. Tente novamente.", true),
+        "AI_UNAVAILABLE" => new(StatusCodes.Status503ServiceUnavailable, ex.Code, "O provedor de IA está indisponível.", true),
+        _ => new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", "Não foi possível gerar uma resposta válida.", ex.Retryable)
     };
 
     private static AssistenteIaException Invalid(string message) =>

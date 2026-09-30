@@ -245,7 +245,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [ ] Completar limites por Organization, orçamento e métricas operacionais.
 - [x] Implementar limite exato de 60.000 tokens de entrada.
 - [ ] Implementar perfis de saída por operação e retry definidos no Tópico 1.
-- [x] Testes unitários do serviço, isolamento e adapter OpenAI.
+- [x] Testes unitários e HTTP do serviço, isolamento, limites e adapter OpenAI.
 
 ### F2 — frontend vertical
 
