@@ -29,6 +29,9 @@ Executar pelo menos uma vez em Windows ou Linux e uma vez em macOS:
       novamente sem usar mouse;
 - [ ] undo e redo funcionam pelos atalhos nativos da plataforma após aplicar;
 - [ ] zoom do navegador em 200% não oculta foco nem ações essenciais.
+- [ ] no primeiro uso, o foco entra no aviso, permanece dentro do diálogo com
+      `Tab`/`Shift+Tab` e chega a `Entendi e continuar`;
+- [ ] `Escape` ou `Agora não` fecha o aviso sem enviar conteúdo à IA;
 
 ## 2. Leitor de tela
 
@@ -49,6 +52,8 @@ Linux   -> Orca + Firefox
 - [ ] alertas e motivo de bloqueio da aplicação são compreensíveis;
 - [ ] o retorno ao editor após fechar ou aplicar é perceptível;
 - [ ] a leitura continua utilizável com conteúdo jurídico extenso.
+- [ ] o aviso de transparência é anunciado como diálogo, com título, descrição,
+      alerta de revisão e ação de confirmação compreensíveis;
 
 ## 3. Revisão visual complementar
 

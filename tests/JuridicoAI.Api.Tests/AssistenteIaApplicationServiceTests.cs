@@ -329,6 +329,7 @@ public sealed class AssistenteIaApplicationServiceTests
             new AssistentePromptPolicy(),
             new AssistenteRequestRegistry(),
             new FeatureAccessStub(),
+            new AllowAllTransparencyService(),
             usageLimiter,
             usageRecorder,
             new CorrelationContextStub(),
@@ -439,6 +440,18 @@ public sealed class AssistenteIaApplicationServiceTests
 
         public Task ExigirModoAsync(Guid organizationId, AssistenteModo modo, CancellationToken cancellationToken) =>
             Task.CompletedTask;
+    }
+
+    private sealed class AllowAllTransparencyService : IAssistenteTransparencyService
+    {
+        public Task<AssistenteTransparenciaDto> ObterAsync(CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<AssistenteTransparenciaDto> ConfirmarAsync(
+            ConfirmarAssistenteTransparenciaRequest request,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
+
+        public Task ExigirConfirmacaoAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 
     private sealed class UsageLimiterStub : IAssistenteUsageLimiter

@@ -76,6 +76,17 @@ public sealed record AssistenteCapacidadesDto(
     bool SuportaHistorico,
     IReadOnlyList<string>? Features = null);
 
+public sealed record AssistenteTransparenciaDto(
+    string Versao,
+    bool Confirmado,
+    DateTime? ConfirmadoEm,
+    string Titulo,
+    string Mensagem,
+    string AvisoDeRevisao,
+    string? PoliticaDePrivacidadeUrl);
+
+public sealed record ConfirmarAssistenteTransparenciaRequest(string? Versao);
+
 public sealed record AssistenteAlertaDto(string Codigo, string Mensagem);
 
 public sealed record AssistenteAchadoDto(

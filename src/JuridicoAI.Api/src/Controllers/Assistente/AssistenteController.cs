@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Application.Services;
@@ -11,6 +12,7 @@ namespace JuridicoAI.Api.Controllers.Assistente;
 [Microsoft.AspNetCore.Authorization.Authorize]
 public sealed class AssistenteController(
     AssistenteIaApplicationService service,
+    IAssistenteTransparencyService transparencyService,
     ILogger<AssistenteController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
@@ -18,6 +20,17 @@ public sealed class AssistenteController(
     [HttpGet("assistente/capacidades")]
     public async Task<ActionResult<AssistenteCapacidadesDto>> ObterCapacidades(CancellationToken cancellationToken) =>
         Ok(await service.ObterCapacidadesAsync(cancellationToken));
+
+    [HttpGet("assistente/transparencia")]
+    public async Task<ActionResult<AssistenteTransparenciaDto>> ObterTransparencia(
+        CancellationToken cancellationToken) =>
+        Ok(await transparencyService.ObterAsync(cancellationToken));
+
+    [HttpPost("assistente/transparencia/confirmacoes")]
+    public async Task<ActionResult<AssistenteTransparenciaDto>> ConfirmarTransparencia(
+        ConfirmarAssistenteTransparenciaRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await transparencyService.ConfirmarAsync(request, cancellationToken));
 
     [HttpPost("pecas/{pecaId:guid}/assistente/solicitacoes")]
     public async Task Solicitar(

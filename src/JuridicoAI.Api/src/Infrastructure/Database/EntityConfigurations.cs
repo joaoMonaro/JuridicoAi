@@ -364,3 +364,32 @@ internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration
         builder.HasIndex(x => x.CorrelationId).HasDatabaseName("ix_ai_usage_correlation_id");
     }
 }
+
+internal sealed class AiTransparencyAcknowledgementConfiguration
+    : IEntityTypeConfiguration<AiTransparencyAcknowledgement>
+{
+    public void Configure(EntityTypeBuilder<AiTransparencyAcknowledgement> builder)
+    {
+        builder.ToTable("ai_transparency_acknowledgements", table =>
+            table.HasCheckConstraint(
+                "ck_ai_transparency_notice_version",
+                "length(btrim(notice_version)) > 0"));
+        builder.HasKey(x => x.Id).HasName("ai_transparency_acknowledgements_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.NoticeVersion).HasColumnName("notice_version").HasMaxLength(80).IsRequired();
+        builder.Property(x => x.AcknowledgedAt).HasColumnName("acknowledged_at");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("ai_transparency_ack_organization_id_fkey");
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("ai_transparency_ack_user_id_fkey");
+        builder.HasIndex(x => new { x.OrganizationId, x.UserId, x.NoticeVersion })
+            .IsUnique()
+            .HasDatabaseName("uq_ai_transparency_organization_user_version");
+        builder.HasIndex(x => new { x.OrganizationId, x.AcknowledgedAt })
+            .HasDatabaseName("ix_ai_transparency_organization_acknowledged_at");
+    }
+}

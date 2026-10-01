@@ -235,6 +235,11 @@ podem ser habilitados sem nova avaliação de retenção e transferência.
 
 ## 7. Transparência antes do primeiro uso
 
+> **Implementado em 2026-10-01:** aviso versionado, confirmação persistida por
+> usuário e Organization, reconfirmação em nova versão e bloqueio da geração no
+> backend. A URL da Política de Privacidade é configurável e deve ser definida
+> antes da comercialização.
+
 Antes da primeira solicitação, o backend exigirá confirmação da versão vigente
 do aviso. Texto inicial aprovado para revisão jurídica:
 
@@ -318,10 +323,11 @@ de tratamento permanece sujeita à análise prevista em `PA-17` e ao
 
 ### Etapa E — transparência e política do provider
 
-- versionar o aviso de IA no backend;
-- persistir confirmação por usuário e Organization;
-- bloquear geração com `AI_TRANSPARENCY_ACK_REQUIRED` enquanto faltar confirmação;
-- expor versão e URL da política nas capacidades;
+- [x] versionar o aviso de IA no backend;
+- [x] persistir confirmação por usuário e Organization;
+- [x] bloquear geração com `AI_TRANSPARENCY_ACK_REQUIRED` enquanto faltar confirmação;
+- [x] expor versão, texto e URL configurável da política em endpoint próprio;
+- [x] apresentar diálogo acessível no primeiro uso e reconfirmar após mudança de versão;
 - manter teste de contrato que assegure `store=false`;
 - criar checklist operacional para ZDR/MAM, região, contrato e suboperadores;
 - revisar qualquer nova feature do provider antes de habilitá-la.
@@ -349,7 +355,7 @@ de tratamento permanece sujeita à análise prevista em `PA-17` e ao
 - [ ] Mapas de pseudonimização não são persistidos nem registrados.
 - [ ] O provider recebe `store=false` e o histórico não depende dele.
 - [ ] O sistema não promete ZDR sem configuração e contrato que a sustentem.
-- [ ] Primeiro uso exige confirmação versionada do aviso de transparência.
+- [x] Primeiro uso exige confirmação versionada do aviso de transparência.
 - [ ] Cancelar, falhar ou excluir não reutiliza conteúdo para outra finalidade.
 - [ ] Testes comprovam isolamento por Organization em histórico e exclusão.
 - [ ] `PA-17` está aprovado antes da comercialização.

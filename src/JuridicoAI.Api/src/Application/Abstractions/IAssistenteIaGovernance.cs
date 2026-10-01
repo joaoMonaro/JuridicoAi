@@ -24,6 +24,28 @@ public interface IAiUsageLedgerRepository
     Task AdicionarAsync(AiUsageLedgerEntry entry, CancellationToken cancellationToken);
 }
 
+public interface IAiTransparencyAcknowledgementRepository
+{
+    Task<AiTransparencyAcknowledgement?> ObterAsync(
+        Guid organizationId,
+        Guid userId,
+        string noticeVersion,
+        CancellationToken cancellationToken);
+
+    Task RegistrarAsync(
+        AiTransparencyAcknowledgement acknowledgement,
+        CancellationToken cancellationToken);
+}
+
+public interface IAssistenteTransparencyService
+{
+    Task<AssistenteTransparenciaDto> ObterAsync(CancellationToken cancellationToken);
+    Task<AssistenteTransparenciaDto> ConfirmarAsync(
+        ConfirmarAssistenteTransparenciaRequest request,
+        CancellationToken cancellationToken);
+    Task ExigirConfirmacaoAsync(CancellationToken cancellationToken);
+}
+
 public interface IAssistenteFeatureAccess
 {
     Task<AssistenteFeatureSnapshot> ObterAsync(Guid organizationId, CancellationToken cancellationToken);

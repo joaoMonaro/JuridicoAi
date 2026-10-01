@@ -23,6 +23,48 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiTransparencyAcknowledgement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AcknowledgedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("acknowledged_at");
+
+                    b.Property<string>("NoticeVersion")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("notice_version");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("ai_transparency_acknowledgements_pkey");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("OrganizationId", "AcknowledgedAt")
+                        .HasDatabaseName("ix_ai_transparency_organization_acknowledged_at");
+
+                    b.HasIndex("OrganizationId", "UserId", "NoticeVersion")
+                        .IsUnique()
+                        .HasDatabaseName("uq_ai_transparency_organization_user_version");
+
+                    b.ToTable("ai_transparency_acknowledgements", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_transparency_notice_version", "length(btrim(notice_version)) > 0");
+                        });
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageLedgerEntry", b =>
                 {
                     b.Property<Guid>("Id")
@@ -940,6 +982,23 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasDatabaseName("uq_users_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiTransparencyAcknowledgement", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("ai_transparency_ack_organization_id_fkey");
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("ai_transparency_ack_user_id_fkey");
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageLedgerEntry", b =>

@@ -2,7 +2,7 @@
 
 > **Estado:** primeira fatia do backend implementada
 >
-> **Última atualização:** 2026-09-27
+> **Última atualização:** 2026-10-01
 >
 > Capacidades, geração, validação e eventos SSE estão implementados. O delta de
 > conteúdo ainda é emitido como um único bloco após a validação da saída
@@ -47,6 +47,49 @@ filtrado pelas mesmas regras usadas pela rota de geração. Sem `AI_ASSISTANT`,
 `habilitado` é `false` e nenhum modo fica disponível. Consulte o
 [Tópico 13 — Feature flags e rollout](./topico-13-feature-flags-rollout.md).
 
+## Transparência antes do primeiro uso
+
+```http
+GET /assistente/transparencia
+Authorization: Bearer <token>
+```
+
+Resposta quando o usuário ainda não confirmou a versão vigente na Organization
+autenticada:
+
+```json
+{
+  "versao": "ai-transparency-v1",
+  "confirmado": false,
+  "confirmadoEm": null,
+  "titulo": "Uso de inteligência artificial",
+  "mensagem": "Algumas informações do caso poderão ser processadas...",
+  "avisoDeRevisao": "As respostas geradas por inteligência artificial podem conter erros...",
+  "politicaDePrivacidadeUrl": null
+}
+```
+
+Para registrar que o aviso vigente foi apresentado:
+
+```http
+POST /assistente/transparencia/confirmacoes
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{"versao":"ai-transparency-v1"}
+```
+
+O registro é idempotente e usa sempre `UserId` e `OrganizationId` obtidos da
+identidade autenticada. Se a versão enviada já não for a atual, a API responde
+`409 AI_TRANSPARENCY_NOTICE_OUTDATED`; o frontend deve buscar e apresentar o
+novo aviso. Uma confirmação anterior não vale para uma nova versão, outro
+usuário ou outra Organization.
+
+Sem confirmação da versão atual, o endpoint de geração responde
+`428 AI_TRANSPARENCY_ACK_REQUIRED` antes de contar tokens, adquirir concorrência
+ou chamar o provider. Esse registro comprova a apresentação do aviso e não é
+tratado como consentimento jurídico geral.
+
 ## Endpoint de geração
 
 ```http
@@ -59,6 +102,9 @@ Accept: text/event-stream
 
 O endpoint valida que a Peça pertence à Organization autenticada e apenas gera
 uma resposta. Ele não atualiza a Peça.
+
+Além da autorização e das feature flags, a geração exige a confirmação descrita
+na seção anterior.
 
 O corpo não aceita `organizationId` como autoridade. O tenant é obtido da
 identidade, sessão e membership validadas pelo backend; `pecaId` e todos os IDs

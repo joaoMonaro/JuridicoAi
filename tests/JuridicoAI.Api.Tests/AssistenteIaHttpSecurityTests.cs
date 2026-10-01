@@ -48,6 +48,63 @@ public sealed class AssistenteIaHttpSecurityTests
     }
 
     [Fact]
+    public async Task Http_ExigeAvisoVigenteAntesDeAcionarIa()
+    {
+        await using var api = await TestApi.CreateAsync();
+        api.Transparency.AllowUnregistered = false;
+        var organizationId = Guid.NewGuid();
+        var caso = CreateCaso(organizationId, "Caso A");
+        var peca = CreatePeca(caso.Id, organizationId, "Peça A");
+        api.Repository.Casos.Add(caso);
+        api.Repository.Pecas.Add(peca);
+        using var client = api.CreateClient(organizationId);
+
+        var status = await client.GetFromJsonAsync<AssistenteTransparenciaDto>("assistente/transparencia");
+        Assert.NotNull(status);
+        Assert.False(status.Confirmado);
+        Assert.Equal("ai-transparency-v1", status.Versao);
+
+        var blocked = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+
+        Assert.Equal((HttpStatusCode)428, blocked.StatusCode);
+        Assert.Contains("AI_TRANSPARENCY_ACK_REQUIRED", await blocked.Content.ReadAsStringAsync());
+        Assert.Equal(0, api.Provider.CountCalls);
+
+        var confirmed = await client.PostAsync(
+            "assistente/transparencia/confirmacoes",
+            JsonBody(new ConfirmarAssistenteTransparenciaRequest(status.Versao)));
+        Assert.Equal(HttpStatusCode.OK, confirmed.StatusCode);
+        var confirmation = await confirmed.Content.ReadFromJsonAsync<AssistenteTransparenciaDto>();
+        Assert.NotNull(confirmation);
+        Assert.True(confirmation.Confirmado);
+        Assert.NotNull(confirmation.ConfirmadoEm);
+
+        var accepted = await client.PostAsync(
+            $"pecas/{peca.Id}/assistente/solicitacoes",
+            JsonBody(CreateAiRequest(Guid.NewGuid())));
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+        Assert.Equal(1, api.Provider.GenerateCalls);
+    }
+
+    [Fact]
+    public async Task Http_NaoConfirmaVersaoDeAvisoDesatualizada()
+    {
+        await using var api = await TestApi.CreateAsync();
+        api.Transparency.AllowUnregistered = false;
+        using var client = api.CreateClient(Guid.NewGuid());
+
+        var response = await client.PostAsync(
+            "assistente/transparencia/confirmacoes",
+            JsonBody(new ConfirmarAssistenteTransparenciaRequest("versao-anterior")));
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("AI_TRANSPARENCY_NOTICE_OUTDATED", await response.Content.ReadAsStringAsync());
+        Assert.Empty(api.Transparency.Items);
+    }
+
+    [Fact]
     public async Task Http_OrganizationANaoAcessaRecursosDaOrganizationB()
     {
         await using var api = await TestApi.CreateAsync();
@@ -543,6 +600,7 @@ public sealed class AssistenteIaHttpSecurityTests
             TestRepository repository,
             TestFileStorage storage,
             TestProvider provider,
+            TestTransparencyRepository transparency,
             CaptureLoggerProvider logs)
         {
             _app = app;
@@ -550,12 +608,14 @@ public sealed class AssistenteIaHttpSecurityTests
             Repository = repository;
             Storage = storage;
             Provider = provider;
+            Transparency = transparency;
             Logs = logs;
         }
 
         public TestRepository Repository { get; }
         public TestFileStorage Storage { get; }
         public TestProvider Provider { get; }
+        public TestTransparencyRepository Transparency { get; }
         public CaptureLoggerProvider Logs { get; }
 
         public static async Task<TestApi> CreateAsync(
@@ -579,6 +639,7 @@ public sealed class AssistenteIaHttpSecurityTests
             var repository = new TestRepository();
             var storage = new TestFileStorage();
             var provider = new TestProvider();
+            var transparency = new TestTransparencyRepository();
             var logs = new CaptureLoggerProvider();
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
@@ -615,6 +676,8 @@ public sealed class AssistenteIaHttpSecurityTests
             builder.Services.AddSingleton<IAssistenteUsageLimiter, AssistenteUsageLimiter>();
             builder.Services.AddSingleton<IAssistenteFeatureAccess, AllowAllFeatureAccess>();
             builder.Services.AddSingleton<IAssistenteUsageRecorder, TestUsageRecorder>();
+            builder.Services.AddSingleton<IAiTransparencyAcknowledgementRepository>(transparency);
+            builder.Services.AddScoped<IAssistenteTransparencyService, AssistenteTransparencyService>();
             builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
             builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
             builder.Services.AddScoped<AssistenteContextBuilder>();
@@ -634,7 +697,7 @@ public sealed class AssistenteIaHttpSecurityTests
             var address = app.Services.GetRequiredService<IServer>()
                 .Features.Get<IServerAddressesFeature>()?.Addresses.Single()
                 ?? throw new InvalidOperationException("O servidor HTTP de teste não publicou um endereço.");
-            return new TestApi(app, new Uri(address), repository, storage, provider, logs);
+            return new TestApi(app, new Uri(address), repository, storage, provider, transparency, logs);
         }
 
         public HttpClient CreateClient(Guid organizationId)
@@ -890,6 +953,45 @@ public sealed class AssistenteIaHttpSecurityTests
     {
         public Task RegistrarAsync(AssistenteUsageRecord record, CancellationToken cancellationToken) =>
             Task.CompletedTask;
+    }
+
+    public sealed class TestTransparencyRepository : IAiTransparencyAcknowledgementRepository
+    {
+        public bool AllowUnregistered { get; set; } = true;
+        public List<AiTransparencyAcknowledgement> Items { get; } = [];
+
+        public Task<AiTransparencyAcknowledgement?> ObterAsync(
+            Guid organizationId,
+            Guid userId,
+            string noticeVersion,
+            CancellationToken cancellationToken)
+        {
+            var acknowledgement = Items.SingleOrDefault(x =>
+                x.OrganizationId == organizationId &&
+                x.UserId == userId &&
+                x.NoticeVersion == noticeVersion);
+            if (acknowledgement is null && AllowUnregistered)
+                acknowledgement = new AiTransparencyAcknowledgement
+                {
+                    Id = Guid.NewGuid(),
+                    OrganizationId = organizationId,
+                    UserId = userId,
+                    NoticeVersion = noticeVersion,
+                    AcknowledgedAt = DateTime.UtcNow
+                };
+            return Task.FromResult(acknowledgement);
+        }
+
+        public Task RegistrarAsync(
+            AiTransparencyAcknowledgement acknowledgement,
+            CancellationToken cancellationToken)
+        {
+            if (!Items.Any(x => x.OrganizationId == acknowledgement.OrganizationId &&
+                                x.UserId == acknowledgement.UserId &&
+                                x.NoticeVersion == acknowledgement.NoticeVersion))
+                Items.Add(acknowledgement);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class StaticOptionsMonitor<T>(T value) : IOptionsMonitor<T>

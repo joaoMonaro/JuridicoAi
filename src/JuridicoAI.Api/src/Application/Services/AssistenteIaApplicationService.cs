@@ -31,6 +31,7 @@ public sealed class AssistenteIaApplicationService(
     AssistentePromptPolicy promptPolicy,
     AssistenteRequestRegistry requestRegistry,
     IAssistenteFeatureAccess featureAccess,
+    IAssistenteTransparencyService transparencyService,
     IAssistenteUsageLimiter usageLimiter,
     IAssistenteUsageRecorder usageRecorder,
     ICorrelationContext correlationContext,
@@ -62,6 +63,7 @@ public sealed class AssistenteIaApplicationService(
     {
         ValidateBaseRequest(pecaId, request);
         await featureAccess.ExigirModoAsync(authContext.OrganizationId, request.Modo, cancellationToken);
+        await transparencyService.ExigirConfirmacaoAsync(cancellationToken);
 
         var peca = await pecaRepository.ObterPecaAsync(pecaId, authContext.OrganizationId, cancellationToken)
             ?? throw new AssistenteIaException(

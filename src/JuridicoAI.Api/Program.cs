@@ -46,6 +46,11 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
         "AssistenteIa:ApiKey é obrigatória quando o assistente está habilitado.")
     .Validate(x => Uri.TryCreate(x.BaseUrl, UriKind.Absolute, out _),
         "AssistenteIa:BaseUrl deve ser uma URL absoluta.")
+    .Validate(x => !string.IsNullOrWhiteSpace(x.TransparencyNoticeVersion),
+        "AssistenteIa:TransparencyNoticeVersion é obrigatória.")
+    .Validate(x => string.IsNullOrWhiteSpace(x.PrivacyPolicyUrl) ||
+                   Uri.TryCreate(x.PrivacyPolicyUrl, UriKind.Absolute, out _),
+        "AssistenteIa:PrivacyPolicyUrl deve ser uma URL absoluta quando informada.")
     .ValidateOnStart();
 builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
     .Validate(x => x.JwtSecret.Length >= 32, "Auth:JwtSecret deve possuir ao menos 32 caracteres.")
@@ -158,6 +163,7 @@ builder.Services.AddScoped<TemplatePecaApplicationService>();
 builder.Services.AddScoped<AuthApplicationService>();
 builder.Services.AddScoped<OrganizationApplicationService>();
 builder.Services.AddScoped<AssistenteIaApplicationService>();
+builder.Services.AddScoped<IAssistenteTransparencyService, AssistenteTransparencyService>();
 builder.Services.AddScoped<AssistenteContextBuilder>();
 builder.Services.AddSingleton<AssistentePromptPolicy>();
 builder.Services.AddSingleton<AssistenteRequestRegistry>();
@@ -171,6 +177,7 @@ builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IOrganizationFeatureRepository, OrganizationFeatureRepository>();
 builder.Services.AddScoped<IAiUsageLedgerRepository, AiUsageLedgerRepository>();
+builder.Services.AddScoped<IAiTransparencyAcknowledgementRepository, AiTransparencyAcknowledgementRepository>();
 builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
 builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();

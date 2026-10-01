@@ -2,7 +2,7 @@
 
 > **Estado:** primeira fatia vertical implementada
 >
-> **Última atualização:** 2026-09-26
+> **Última atualização:** 2026-10-01
 >
 > **Repositório:** `../JuridicoAi-frontend`
 
@@ -30,12 +30,15 @@ Em 2026-09-26, estão disponíveis:
 - aplicação explícita no TipTap em uma transação, integrada ao undo/redo e ao
   autosave existente;
 - bloqueio da aplicação quando a revisão local mudou ou há conflito de versão.
+- aviso de transparência versionado antes do primeiro uso, com confirmação
+  persistida pelo backend e nova apresentação quando a versão mudar;
+- suíte Vitest/Testing Library, Playwright e axe-core cobrindo o fluxo principal,
+  resiliência, teclado, integridade e o diálogo de transparência.
 
 O código está concentrado em `src/features/ai-assistant`, com integração em
 `legal-document-editor.tsx` e uma variante de baixo nível `apiFetch` no cliente
-HTTP. Build e lint passam. O repositório ainda não possui infraestrutura de
-testes automatizados; por isso, os fluxos funcionais e a acessibilidade completa
-permanecem como trabalho de validação, sem alegação de homologação ponta a ponta.
+HTTP. Build e testes automatizados passam. A auditoria com teclado físico e
+leitor de tela real permanece manual e está registrada no checklist do PA-12.
 
 ## Experiência alvo
 
@@ -59,6 +62,8 @@ Estados principais:
 
 ```text
 Fechado
+  -> Aviso de transparência pendente
+       -> Confirmado | Fechado sem usar
   -> Compondo
   -> Enviando
   -> Recebendo

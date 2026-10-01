@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** em andamento — unitários, componentes e E2E principal configurados
+> **Estado da implementação:** suíte automatizada concluída; auditoria manual pendente
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -193,7 +193,7 @@ Executar `axe-core` pelo menos em:
 - estado de streaming e cancelamento;
 - cartão de sugestão e diff;
 - alertas, erro de provider e erro de autosave;
-- confirmação de contexto;
+- aviso de transparência antes do primeiro uso;
 - estado de âncora expirada.
 
 O gate não permite violações críticas ou sérias. Violações moderadas ou menores
@@ -335,8 +335,8 @@ Entregas iniciais concluídas no frontend:
   sugestão com orientação para recarregar;
 - `@axe-core/playwright` integrado ao Chromium com comando dedicado
   `test:a11y` e gate para qualquer violação crítica ou séria;
-- seis estados possuem scan automatizado: painel vazio, streaming, sugestão com
-  diff, erro do provider, erro de autosave e âncora expirada;
+- sete estados possuem scan automatizado: painel vazio, aviso de transparência,
+  streaming, sugestão com diff, erro do provider, erro de autosave e âncora expirada;
 - a primeira execução identificou e levou à correção do nome acessível do campo
   de proposta e do contraste de botões, item selecionado e alertas; depois das
   correções, os seis scans passaram sem violações críticas ou sérias;
@@ -358,15 +358,16 @@ Entregas iniciais concluídas no frontend:
   foram registradas no
   [checklist manual de acessibilidade](checklist-manual-acessibilidade.md);
 - `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
-- teste, lint e build executados com sucesso: `56/56` testes Vitest, `104/104`
-  testes do backend e `22/22` testes Playwright aprovados; o E2E crítico
+- o primeiro uso possui teste de componente e E2E para texto, foco inicial,
+  confirmação pelo teclado, persistência e liberação posterior do compositor;
+- teste e build executados com sucesso: `57/57` testes Vitest, `110/110`
+  testes do backend e `24/24` testes Playwright aprovados; o E2E crítico
   principal, os cinco cenários de resiliência, os seis scans de acessibilidade,
   os cinco fluxos de teclado e os cinco fluxos de integridade passaram em três
   execuções consecutivas.
 
-Continuam pendentes nesta infraestrutura: scan do estado de confirmação de
-contexto e execução do checklist manual de teclado físico, foco visual,
-contraste e leitor de tela.
+Continuam pendentes nesta infraestrutura: execução do checklist manual de
+teclado físico, foco visual, contraste e leitor de tela.
 
 ## 11. Critérios para encerrar o PA-12
 
@@ -378,10 +379,10 @@ contraste e leitor de tela.
 - [x] O fluxo E2E principal comprova aplicação, autosave e persistência após
       reload.
 - [x] E2E cobre conflito, erro, cancelamento e âncora expirada.
-- [ ] Axe não encontra violações críticas ou sérias nos estados definidos.
+- [x] Axe não encontra violações críticas ou sérias nos estados definidos.
 - [ ] Auditoria de teclado, foco, ARIA e contraste está registrada.
 - [ ] Smoke test com leitor de tela está registrado.
 - [ ] Atalhos foram comprovados em Windows/Linux e macOS.
-- [ ] A suíte foi executada com sucesso e a evidência está preservada.
+- [x] A suíte foi executada com sucesso e a evidência está registrada neste documento.
 
 A aprovação desta estratégia, isoladamente, não encerra o ponto.

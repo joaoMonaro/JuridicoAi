@@ -24,4 +24,6 @@ public sealed class AssistenteIaSettings
     public decimal CachedInputCostPerMillionTokensUsd { get; set; }
     public decimal OutputCostPerMillionTokensUsd { get; set; }
     public string PricingVersion { get; set; } = "unconfigured";
+    public string TransparencyNoticeVersion { get; set; } = "ai-transparency-v1";
+    public string? PrivacyPolicyUrl { get; set; }
 }

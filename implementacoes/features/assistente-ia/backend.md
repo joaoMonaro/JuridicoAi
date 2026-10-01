@@ -372,7 +372,9 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [x] Implementar contagem exata de entrada e concorrência do
       [Tópico 1](topico-01-modelo-e-operacao.md).
 - [ ] Implementar perfis de saída e retry do Tópico 1.
-- [ ] Implementar histórico, exclusão, retenção, minimização e transparência do
-      [Tópico 3](topico-03-retencao-exclusao-lgpd.md).
+- [x] Implementar o aviso versionado, a confirmação persistida e o bloqueio de
+      primeiro uso definidos no [Tópico 3](topico-03-retencao-exclusao-lgpd.md).
+- [ ] Implementar histórico, exclusão, retenção e as próximas camadas de
+      minimização definidas no Tópico 3.
 - [x] Atualizar Swagger, `.env.example`, user-secrets e documentação operacional.
 - [ ] Marcar critérios correspondentes no documento principal.
