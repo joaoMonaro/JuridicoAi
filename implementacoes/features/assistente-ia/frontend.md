@@ -21,7 +21,10 @@ estado canônico do documento nem editar diretamente o JSON mantido no React.
 Em 2026-09-26, estão disponíveis:
 
 - painel lateral responsivo aberto pela toolbar ou por `Ctrl/Cmd + Alt + A`;
-- consulta dinâmica de capacidades e limites do backend;
+- consulta antecipada e dinâmica de capacidades e limites do backend;
+- toolbar, atalho, modos e ações rápidas ocultos quando não autorizados;
+- revalidação após recusa da API e ao retornar o foco à janela, com falha
+  fechada quando as capacidades não podem ser carregadas;
 - modos `Perguntar`, `Redigir`, `Reescrever` e `Revisar` com ações rápidas;
 - escopos sem documento, seleção, seção atual e documento completo;
 - seleção opcional de contextos textuais e dados estruturados do Caso;
@@ -52,8 +55,8 @@ backend. A entrada do assistente fica oculta ou identificada como indisponível
 quando a feature estiver desabilitada; modos, limites e suporte a histórico não
 são presumidos no bundle.
 
-Para o rollout, essa consulta deve ocorrer antes de renderizar a toolbar e o
-atalho. `AI_ASSISTANT` controla a entrada principal; `AI_EDIT`, `AI_REVIEW` e
+Para o rollout, essa consulta ocorre antes de renderizar a toolbar e o atalho.
+`AI_ASSISTANT` controla a entrada principal; `AI_EDIT`, `AI_REVIEW` e
 `AI_DOCUMENT_GENERATION` filtram modos e ações. A API repete todas as
 validações. Consulte o
 [Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md).

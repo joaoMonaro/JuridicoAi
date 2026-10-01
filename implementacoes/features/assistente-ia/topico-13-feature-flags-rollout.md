@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** parcial
+> **Estado da implementação:** controles técnicos implementados; rollout operacional pendente
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -279,28 +279,29 @@ Já existe:
 - endpoint de capacidades filtrando features e modos pelo tenant autenticado;
 - comando operacional `set-ai-feature` para habilitar ou desabilitar uma flag
   de uma Organization;
-- frontend consultando capacidades ao abrir o painel;
-- testes unitários do kill switch, permissões específicas e isolamento entre
-  Organizations.
+- frontend carregando capacidades no editor antes de expor botão ou atalho;
+- ações e modos do painel filtrados pelas capacidades efetivas;
+- revalidação das capacidades após recusa do backend e quando a janela volta a
+  receber foco;
+- comportamento fechado quando a consulta de capacidades falha;
+- testes unitários e E2E do kill switch, permissões específicas, isolamento,
+  revogação e rollback.
 
 Ainda falta:
 
 - tornar o kill switch observável operacionalmente sem depender de novo deploy,
   com mecanismo e prazo de propagação definidos;
-- carregamento antecipado das capacidades para esconder toolbar e atalho;
-- mensagem genérica de indisponibilidade no frontend;
 - interface administrativa autenticada e auditável; o comando atual não possui
   identidade de operador e é apenas uma ferramenta de operação controlada;
-- cancelamento/revogação e rollback testados;
 - execução do rollout por etapas.
 
 Hoje a flag global é lida por `IOptionsMonitor`, mas a propagação depende da
 fonte de configuração do ambiente; variáveis de ambiente normalmente exigem
 restart controlado. Ela ainda não é, portanto, um kill switch operacional
-completo. O botão da toolbar
-permanece visível e as capacidades só são consultadas depois que o painel abre.
-A mensagem desabilitada também menciona configuração do provider, modelo e
-chave; esse detalhe deve ser removido da interface final.
+completo. As flags por Organization são consultadas em cada nova verificação,
+e o frontend atualiza capacidades após recusa da API ou retorno do foco à
+janela. Nenhuma mensagem ao usuário revela provider, modelo, chave ou
+configuração interna.
 
 ## 10. Testes obrigatórios
 
@@ -342,10 +343,10 @@ chave; esse detalhe deve ser removido da interface final.
 - [ ] A alteração do kill switch propaga pelo mecanismo e prazo operacionais
       documentados.
 - [x] Capacidades e rotas usam a mesma política de autorização.
-- [ ] Frontend esconde somente o que o backend também recusa.
+- [x] Frontend esconde somente o que o backend também recusa.
 - [x] Testes comprovam isolamento das flags entre Organizations.
 - [ ] Habilitação e desabilitação possuem auditoria.
-- [ ] Rollback e kill switch foram testados.
+- [x] Revogação, rollback e kill switch possuem testes automatizados.
 - [ ] Tenant interno e piloto foram executados com evidência registrada.
 - [ ] Existe autorização explícita para avançar ao próximo estágio.
 

@@ -57,6 +57,57 @@ public sealed class AssistenteIaGovernanceTests
     }
 
     [Fact]
+    public async Task FeatureAccess_PropagaRevogacaoERollbackSemAfetarOutraOrganization()
+    {
+        var organizationA = Guid.NewGuid();
+        var organizationB = Guid.NewGuid();
+        var repository = new FeatureRepositoryStub();
+        repository.Features[organizationA] = new HashSet<OrganizationFeatureEnum>
+            { OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT };
+        repository.Features[organizationB] = new HashSet<OrganizationFeatureEnum>();
+        var service = new AssistenteFeatureAccessService(
+            repository,
+            new StaticOptionsMonitor<AssistenteIaSettings>(new AssistenteIaSettings { Enabled = true }));
+
+        await service.ExigirModoAsync(organizationA, AssistenteModo.Redigir, default);
+
+        repository.Features[organizationA] = new HashSet<OrganizationFeatureEnum>
+            { OrganizationFeatureEnum.AI_ASSISTANT };
+        var revoked = await Assert.ThrowsAsync<AssistenteIaException>(() =>
+            service.ExigirModoAsync(organizationA, AssistenteModo.Redigir, default));
+        var organizationBState = await service.ObterAsync(organizationB, default);
+
+        repository.Features[organizationA] = new HashSet<OrganizationFeatureEnum>
+            { OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT };
+        await service.ExigirModoAsync(organizationA, AssistenteModo.Redigir, default);
+
+        Assert.Equal("AI_FEATURE_NOT_ENABLED", revoked.Code);
+        Assert.False(organizationBState.Habilitado);
+    }
+
+    [Fact]
+    public async Task FeatureAccess_PropagaKillSwitchERollbackGlobal()
+    {
+        var organizationId = Guid.NewGuid();
+        var repository = new FeatureRepositoryStub();
+        repository.Features[organizationId] = new HashSet<OrganizationFeatureEnum>
+            { OrganizationFeatureEnum.AI_ASSISTANT };
+        var options = new MutableOptionsMonitor<AssistenteIaSettings>(new() { Enabled = true });
+        var service = new AssistenteFeatureAccessService(repository, options);
+
+        Assert.True((await service.ObterAsync(organizationId, default)).Habilitado);
+
+        options.CurrentValue = new AssistenteIaSettings { Enabled = false };
+        Assert.False((await service.ObterAsync(organizationId, default)).Habilitado);
+        var disabled = await Assert.ThrowsAsync<AssistenteIaException>(() =>
+            service.ExigirModoAsync(organizationId, AssistenteModo.Perguntar, default));
+
+        options.CurrentValue = new AssistenteIaSettings { Enabled = true };
+        Assert.True((await service.ObterAsync(organizationId, default)).Habilitado);
+        Assert.Equal("AI_UNAVAILABLE", disabled.Code);
+    }
+
+    [Fact]
     public async Task Limiter_BloqueiaTerceiraOperacaoSimultaneaDoMesmoUsuario()
     {
         using var limiter = new AssistenteUsageLimiter(new StaticOptionsMonitor<AssistenteIaSettings>(new()
@@ -334,6 +385,13 @@ public sealed class AssistenteIaGovernanceTests
         private readonly T _value = initialValue;
         public T CurrentValue => _value;
         public T Get(string? name) => _value;
+        public IDisposable? OnChange(Action<T, string?> listener) => null;
+    }
+
+    private sealed class MutableOptionsMonitor<T>(T initialValue) : IOptionsMonitor<T>
+    {
+        public T CurrentValue { get; set; } = initialValue;
+        public T Get(string? name) => CurrentValue;
         public IDisposable? OnChange(Action<T, string?> listener) => null;
     }
 }

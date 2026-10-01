@@ -164,6 +164,12 @@ Critério de fechamento: persistência e validação implementadas, isolamento
 testado, kill switch e rollback comprovados e primeiras etapas do rollout
 executadas com evidência. A estratégia, sozinha, não fecha o ponto.
 
+Estado em 2026-10-01: persistência, validação backend, ocultação seletiva no
+frontend, falha fechada, isolamento, revogação e rollback possuem cobertura
+automatizada. Permanecem pendentes o mecanismo operacional de propagação do
+kill switch, auditoria da operação administrativa e a execução documentada das
+etapas com tenant interno e cliente piloto.
+
 ### PA-14 — Observabilidade e métricas
 
 A estratégia está definida no

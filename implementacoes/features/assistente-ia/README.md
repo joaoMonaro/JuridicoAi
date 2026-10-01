@@ -267,7 +267,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [ ] Implementar e comprovar o gate de segurança do Tópico 11.
 - [ ] Limites por usuário/Organization e orçamento operacional.
 - [ ] Política de retenção/exclusão implementada e documentada.
-- [ ] Implementar feature flags e rollout controlado conforme o Tópico 13.
+- [x] Implementar e testar os controles técnicos de feature flags do Tópico 13.
+- [ ] Preparar o kill switch operacional, auditoria e executar o rollout do Tópico 13.
 - [ ] Implementar métricas, dashboards e alertas conforme o Tópico 14.
 
 ## Decisões registradas
@@ -298,7 +299,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Em implementação; tenancy de Contexto reforçada, logs de erro protegidos, `Retry-After` e testes dos limitadores entregues |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Suíte automatizada executada; checklist manual permanece pendente |
 | 2026-10-01 | A confirmação do aviso de IA é persistida por usuário, Organization e versão; nova versão exige reconfirmação e a geração é bloqueada no backend até lá. | Implementada e coberta por testes backend, componente, E2E e axe-core |
-| 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Estratégia aceita; implementação e rollout pendentes |
+| 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Controles técnicos e testes implementados; operação auditável e rollout pendentes |
 | 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |
 | 2026-09-27 | A validação jurídica, contratual e de transferência internacional permanece bloqueadora em `PA-17`. | Pendente |
 
