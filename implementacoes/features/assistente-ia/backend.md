@@ -252,12 +252,23 @@ Antes do tenant interno, preencher as três tarifas por milhão de tokens e uma
 variável de ambiente no deploy. Ela nunca é devolvida ao cliente ou registrada.
 `Enabled=false` deve responder `AI_UNAVAILABLE` sem tentar acessar o provedor.
 
-Esse `Enabled` representa o kill switch global `AI_ENABLED`. O rollout por
-Organization usa `OrganizationFeature` e falha fechado. Uma flag pode ser
-alterada operacionalmente com o comando `set-ai-feature`, usando
-`AI_FEATURE_ORGANIZATION_ID`, `AI_FEATURE_NAME` e `AI_FEATURE_ENABLED`. O
-comando registra data; uma futura interface administrativa deverá também
-registrar o usuário responsável.
+Esse `Enabled` é a trava de bootstrap do kill switch global. Quando estiver
+`false`, nenhum estado do banco pode habilitar a IA. Com ele em `true`, o estado
+operacional `AI_ENABLED` é consultado no banco a cada nova verificação e pode
+ser alterado sem reiniciar a API pelo comando `set-ai-enabled`.
+
+O rollout por Organization usa `OrganizationFeature` e falha fechado. As
+operações `set-ai-enabled` e `set-ai-feature` exigem
+`AI_OPERATION_UPDATED_BY_ID` e `AI_OPERATION_REASON`. Alterações globais e por
+Organization são registradas de forma append-only em
+`ai_feature_change_audit`, sem conteúdo jurídico. O estado global corrente fica
+em `ai_operational_controls`; na ausência inicial desse registro, a trava de
+bootstrap prevalece e o estado operacional é considerado habilitado.
+
+Para flags de Organization, o operador precisa ser `Owner` do tenant. Para o
+controle global, precisa ser um usuário ativo e também possuir acesso ao
+ambiente operacional. Uma futura interface administrativa deverá substituir a
+execução manual por um fluxo autenticado próprio.
 
 ## Persistência e auditoria
 
@@ -270,6 +281,8 @@ Estado atualmente implementado:
   Organization, usuário e Peça por identificadores.
 - persiste `ai_usage_ledger` sem conteúdo jurídico, incluindo tokens de entrada,
   cache e saída, preço versionado e custo estimado.
+- persiste o estado corrente do kill switch e um histórico imutável de
+  alterações de flags, com operador, data e justificativa técnica.
 
 O alvo de métricas, ledger de custo, eventos de produto e `CorrelationId`
 ponta a ponta está no

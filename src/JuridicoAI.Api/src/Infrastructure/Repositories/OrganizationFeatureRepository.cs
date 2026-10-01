@@ -22,12 +22,23 @@ public sealed class OrganizationFeatureRepository(JuridicoAiDbContext context) :
         Guid organizationId,
         OrganizationFeatureEnum feature,
         bool enabled,
-        Guid? updatedById,
+        Guid updatedById,
+        string reason,
         DateTime updatedAt,
         CancellationToken cancellationToken)
     {
         if (!await context.Organizations.AnyAsync(x => x.Id == organizationId, cancellationToken))
             throw new InvalidOperationException("Organização não encontrada.");
+        if (!await context.Users.AnyAsync(
+                x => x.Id == updatedById && x.Status == UserStatusEnum.Active,
+                cancellationToken) ||
+            !await context.Memberships.AnyAsync(
+                x => x.OrganizationId == organizationId &&
+                     x.UserId == updatedById &&
+                     x.Role == MembershipRoleEnum.Owner,
+                cancellationToken))
+            throw new InvalidOperationException("O operador deve ser um owner ativo da organização.");
+        reason = NormalizeReason(reason);
 
         var current = await context.OrganizationFeatures.FindAsync(
             [organizationId, feature],
@@ -50,6 +61,26 @@ public sealed class OrganizationFeatureRepository(JuridicoAiDbContext context) :
             current.UpdatedAt = updatedAt;
         }
 
+        context.AiFeatureChangeAudit.Add(new AiFeatureChangeAudit
+        {
+            Id = Guid.NewGuid(),
+            Scope = AiFeatureScopeEnum.Organization,
+            OrganizationId = organizationId,
+            Feature = feature.ToString(),
+            Enabled = enabled,
+            ChangedById = updatedById,
+            ChangedAt = updatedAt,
+            Reason = reason
+        });
+
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string NormalizeReason(string reason)
+    {
+        var normalized = reason?.Trim();
+        if (string.IsNullOrWhiteSpace(normalized) || normalized.Length > 500)
+            throw new InvalidOperationException("A justificativa deve ter entre 1 e 500 caracteres.");
+        return normalized;
     }
 }

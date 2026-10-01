@@ -18,6 +18,8 @@ public sealed class JuridicoAiDbContext(DbContextOptions<JuridicoAiDbContext> op
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<OrganizationFeature> OrganizationFeatures => Set<OrganizationFeature>();
+    public DbSet<AiOperationalControl> AiOperationalControls => Set<AiOperationalControl>();
+    public DbSet<AiFeatureChangeAudit> AiFeatureChangeAudit => Set<AiFeatureChangeAudit>();
     public DbSet<AiUsageLedgerEntry> AiUsageLedger => Set<AiUsageLedgerEntry>();
     public DbSet<AiTransparencyAcknowledgement> AiTransparencyAcknowledgements => Set<AiTransparencyAcknowledgement>();
 

@@ -14,7 +14,20 @@ public interface IOrganizationFeatureRepository
         Guid organizationId,
         OrganizationFeatureEnum feature,
         bool enabled,
-        Guid? updatedById,
+        Guid updatedById,
+        string reason,
+        DateTime updatedAt,
+        CancellationToken cancellationToken);
+}
+
+public interface IAiOperationalControlRepository
+{
+    Task<bool> ObterAssistenteHabilitadoAsync(CancellationToken cancellationToken);
+
+    Task DefinirAssistenteHabilitadoAsync(
+        bool enabled,
+        Guid updatedById,
+        string reason,
         DateTime updatedAt,
         CancellationToken cancellationToken);
 }

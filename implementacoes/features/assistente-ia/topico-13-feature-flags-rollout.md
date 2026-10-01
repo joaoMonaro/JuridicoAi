@@ -2,7 +2,7 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** controles técnicos implementados; rollout operacional pendente
+> **Estado da implementação:** controles operacionais implementados; execução do rollout pendente
 >
 > **Data da decisão:** 2026-09-27
 >
@@ -24,10 +24,15 @@ AI_ENABLED
 Organizations. Essa flag é o kill switch operacional e tem precedência sobre
 qualquer liberação por tenant.
 
-O `AssistenteIa:Enabled` já existente será a representação de configuração
-inicial dessa flag. O nome da variável de ambiente pode continuar seguindo a
-convenção do backend, por exemplo `AssistenteIa__Enabled`, desde que a semântica
-documentada permaneça `AI_ENABLED`.
+`AssistenteIa:Enabled` é a trava superior de bootstrap. Se estiver desligada,
+nenhum valor persistido pode habilitar a IA. Quando estiver ligada, o estado
+operacional `AI_ENABLED` é consultado no banco em cada nova verificação e pode
+ser alterado pelo comando `set-ai-enabled` sem novo deploy ou restart.
+
+Na ausência inicial do registro persistido, o estado operacional é considerado
+habilitado e ainda depende da trava de bootstrap e das flags por Organization.
+Depois da primeira alteração, o valor atual permanece em
+`ai_operational_controls`.
 
 ### Flags por Organization
 
@@ -76,6 +81,22 @@ OrganizationFeature
 ├── Enabled
 ├── UpdatedAt
 └── UpdatedById
+
+AiOperationalControl
+├── Feature = AI_ENABLED
+├── Enabled
+├── UpdatedAt
+├── UpdatedById
+└── Reason
+
+AiFeatureChangeAudit
+├── Scope = Global | Organization
+├── OrganizationId, quando aplicável
+├── Feature
+├── Enabled
+├── ChangedAt
+├── ChangedById
+└── Reason
 ```
 
 Regras:
@@ -87,6 +108,10 @@ Regras:
 - exclusão ou ausência do registro desabilita a feature;
 - nunca aceitar `OrganizationId` do corpo como autoridade para consultar flags;
 - alterações administrativas precisam de auditoria sem conteúdo jurídico.
+- cada mudança gera um registro append-only; atualizar o estado corrente não
+  apaga o histórico;
+- a justificativa é técnica, limitada a 500 caracteres e não pode conter dados
+  do Caso, da Peça ou das partes.
 
 No MVP, não haverá condição percentual, segmentação aleatória ou expressão de
 regras. A liberação será explícita para Organizations nomeadas.
@@ -204,6 +229,12 @@ invalidação definida e testes de revogação.
 Rollback não apaga dados nem desfaz texto já aplicado pelo usuário. Ele
 interrompe novas utilizações da capacidade.
 
+No MVP, a propagação para novas operações ocorre na próxima consulta ao
+backend, pois o estado persistido não utiliza cache. Uma geração já em stream
+não é interrompida à força; sua sugestão continua dependendo de aplicação
+explícita pelo usuário. O frontend observa a revogação na próxima resposta da
+API ou atualização de capacidades.
+
 ## 7. Rollout do MVP
 
 Não haverá rollout percentual. A sequência será:
@@ -279,6 +310,10 @@ Já existe:
 - endpoint de capacidades filtrando features e modos pelo tenant autenticado;
 - comando operacional `set-ai-feature` para habilitar ou desabilitar uma flag
   de uma Organization;
+- kill switch persistido e comando `set-ai-enabled`, sem necessidade de
+  reiniciar a API;
+- auditoria append-only das alterações globais e por Organization, exigindo
+  operador e justificativa;
 - frontend carregando capacidades no editor antes de expor botão ou atalho;
 - ações e modos do painel filtrados pelas capacidades efetivas;
 - revalidação das capacidades após recusa do backend e quando a janela volta a
@@ -289,19 +324,15 @@ Já existe:
 
 Ainda falta:
 
-- tornar o kill switch observável operacionalmente sem depender de novo deploy,
-  com mecanismo e prazo de propagação definidos;
 - interface administrativa autenticada e auditável; o comando atual não possui
-  identidade de operador e é apenas uma ferramenta de operação controlada;
+  autenticação própria e é apenas uma ferramenta de operação controlada;
 - execução do rollout por etapas.
 
-Hoje a flag global é lida por `IOptionsMonitor`, mas a propagação depende da
-fonte de configuração do ambiente; variáveis de ambiente normalmente exigem
-restart controlado. Ela ainda não é, portanto, um kill switch operacional
-completo. As flags por Organization são consultadas em cada nova verificação,
-e o frontend atualiza capacidades após recusa da API ou retorno do foco à
-janela. Nenhuma mensagem ao usuário revela provider, modelo, chave ou
-configuração interna.
+A trava de configuração continua sendo lida por `IOptionsMonitor`, mas o kill
+switch cotidiano é persistido e consultado em cada nova verificação. As flags
+por Organization seguem o mesmo comportamento sem cache. O frontend atualiza
+capacidades após recusa da API ou retorno do foco à janela. Nenhuma mensagem ao
+usuário revela provider, modelo, chave ou configuração interna.
 
 ## 10. Testes obrigatórios
 
@@ -340,12 +371,12 @@ configuração interna.
 - [x] `OrganizationFeature` e migration existem.
 - [x] As quatro flags por Organization são reconhecidas pelo backend.
 - [x] `AI_ENABLED` bloqueia novas solicitações como kill switch.
-- [ ] A alteração do kill switch propaga pelo mecanismo e prazo operacionais
+- [x] A alteração do kill switch propaga pelo mecanismo e prazo operacionais
       documentados.
 - [x] Capacidades e rotas usam a mesma política de autorização.
 - [x] Frontend esconde somente o que o backend também recusa.
 - [x] Testes comprovam isolamento das flags entre Organizations.
-- [ ] Habilitação e desabilitação possuem auditoria.
+- [x] Habilitação e desabilitação possuem auditoria append-only.
 - [x] Revogação, rollback e kill switch possuem testes automatizados.
 - [ ] Tenant interno e piloto foram executados com evidência registrada.
 - [ ] Existe autorização explícita para avançar ao próximo estágio.

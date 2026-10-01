@@ -23,6 +23,102 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiFeatureChangeAudit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("changed_at");
+
+                    b.Property<Guid>("ChangedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("changed_by_id");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("Feature")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("feature");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("scope");
+
+                    b.HasKey("Id")
+                        .HasName("ai_feature_change_audit_pkey");
+
+                    b.HasIndex("ChangedAt")
+                        .HasDatabaseName("ix_ai_feature_change_audit_changed_at");
+
+                    b.HasIndex("ChangedById");
+
+                    b.HasIndex("OrganizationId", "ChangedAt")
+                        .HasDatabaseName("ix_ai_feature_change_audit_organization_changed_at");
+
+                    b.ToTable("ai_feature_change_audit", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_feature_change_audit_scope", "scope IN ('Global', 'Organization')");
+
+                            t.HasCheckConstraint("ck_ai_feature_change_audit_target", "(scope = 'Global' AND organization_id IS NULL AND feature = 'AI_ENABLED') OR (scope = 'Organization' AND organization_id IS NOT NULL AND feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION'))");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOperationalControl", b =>
+                {
+                    b.Property<string>("Feature")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("feature");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("enabled");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("Feature")
+                        .HasName("ai_operational_controls_pkey");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ai_operational_controls", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_operational_controls_feature", "feature IN ('AI_ENABLED')");
+                        });
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiTransparencyAcknowledgement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -982,6 +1078,29 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasDatabaseName("uq_users_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiFeatureChangeAudit", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOperationalControl", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiTransparencyAcknowledgement", b =>

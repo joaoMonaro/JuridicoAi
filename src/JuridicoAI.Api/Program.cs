@@ -176,6 +176,7 @@ builder.Services.AddScoped<ICasoRepository, CasoRepository>();
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IOrganizationFeatureRepository, OrganizationFeatureRepository>();
+builder.Services.AddScoped<IAiOperationalControlRepository, AiOperationalControlRepository>();
 builder.Services.AddScoped<IAiUsageLedgerRepository, AiUsageLedgerRepository>();
 builder.Services.AddScoped<IAiTransparencyAcknowledgementRepository, AiTransparencyAcknowledgementRepository>();
 builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
@@ -233,12 +234,17 @@ if (args.Contains("set-ai-feature", StringComparer.OrdinalIgnoreCase))
     var organizationText = Environment.GetEnvironmentVariable("AI_FEATURE_ORGANIZATION_ID");
     var featureText = Environment.GetEnvironmentVariable("AI_FEATURE_NAME");
     var enabledText = Environment.GetEnvironmentVariable("AI_FEATURE_ENABLED");
+    var updatedByText = Environment.GetEnvironmentVariable("AI_OPERATION_UPDATED_BY_ID");
+    var reason = Environment.GetEnvironmentVariable("AI_OPERATION_REASON");
     if (!Guid.TryParse(organizationText, out var organizationId) ||
         !Enum.TryParse<OrganizationFeatureEnum>(featureText, ignoreCase: true, out var feature) ||
         !Enum.IsDefined(feature) ||
-        !bool.TryParse(enabledText, out var enabled))
+        !bool.TryParse(enabledText, out var enabled) ||
+        !Guid.TryParse(updatedByText, out var updatedById) ||
+        string.IsNullOrWhiteSpace(reason))
         throw new InvalidOperationException(
-            "Informe AI_FEATURE_ORGANIZATION_ID, AI_FEATURE_NAME e AI_FEATURE_ENABLED válidos.");
+            "Informe AI_FEATURE_ORGANIZATION_ID, AI_FEATURE_NAME, AI_FEATURE_ENABLED, " +
+            "AI_OPERATION_UPDATED_BY_ID e AI_OPERATION_REASON válidos.");
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
@@ -247,10 +253,35 @@ if (args.Contains("set-ai-feature", StringComparer.OrdinalIgnoreCase))
         organizationId,
         feature,
         enabled,
-        updatedById: null,
+        updatedById,
+        reason,
         DateTime.UtcNow,
         default);
     Console.WriteLine($"Feature {feature} definida como {enabled} para a organização {organizationId}.");
+    return;
+}
+if (args.Contains("set-ai-enabled", StringComparer.OrdinalIgnoreCase))
+{
+    var enabledText = Environment.GetEnvironmentVariable("AI_ENABLED");
+    var updatedByText = Environment.GetEnvironmentVariable("AI_OPERATION_UPDATED_BY_ID");
+    var reason = Environment.GetEnvironmentVariable("AI_OPERATION_REASON");
+    if (!bool.TryParse(enabledText, out var enabled) ||
+        !Guid.TryParse(updatedByText, out var updatedById) ||
+        string.IsNullOrWhiteSpace(reason))
+        throw new InvalidOperationException(
+            "Informe AI_ENABLED, AI_OPERATION_UPDATED_BY_ID e AI_OPERATION_REASON válidos.");
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<IAiOperationalControlRepository>()
+        .DefinirAssistenteHabilitadoAsync(
+            enabled,
+            updatedById,
+            reason,
+            DateTime.UtcNow,
+            default);
+    Console.WriteLine($"Kill switch AI_ENABLED definido como {enabled}.");
     return;
 }
 

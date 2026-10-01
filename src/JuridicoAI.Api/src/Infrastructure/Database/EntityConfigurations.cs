@@ -324,6 +324,56 @@ internal sealed class OrganizationFeatureConfiguration : IEntityTypeConfiguratio
     }
 }
 
+internal sealed class AiOperationalControlConfiguration : IEntityTypeConfiguration<AiOperationalControl>
+{
+    public void Configure(EntityTypeBuilder<AiOperationalControl> builder)
+    {
+        builder.ToTable("ai_operational_controls", table =>
+            table.HasCheckConstraint(
+                "ck_ai_operational_controls_feature",
+                "feature IN ('AI_ENABLED')"));
+        builder.HasKey(x => x.Feature).HasName("ai_operational_controls_pkey");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
+        builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500).IsRequired();
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AiFeatureChangeAuditConfiguration : IEntityTypeConfiguration<AiFeatureChangeAudit>
+{
+    public void Configure(EntityTypeBuilder<AiFeatureChangeAudit> builder)
+    {
+        builder.ToTable("ai_feature_change_audit", table =>
+        {
+            table.HasCheckConstraint(
+                "ck_ai_feature_change_audit_scope",
+                "scope IN ('Global', 'Organization')");
+            table.HasCheckConstraint(
+                "ck_ai_feature_change_audit_target",
+                "(scope = 'Global' AND organization_id IS NULL AND feature = 'AI_ENABLED') OR " +
+                "(scope = 'Organization' AND organization_id IS NOT NULL AND " +
+                "feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION'))");
+        });
+        builder.HasKey(x => x.Id).HasName("ai_feature_change_audit_pkey");
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.Scope).HasColumnName("scope").HasMaxLength(20).HasConversion<string>();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.ChangedAt).HasColumnName("changed_at");
+        builder.Property(x => x.ChangedById).HasColumnName("changed_by_id");
+        builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500).IsRequired();
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.ChangedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => x.ChangedAt).HasDatabaseName("ix_ai_feature_change_audit_changed_at");
+        builder.HasIndex(x => new { x.OrganizationId, x.ChangedAt })
+            .HasDatabaseName("ix_ai_feature_change_audit_organization_changed_at");
+    }
+}
+
 internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration<AiUsageLedgerEntry>
 {
     public void Configure(EntityTypeBuilder<AiUsageLedgerEntry> builder)

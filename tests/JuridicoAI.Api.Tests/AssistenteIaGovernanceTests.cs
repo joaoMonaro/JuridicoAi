@@ -27,6 +27,7 @@ public sealed class AssistenteIaGovernanceTests
             { OrganizationFeatureEnum.AI_ASSISTANT };
         var service = new AssistenteFeatureAccessService(
             repository,
+            new OperationalControlStub(),
             new StaticOptionsMonitor<AssistenteIaSettings>(new AssistenteIaSettings { Enabled = true }));
 
         var snapshotA = await service.ObterAsync(organizationA, default);
@@ -45,8 +46,10 @@ public sealed class AssistenteIaGovernanceTests
     [Fact]
     public async Task FeatureAccess_KillSwitchGlobalRetornaIndisponivel()
     {
+        var operationalControl = new OperationalControlStub();
         var service = new AssistenteFeatureAccessService(
             new FeatureRepositoryStub(),
+            operationalControl,
             new StaticOptionsMonitor<AssistenteIaSettings>(new AssistenteIaSettings { Enabled = false }));
 
         var exception = await Assert.ThrowsAsync<AssistenteIaException>(() =>
@@ -54,6 +57,7 @@ public sealed class AssistenteIaGovernanceTests
 
         Assert.Equal("AI_UNAVAILABLE", exception.Code);
         Assert.Equal(StatusCodes.Status503ServiceUnavailable, exception.StatusCode);
+        Assert.Equal(0, operationalControl.ReadCount);
     }
 
     [Fact]
@@ -67,6 +71,7 @@ public sealed class AssistenteIaGovernanceTests
         repository.Features[organizationB] = new HashSet<OrganizationFeatureEnum>();
         var service = new AssistenteFeatureAccessService(
             repository,
+            new OperationalControlStub(),
             new StaticOptionsMonitor<AssistenteIaSettings>(new AssistenteIaSettings { Enabled = true }));
 
         await service.ExigirModoAsync(organizationA, AssistenteModo.Redigir, default);
@@ -92,17 +97,20 @@ public sealed class AssistenteIaGovernanceTests
         var repository = new FeatureRepositoryStub();
         repository.Features[organizationId] = new HashSet<OrganizationFeatureEnum>
             { OrganizationFeatureEnum.AI_ASSISTANT };
-        var options = new MutableOptionsMonitor<AssistenteIaSettings>(new() { Enabled = true });
-        var service = new AssistenteFeatureAccessService(repository, options);
+        var operationalControl = new OperationalControlStub();
+        var service = new AssistenteFeatureAccessService(
+            repository,
+            operationalControl,
+            new StaticOptionsMonitor<AssistenteIaSettings>(new() { Enabled = true }));
 
         Assert.True((await service.ObterAsync(organizationId, default)).Habilitado);
 
-        options.CurrentValue = new AssistenteIaSettings { Enabled = false };
+        operationalControl.Enabled = false;
         Assert.False((await service.ObterAsync(organizationId, default)).Habilitado);
         var disabled = await Assert.ThrowsAsync<AssistenteIaException>(() =>
             service.ExigirModoAsync(organizationId, AssistenteModo.Perguntar, default));
 
-        options.CurrentValue = new AssistenteIaSettings { Enabled = true };
+        operationalControl.Enabled = true;
         Assert.True((await service.ObterAsync(organizationId, default)).Habilitado);
         Assert.Equal("AI_UNAVAILABLE", disabled.Code);
     }
@@ -346,8 +354,27 @@ public sealed class AssistenteIaGovernanceTests
         public Dictionary<Guid, IReadOnlySet<OrganizationFeatureEnum>> Features { get; } = [];
         public Task<IReadOnlySet<OrganizationFeatureEnum>> ListarHabilitadasAsync(Guid organizationId, CancellationToken cancellationToken) =>
             Task.FromResult(Features.GetValueOrDefault(organizationId) ?? new HashSet<OrganizationFeatureEnum>());
-        public Task DefinirAsync(Guid organizationId, OrganizationFeatureEnum feature, bool enabled, Guid? updatedById, DateTime updatedAt, CancellationToken cancellationToken) =>
+        public Task DefinirAsync(Guid organizationId, OrganizationFeatureEnum feature, bool enabled, Guid updatedById, string reason, DateTime updatedAt, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+    }
+
+    private sealed class OperationalControlStub : IAiOperationalControlRepository
+    {
+        public bool Enabled { get; set; } = true;
+        public int ReadCount { get; private set; }
+
+        public Task<bool> ObterAssistenteHabilitadoAsync(CancellationToken cancellationToken)
+        {
+            ReadCount++;
+            return Task.FromResult(Enabled);
+        }
+
+        public Task DefinirAssistenteHabilitadoAsync(
+            bool enabled,
+            Guid updatedById,
+            string reason,
+            DateTime updatedAt,
+            CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class UsageRepositoryStub : IAiUsageLedgerRepository
@@ -388,10 +415,4 @@ public sealed class AssistenteIaGovernanceTests
         public IDisposable? OnChange(Action<T, string?> listener) => null;
     }
 
-    private sealed class MutableOptionsMonitor<T>(T initialValue) : IOptionsMonitor<T>
-    {
-        public T CurrentValue { get; set; } = initialValue;
-        public T Get(string? name) => CurrentValue;
-        public IDisposable? OnChange(Action<T, string?> listener) => null;
-    }
 }

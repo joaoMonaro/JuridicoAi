@@ -9,15 +9,23 @@ namespace JuridicoAI.Api.Application.Services;
 
 public sealed class AssistenteFeatureAccessService(
     IOrganizationFeatureRepository repository,
+    IAiOperationalControlRepository operationalControl,
     IOptionsMonitor<AssistenteIaSettings> options) : IAssistenteFeatureAccess
 {
     public async Task<AssistenteFeatureSnapshot> ObterAsync(
         Guid organizationId,
         CancellationToken cancellationToken)
     {
-        if (!options.CurrentValue.Enabled)
+        if (!await IsGloballyEnabledAsync(cancellationToken))
             return new(false, [], []);
 
+        return await ObterOrganizationAsync(organizationId, cancellationToken);
+    }
+
+    private async Task<AssistenteFeatureSnapshot> ObterOrganizationAsync(
+        Guid organizationId,
+        CancellationToken cancellationToken)
+    {
         var features = await repository.ListarHabilitadasAsync(organizationId, cancellationToken);
         if (!features.Contains(OrganizationFeatureEnum.AI_ASSISTANT))
             return new(false, [], []);
@@ -40,20 +48,24 @@ public sealed class AssistenteFeatureAccessService(
         AssistenteModo modo,
         CancellationToken cancellationToken)
     {
-        if (!options.CurrentValue.Enabled)
+        if (!await IsGloballyEnabledAsync(cancellationToken))
             throw new AssistenteIaException(
                 StatusCodes.Status503ServiceUnavailable,
                 "AI_UNAVAILABLE",
                 "O assistente de IA não está habilitado.",
                 retryable: true);
 
-        var snapshot = await ObterAsync(organizationId, cancellationToken);
+        var snapshot = await ObterOrganizationAsync(organizationId, cancellationToken);
         if (!snapshot.Habilitado || !snapshot.Modos.Contains(modo))
             throw new AssistenteIaException(
                 StatusCodes.Status403Forbidden,
                 "AI_FEATURE_NOT_ENABLED",
                 "Esta funcionalidade de IA não está habilitada para a organização.");
     }
+
+    private async Task<bool> IsGloballyEnabledAsync(CancellationToken cancellationToken) =>
+        options.CurrentValue.Enabled &&
+        await operationalControl.ObterAssistenteHabilitadoAsync(cancellationToken);
 
     private static OrganizationFeatureEnum? RequiredFeature(AssistenteModo mode) => mode switch
     {

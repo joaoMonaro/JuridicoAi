@@ -98,6 +98,8 @@ de PostgreSQL da API:
 AI_FEATURE_ORGANIZATION_ID="uuid-da-organizacao" \
 AI_FEATURE_NAME="AI_ASSISTANT" \
 AI_FEATURE_ENABLED="true" \
+AI_OPERATION_UPDATED_BY_ID="uuid-do-owner" \
+AI_OPERATION_REASON="Liberação para tenant interno" \
 dotnet run --project src/JuridicoAI.Api -- set-ai-feature
 ```
 
@@ -105,7 +107,29 @@ Repita explicitamente para `AI_EDIT`, `AI_REVIEW` ou
 `AI_DOCUMENT_GENERATION`, conforme o estágio do rollout. Ausência de registro
 equivale a desabilitado. Esse comando é administrativo e não recebe conteúdo
 jurídico; até existir uma interface autenticada, sua execução deve ficar
-restrita ao ambiente operacional controlado.
+restrita ao ambiente operacional controlado. O operador informado precisa ser
+um `Owner` ativo da Organization e a justificativa deve ter entre 1 e 500 caracteres.
+Cada alteração gera um registro imutável em `ai_feature_change_audit`.
+
+Com `AssistenteIa:Enabled=true`, o kill switch persistido pode bloquear e
+restaurar novas operações sem reiniciar a API:
+
+```bash
+AI_ENABLED="false" \
+AI_OPERATION_UPDATED_BY_ID="uuid-do-operador" \
+AI_OPERATION_REASON="Interrupção preventiva durante investigação" \
+dotnet run --project src/JuridicoAI.Api -- set-ai-enabled
+```
+
+Para o rollback, execute o mesmo comando com `AI_ENABLED="true"` e uma nova
+justificativa. O operador global precisa ser um usuário ativo. A justificativa
+é dado técnico de auditoria: não inclua nomes de partes, conteúdo de Peças ou
+outros dados do Caso.
+
+`AssistenteIa:Enabled=false` continua sendo a trava superior de configuração e
+não pode ser revertida pelo banco. Para que o comando operacional possa
+habilitar a IA, essa configuração de bootstrap precisa estar em `true`, com
+provider, modelo e chave válidos.
 
 ## Consultar, remover e limpar
 
