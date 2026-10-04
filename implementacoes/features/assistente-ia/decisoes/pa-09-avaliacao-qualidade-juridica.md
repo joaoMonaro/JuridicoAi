@@ -15,11 +15,11 @@ assistente. O objetivo é detectar regressões antes que uma mudança de modelo,
 prompt ou montagem de contexto chegue aos usuários.
 
 Os casos da categoria Fontes devem aplicar a política aprovada no
-[Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md):
+[Tópico 10 — Legislação, jurisprudência e fontes](pa-10-legislacao-jurisprudencia-fontes.md):
 sem pesquisa externa, sem scraper no fluxo e sem referência concreta inventada.
 
 A suíte versionada existe em
-[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md),
+[`avaliacoes/qualidade-juridica`](../../../../avaliacoes/qualidade-juridica/README.md),
 com validação estrutural e verificações automáticas. A configuração congelada
 do MVP foi executada nos 30 casos com o modelo real e aceita como baseline
 técnica pelo responsável pelo produto. Essa decisão encerra o `PA-09` para o

@@ -77,8 +77,23 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `Mongo:ConnectionString` | vazio | conexão obrigatória para operações com MongoDB |
 | `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
 | `Postgres:RunMigrations` | `true` | aplica migrations pendentes do EF Core ao iniciar |
+| `Auth:JwtSecret` | vazio | segredo JWT obrigatório, com ao menos 32 caracteres |
+| `Auth:Issuer` | `JuridicoAI` | emissor dos access tokens |
+| `Auth:Audience` | `JuridicoAI.Web` | audiência dos access tokens |
+| `Auth:AccessTokenTtlMinutes` | `15` | duração do access token |
+| `Auth:RefreshTokenTtlDays` | `30` | duração máxima do refresh token |
 | `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
 | `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
+| `AssistenteIa:Enabled` | `false` | trava de configuração superior do assistente |
+| `AssistenteIa:Provider` | `OpenAI` | provider selecionado |
+| `AssistenteIa:Model` | vazio | modelo enviado ao provider |
+| `AssistenteIa:ApiKey` | vazio | chave sensível do provider |
+| `AssistenteIa:MaxInputTokens` | `60000` | teto de entrada após montagem do contexto |
+| `AssistenteIa:MaxRequestBodyBytes` | `524288` | limite do corpo HTTP do assistente |
+| `AssistenteIa:RequestsPerUserPerMinute` | `10` | limite por usuário |
+| `AssistenteIa:ConcurrentRequestsPerUser` | `2` | concorrência por usuário |
+| `AssistenteIa:RequestsPerOrganizationPerMinute` | `30` | limite agregado por Organization |
+| `AssistenteIa:ConcurrentRequestsPerOrganization` | `6` | concorrência por Organization |
 | `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
 | `Mongo:RawCollectionName` | `jurisprudencias_raw` | dados coletados |
 | `Mongo:JurisprudenciasCollectionName` | `jurisprudencias` | dados processados |
@@ -90,6 +105,9 @@ Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
 o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
 Manager do .NET quando o ambiente é `Development`.
 
+O guia completo, incluindo chave da OpenAI, flags por Organization e kill
+switch, está em [User Secrets no desenvolvimento](user-secrets.md).
+
 Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 
 ```bash
@@ -100,6 +118,10 @@ dotnet user-secrets --project src/JuridicoAI.Api set \
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Postgres:ConnectionString" \
   "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=defina-uma-senha-local"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Auth:JwtSecret" \
+  "um-segredo-aleatorio-com-pelo-menos-32-caracteres"
 ```
 
 Também é possível sobrescrever configurações operacionais:
@@ -164,17 +186,22 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 | Ingestão pela API | MongoDB, Chromium e acesso ao TJSP |
 | Consulta de jurisprudências | MongoDB |
 | Reprocessamento | MongoDB |
-| Fundação do caso | PostgreSQL e diretório de storage gravável |
+| Fundação do caso, autenticação e Peças | PostgreSQL, segredo JWT e diretório de storage gravável |
+| Assistente de IA | requisitos de Peças, chave/modelo do provider, configuração habilitada, kill switch e flags da Organization |
 
 ## Sequência recomendada
 
 1. Execute `cp .env.example .env` e altere a senha.
 2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
 3. Inicie os bancos com `docker compose up -d`.
-4. Configure `Mongo:ConnectionString` e `Postgres:ConnectionString` nos
-   user-secrets.
+4. Configure `Mongo:ConnectionString`, `Postgres:ConnectionString` e
+   `Auth:JwtSecret` nos user-secrets.
 5. Execute `dotnet restore` e `dotnet build`.
 6. Instale o Chromium do Playwright, se necessário.
 7. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
    começar a atender requisições.
 8. Valide `GET http://localhost:5299/`.
+
+Para usar a IA, configure separadamente o provider e libere apenas a
+Organization desejada conforme [User Secrets](user-secrets.md). A configuração
+local não substitui o aviso de transparência apresentado no primeiro uso.

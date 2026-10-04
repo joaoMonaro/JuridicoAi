@@ -1,8 +1,13 @@
 # Implementações do JuridicoAI
 
-Este diretório concentra a documentação viva das funcionalidades em construção.
-Ele fica separado de `docs/`, que descreve prioritariamente o comportamento
-estável e já disponível do produto.
+Este diretório é a bancada de trabalho das funcionalidades em evolução. Ele
+concentra especificações, decisões, planejamento e evidências enquanto uma
+entrega ainda está sendo desenvolvida ou validada.
+
+O diretório [`docs/`](../docs/README.md) continua sendo a referência do
+comportamento estável e efetivamente disponível. Quando uma decisão de
+implementação se torna comportamento permanente, sua descrição deve ser
+promovida para `docs/`; o histórico da decisão pode permanecer aqui.
 
 ## Organização
 
@@ -11,32 +16,34 @@ implementacoes/
 └── features/
     └── <nome-da-feature>/
         ├── README.md
-        ├── backend.md
-        ├── frontend.md
-        ├── contrato-api.md
-        └── pontos-em-aberto.md
+        ├── especificacoes/
+        │   ├── backend.md
+        │   ├── frontend.md
+        │   └── contrato-api.md
+        ├── decisoes/
+        │   └── pa-<numero>-<assunto>.md
+        ├── planejamento/
+        │   └── pontos-em-aberto.md
+        └── evidencias/
+            └── <evidencia>.md
 ```
 
-Cada feature deve possuir um documento principal com estado, escopo, critérios
-de aceite e links para os planos técnicos. Decisões ainda não tomadas ficam em
-`pontos-em-aberto.md`; depois de resolvidas, são registradas no documento
-principal e removidas da lista de pendências.
+Cada feature deve manter no `README.md` seu estado, escopo e critérios de
+aceite. As pastas têm responsabilidades distintas:
+
+- `especificacoes/`: comportamento pretendido e contratos técnicos em evolução;
+- `decisoes/`: decisões fechadas, com contexto e consequências;
+- `planejamento/`: pendências reais e próximos passos;
+- `evidencias/`: checklists, resultados e comprovações de validação.
+
+Documentos históricos que não orientam mais a implementação pertencem a
+[`docs/historico/`](../docs/historico/).
 
 ## Features atuais
 
 - [Assistente de IA para redação jurídica](features/assistente-ia/README.md)
-  - [Contrato HTTP](features/assistente-ia/contrato-api.md)
-  - [Backend](features/assistente-ia/backend.md)
-  - [Frontend](features/assistente-ia/frontend.md)
-  - [Pontos em aberto](features/assistente-ia/pontos-em-aberto.md)
-  - [Tópico 1 — Modelo e operação](features/assistente-ia/topico-01-modelo-e-operacao.md)
-  - [Tópico 3 — Retenção, exclusão e LGPD](features/assistente-ia/topico-03-retencao-exclusao-lgpd.md)
-  - [Tópico 7 — Âncora expirada](features/assistente-ia/topico-07-ancora-expirada.md)
-  - [Tópico 8 — Autosave em erro](features/assistente-ia/topico-08-autosave-em-erro.md)
-  - [Tópico 9 — Avaliação de qualidade jurídica](features/assistente-ia/topico-09-avaliacao-qualidade-juridica.md)
-    - [Suíte executável de 30 casos](../avaliacoes/qualidade-juridica/README.md)
-  - [Tópico 10 — Legislação, jurisprudência e fontes](features/assistente-ia/topico-10-legislacao-jurisprudencia-fontes.md)
-  - [Tópico 11 — Segurança, isolamento e logs](features/assistente-ia/topico-11-seguranca-isolamento-logs.md)
-  - [Tópico 12 — Testes e acessibilidade](features/assistente-ia/topico-12-testes-acessibilidade.md)
-  - [Tópico 13 — Feature flags e rollout](features/assistente-ia/topico-13-feature-flags-rollout.md)
-  - [Tópico 14 — Observabilidade e métricas](features/assistente-ia/topico-14-observabilidade-metricas.md)
+  - Especificações: [contrato HTTP](features/assistente-ia/especificacoes/contrato-api.md), [backend](features/assistente-ia/especificacoes/backend.md) e [frontend](features/assistente-ia/especificacoes/frontend.md)
+  - Planejamento: [pontos em aberto](features/assistente-ia/planejamento/pontos-em-aberto.md)
+  - Decisões: [PA-01](features/assistente-ia/decisoes/pa-01-modelo-e-operacao.md), [PA-03](features/assistente-ia/decisoes/pa-03-retencao-exclusao-lgpd.md), [PA-07](features/assistente-ia/decisoes/pa-07-ancora-expirada.md), [PA-08](features/assistente-ia/decisoes/pa-08-autosave-em-erro.md), [PA-09](features/assistente-ia/decisoes/pa-09-avaliacao-qualidade-juridica.md), [PA-10](features/assistente-ia/decisoes/pa-10-legislacao-jurisprudencia-fontes.md), [PA-11](features/assistente-ia/decisoes/pa-11-seguranca-isolamento-logs.md), [PA-12](features/assistente-ia/decisoes/pa-12-testes-acessibilidade.md), [PA-13](features/assistente-ia/decisoes/pa-13-feature-flags-rollout.md) e [PA-14](features/assistente-ia/decisoes/pa-14-observabilidade-metricas.md)
+  - Evidências: [segurança operacional](features/assistente-ia/evidencias/seguranca-operacional-producao.md) e [acessibilidade manual](features/assistente-ia/evidencias/checklist-manual-acessibilidade.md)
+  - Avaliações: [suíte executável de qualidade jurídica](../avaliacoes/qualidade-juridica/README.md)

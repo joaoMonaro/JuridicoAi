@@ -271,7 +271,7 @@ Ainda falta implementar ou comprovar:
   conversa, mensagem e sugestão;
 - executar no ambiente do piloto a inspeção de logs de infraestrutura, proxy,
   hospedagem e APM com os marcadores sintéticos previstos no
-  [roteiro de segurança operacional](seguranca-operacional-producao.md);
+  [roteiro de segurança operacional](../evidencias/seguranca-operacional-producao.md);
 - validar o produto e a configuração reais de proxy e APM, que ainda não
   existem neste repositório.
 

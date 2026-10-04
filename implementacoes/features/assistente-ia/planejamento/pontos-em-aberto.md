@@ -2,9 +2,9 @@
 
 > **Estado:** decisões pendentes
 >
-> **Última atualização:** 2026-09-29
+> **Última atualização:** 2026-10-03
 >
-> **Documento principal:** [Assistente de IA](README.md)
+> **Documento principal:** [Assistente de IA](../README.md)
 
 Este documento reúne decisões que ainda afetam produto, segurança, custo ou
 arquitetura. Um ponto decisório pode ser encerrado quando existe uma decisão
@@ -26,12 +26,13 @@ homologação registrados no documento do tópico.
 
 ## Ordem recomendada de decisão
 
-1. Submeter `PA-17` à revisão jurídica e contratual, incluindo a homologação
-   jurídica formal da qualidade das respostas antes da comercialização.
-2. Implementar e validar as decisões de `PA-01` a `PA-06` já encerradas.
-3. Fechar segurança e testes em `PA-11` e `PA-12` e implementar a decisão de
-   autosave registrada no `PA-08`.
-4. Preparar operação e lançamento com `PA-13` e `PA-14`.
+1. Implementar as partes operacionais ainda pendentes de `PA-01` a `PA-06`:
+   perfis de saída/retry, orçamento, retenção, pseudonimização e histórico.
+2. Concluir a preparação de produção de `PA-11` e a auditoria manual de
+   acessibilidade de `PA-12`.
+3. Instrumentar `PA-14` e executar o rollout nominal previsto em `PA-13`.
+4. Submeter `PA-17` à revisão jurídica e contratual, incluindo homologação
+   formal das respostas, antes da comercialização.
 5. Definir o fluxo de geração integral em `PA-16`.
 6. Tratar a melhoria não bloqueante de bundle em `PA-15`.
 
@@ -39,23 +40,23 @@ homologação registrados no documento do tópico.
 
 | ID | Decisão | Responsável | Registro |
 |---|---|---|---|
-| `PA-01` | GPT-5.6 Terra como modelo único do MVP; duas novas tentativas transitórias; sem fallback de modelo. | Produto / proprietário do projeto | [Tópico 1](topico-01-modelo-e-operacao.md) |
-| `PA-02` | Limites por operação, 60 mil tokens de entrada, orçamento de US$ 10 e controles operacionais por usuário e Organization. | Produto / proprietário do projeto | [Tópico 1](topico-01-modelo-e-operacao.md) |
-| `PA-03` | Retenção por categoria, histórico próprio, logs por 90 dias, backups por 30 dias e exclusão recuperável por 30 dias. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
-| `PA-04` | Minimização e pseudonimização por necessidade, com proteção reforçada para dados sensíveis relevantes. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
-| `PA-05` | Aviso versionado antes do primeiro uso, sem tratá-lo automaticamente como base legal geral. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
-| `PA-06` | Histórico persistente por Caso no JuridicoAI, com exclusão independente e sem usar o provider como fonte primária. | Produto / proprietário do projeto | [Tópico 3](topico-03-retencao-exclusao-lgpd.md) |
-| `PA-07` | Âncora expirada bloqueia aplicação; o usuário seleciona outro trecho e gera novamente ou descarta. Inserção no cursor atual não é fallback do MVP. | Produto / proprietário do projeto | [Tópico 7](topico-07-ancora-expirada.md) |
-| `PA-08` | Edição manual continua disponível, mas sugestões da IA só podem ser aplicadas quando o autosave está em `SALVO`. | Produto / proprietário do projeto | [Tópico 8](topico-08-autosave-em-erro.md) |
-| `PA-09` | A suíte fictícia de 30 casos, o executor e o gate automático foram implementados; a baseline `1.0.3` com prompt `assistente-juridico-v3` foi aceita como referência técnica congelada do MVP. | Produto / proprietário do projeto | [Tópico 9](topico-09-avaliacao-qualidade-juridica.md) |
-| `PA-10` | O MVP não pesquisa externamente; somente fontes fornecidas no contexto podem ser tratadas como confirmadas. O scraper fica fora do fluxo e da apresentação. | Produto / proprietário do projeto | [Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md) |
+| `PA-01` | GPT-5.6 Terra como modelo único do MVP; duas novas tentativas transitórias; sem fallback de modelo. | Produto / proprietário do projeto | [Tópico 1](../decisoes/pa-01-modelo-e-operacao.md) |
+| `PA-02` | Limites por operação, 60 mil tokens de entrada, orçamento de US$ 10 e controles operacionais por usuário e Organization. | Produto / proprietário do projeto | [Tópico 1](../decisoes/pa-01-modelo-e-operacao.md) |
+| `PA-03` | Retenção por categoria, histórico próprio, logs por 90 dias, backups por 30 dias e exclusão recuperável por 30 dias. | Produto / proprietário do projeto | [Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md) |
+| `PA-04` | Minimização e pseudonimização por necessidade, com proteção reforçada para dados sensíveis relevantes. | Produto / proprietário do projeto | [Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md) |
+| `PA-05` | Aviso versionado antes do primeiro uso, sem tratá-lo automaticamente como base legal geral. | Produto / proprietário do projeto | [Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md) |
+| `PA-06` | Histórico persistente por Caso no JuridicoAI, com exclusão independente e sem usar o provider como fonte primária. | Produto / proprietário do projeto | [Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md) |
+| `PA-07` | Âncora expirada bloqueia aplicação; o usuário seleciona outro trecho e gera novamente ou descarta. Inserção no cursor atual não é fallback do MVP. | Produto / proprietário do projeto | [Tópico 7](../decisoes/pa-07-ancora-expirada.md) |
+| `PA-08` | Edição manual continua disponível, mas sugestões da IA só podem ser aplicadas quando o autosave está em `SALVO`. | Produto / proprietário do projeto | [Tópico 8](../decisoes/pa-08-autosave-em-erro.md) |
+| `PA-09` | A suíte fictícia de 30 casos, o executor e o gate automático foram implementados; a baseline `1.0.3` com prompt `assistente-juridico-v3` foi aceita como referência técnica congelada do MVP. | Produto / proprietário do projeto | [Tópico 9](../decisoes/pa-09-avaliacao-qualidade-juridica.md) |
+| `PA-10` | O MVP não pesquisa externamente; somente fontes fornecidas no contexto podem ser tratadas como confirmadas. O scraper fica fora do fluxo e da apresentação. | Produto / proprietário do projeto | [Tópico 10](../decisoes/pa-10-legislacao-jurisprudencia-fontes.md) |
 
 ## Privacidade e dados
 
 ### PA-17 — Validação jurídica e contratual para comercialização
 
 As decisões técnicas de `PA-03`, `PA-04`, `PA-05` e `PA-06` estão registradas no
-[Tópico 3](topico-03-retencao-exclusao-lgpd.md), mas não encerram:
+[Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md), mas não encerram:
 
 - base legal de cada operação, inclusive dados sensíveis;
 - papéis formais de controlador, operador e suboperador;
@@ -74,7 +75,7 @@ configuração do provider verificada e autorização expressa para comercializa
 ### PA-16 — Fluxo seguro de geração integral da Peça
 
 O modelo e o limite de 8.000 tokens foram definidos no
-[Tópico 1](topico-01-modelo-e-operacao.md). Ainda é necessário definir:
+[Tópico 1](../decisoes/pa-01-modelo-e-operacao.md). Ainda é necessário definir:
 
 - se a geração parte de documento vazio, template ou Peça existente;
 - como o usuário informa estrutura, fatos e seções esperadas;
@@ -96,7 +97,7 @@ Peça.
 ### PA-11 — Segurança, isolamento e logs
 
 A política está definida no
-[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
+[Tópico 11 — Segurança, isolamento e logs](../decisoes/pa-11-seguranca-isolamento-logs.md).
 Foram aprovados:
 
 - tenant derivado exclusivamente da identidade validada pelo backend;
@@ -108,20 +109,24 @@ Foram aprovados:
 - 10 requisições/minuto e 2 simultâneas por usuário;
 - 30 requisições/minuto e 6 simultâneas por Organization.
 
-Ainda precisam de evidência específica:
+Evidências já existentes:
 
 - a suíte real `seguranca-ia` `1.0.0` foi aprovada tecnicamente em 2026-09-30,
   sem falhas automáticas nos seis casos; novas versões de modelo, prompt ou
   suíte exigem nova execução e aprovação;
-- adicionar cobertura HTTP quando forem criadas conversa, mensagem e sugestão;
-  os recursos atuais, inclusive envolvidos, endereços e listagens, já possuem
-  cenários de acesso cruzado;
-- inspeção de logs e telemetria de infraestrutura para conteúdo, CPF/CNPJ, JWT
-  e API keys; logs automáticos do cliente OpenAI foram desabilitados e os
-  caminhos de erro da aplicação já possuem testes com marcadores sensíveis;
 - payload, tokens, contexto e upload excessivos, resposta inválida do modelo,
   timeout, desconexão, quatro limitadores, `Retry-After` e liberação da lease
   possuem cobertura automatizada;
+- os recursos atuais, inclusive envolvidos, endereços e listagens, possuem
+  cenários de acesso cruzado;
+- logs automáticos do cliente OpenAI foram desabilitados e os caminhos de erro
+  da aplicação possuem testes com marcadores sensíveis.
+
+Ainda precisam de evidência ou implementação:
+
+- adicionar cobertura HTTP quando forem criadas conversa, mensagem e sugestão;
+- inspecionar logs e telemetria da infraestrutura real para conteúdo,
+  CPF/CNPJ, JWT e API keys;
 - coordenação distribuída dos limitadores antes de múltiplas instâncias;
 - validação das configurações de produção.
 
@@ -132,7 +137,7 @@ logs de sucesso e falha. A política aprovada, sozinha, não fecha o ponto.
 ### PA-12 — Testes e acessibilidade do frontend
 
 A estratégia está definida no
-[Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md):
+[Tópico 12 — Testes e acessibilidade](../decisoes/pa-12-testes-acessibilidade.md):
 
 - unitários com Vitest;
 - componentes com React Testing Library;
@@ -144,12 +149,19 @@ Critério de fechamento: ferramentas configuradas, cenários críticos presentes
 suíte executada com sucesso e auditoria manual registrada. O plano, sozinho,
 não fecha o ponto.
 
+Estado em 2026-10-03: Vitest, React Testing Library, Playwright e axe-core
+estão configurados; parser SSE, TipTap, painel, autosave, resiliência,
+integridade, teclado simulado e acessibilidade automatizada possuem testes
+aprovados. Permanecem a auditoria com teclado físico em plataformas reais e o
+smoke test com leitor de tela, registrados no
+[checklist manual](../evidencias/checklist-manual-acessibilidade.md).
+
 ## Lançamento e operação
 
 ### PA-13 — Feature flag e rollout
 
 A estratégia está definida no
-[Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md).
+[Tópico 13 — Feature flags e rollout](../decisoes/pa-13-feature-flags-rollout.md).
 Foram aprovados:
 
 - `AI_ENABLED` como kill switch global;
@@ -174,7 +186,7 @@ execução documentada das etapas com tenant interno e cliente piloto.
 ### PA-14 — Observabilidade e métricas
 
 A estratégia está definida no
-[Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md).
+[Tópico 14 — Observabilidade e métricas](../decisoes/pa-14-observabilidade-metricas.md).
 Ela responde a funcionamento, utilidade e custo com:
 
 - métricas técnicas de volume, sucesso, falha, cancelamento, TTFT e duração;
@@ -199,7 +211,7 @@ for implementado.
 
 ## Registro de resolução
 
-Ao fechar um item, registrar no [documento principal](README.md):
+Ao fechar um item, registrar no [documento principal](../README.md):
 
 ```text
 Data | ID | decisão | responsável | evidência/link

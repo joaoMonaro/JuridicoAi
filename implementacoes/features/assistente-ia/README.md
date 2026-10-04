@@ -1,33 +1,38 @@
 # Assistente de IA para redação jurídica
 
-> **Estado:** primeira fatia vertical implementada no backend e no frontend
+> **Estado:** fatia vertical implementada e coberta por testes automatizados;
+> preparação operacional e validações manuais/comerciais ainda em andamento
 >
-> **Última atualização:** 2026-09-29
+> **Última atualização:** 2026-10-03
 >
 > **Implementação atual:** geração, streaming, revisão e aplicação explícita
-> integrados; validação funcional ponta a ponta e endurecimento continuam pendentes
+> integrados; testes unitários, de componente, E2E, segurança e qualidade
+> jurídica executados. Permanecem rollout, observabilidade, retenção completa,
+> orçamento e validações manuais/jurídicas.
 >
-> **Documentos relacionados:** [contrato HTTP](contrato-api.md),
-> [backend](backend.md), [frontend](frontend.md) e
-> [pontos em aberto](pontos-em-aberto.md). Decisões consolidadas:
-> [Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md),
-> [Tópico 3 — Retenção, exclusão e LGPD](topico-03-retencao-exclusao-lgpd.md),
-> [Tópico 7 — Âncora expirada](topico-07-ancora-expirada.md) e
-> [Tópico 8 — Autosave em erro](topico-08-autosave-em-erro.md),
-> [Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md) e
-> [Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md)
+> **Documentos relacionados:** [contrato HTTP](especificacoes/contrato-api.md),
+> [backend](especificacoes/backend.md), [frontend](especificacoes/frontend.md) e
+> [pontos em aberto](planejamento/pontos-em-aberto.md). Decisões consolidadas:
+> [PA-01 — Modelo e operação](decisoes/pa-01-modelo-e-operacao.md),
+> [PA-03 — Retenção, exclusão e LGPD](decisoes/pa-03-retencao-exclusao-lgpd.md),
+> [PA-07 — Âncora expirada](decisoes/pa-07-ancora-expirada.md),
+> [PA-08 — Autosave em erro](decisoes/pa-08-autosave-em-erro.md),
+> [PA-09 — Avaliação de qualidade jurídica](decisoes/pa-09-avaliacao-qualidade-juridica.md)
+> e [PA-10 — Legislação, jurisprudência e fontes](decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 >
 > Planos ainda abertos:
-> [Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md),
-> [roteiro de segurança operacional](seguranca-operacional-producao.md),
-> [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md),
-> [Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md)
-> e [Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md)
+> [PA-11 — Segurança, isolamento e logs](decisoes/pa-11-seguranca-isolamento-logs.md),
+> [roteiro de segurança operacional](evidencias/seguranca-operacional-producao.md),
+> [PA-12 — Testes e acessibilidade](decisoes/pa-12-testes-acessibilidade.md),
+> [PA-13 — Feature flags e rollout](decisoes/pa-13-feature-flags-rollout.md)
+> e [PA-14 — Observabilidade e métricas](decisoes/pa-14-observabilidade-metricas.md).
 
-Este diretório é a fonte de verdade da feature de assistência por IA no editor
-de Peças. Ele deve ser atualizado junto com cada mudança de escopo, contrato ou
-implementação. Uma caixa marcada significa que o comportamento está entregue e
-verificado, não apenas que existe código parcial.
+Este diretório é a bancada viva da feature de assistência por IA no editor de
+Peças. Ele deve ser atualizado junto com cada mudança de escopo, contrato ou
+implementação. O comportamento estável já disponível é resumido em
+[`docs/backend/assistente-ia.md`](../../../docs/backend/assistente-ia.md). Uma
+caixa marcada significa que o comportamento está entregue e verificado, não
+apenas que existe código parcial.
 
 ## Objetivo
 
@@ -199,24 +204,24 @@ O prompt de sistema mantido no backend deve, no mínimo:
 
 ## Critérios de aceite do MVP
 
-- [ ] É possível perguntar sem seleção e nada muda na Peça.
-- [ ] É possível redigir um trecho usando contexto livre e inseri-lo no cursor
+- [x] É possível perguntar sem seleção e nada muda na Peça.
+- [x] É possível redigir um trecho usando contexto livre e inseri-lo no cursor
       somente depois de clicar em uma ação explícita.
-- [ ] É possível reescrever uma seleção vendo original e sugestão.
-- [ ] Alterar o documento depois do envio invalida uma aplicação insegura.
-- [ ] Rejeitar ou cancelar não altera o `conteudoJson` nem incrementa a versão.
-- [ ] Aceitar gera uma única transação TipTap, pode ser desfeito e entra no
+- [x] É possível reescrever uma seleção vendo original e sugestão.
+- [x] Alterar o documento depois do envio invalida uma aplicação insegura.
+- [x] Rejeitar ou cancelar não altera o `conteudoJson` nem incrementa a versão.
+- [x] Aceitar gera uma única transação TipTap, pode ser desfeito e entra no
       autosave normal.
-- [ ] Aplicação da IA fica bloqueada até o autosave estar em `SALVO`, sem
+- [x] Aplicação da IA fica bloqueada até o autosave estar em `SALVO`, sem
       impedir edição manual, undo ou retry nos demais estados.
 - [x] O endpoint de geração não chama `IPecaRepository.AtualizarAsync` nem
       qualquer caminho equivalente de escrita na Peça.
 - [x] Uma Organization não acessa nem usa contexto de outra Organization.
-- [ ] O usuário visualiza os escopos enviados e pode remover os opcionais.
+- [x] O usuário visualiza os escopos enviados e pode remover os opcionais.
 - [ ] Referências sem fonte aparecem com alerta de verificação.
-- [ ] Timeout, cancelamento, limite e indisponibilidade do provedor não perdem
+- [x] Timeout, cancelamento e indisponibilidade do provedor não perdem
       o texto que o usuário já escreveu.
-- [ ] Logs não contêm prompt, resposta, CPF/CNPJ ou conteúdo integral da Peça.
+- [x] Logs testados não contêm prompt, resposta, CPF/CNPJ ou conteúdo integral da Peça.
 
 ## Entregas incrementais
 
@@ -256,8 +261,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Consumo do stream, cancelamento e estados de erro.
 - [x] Preview/diff e aplicação segura no TipTap.
 - [x] Integração com autosave, conflito de versão e undo/redo.
-- [ ] Restringir aplicação da IA ao estado `SALVO` conforme o Tópico 8.
-- [ ] Configurar e executar a suíte frontend definida no Tópico 12.
+- [x] Restringir aplicação da IA ao estado `SALVO` conforme o PA-08.
+- [x] Configurar e executar a suíte frontend definida no PA-12.
 
 ### F3 — endurecimento e lançamento
 
@@ -278,8 +283,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 |---|---|---|
 | 2026-09-26 | O endpoint de IA nunca grava `ConteudoJson`; aplicação ocorre no TipTap após confirmação. | Aceita |
 | 2026-09-26 | O contexto do documento é explícito e começa no menor escopo necessário. | Aceita |
-| 2026-09-26 | O primeiro formato de saída editável é texto dividido em parágrafos, não JSON TipTap produzido pelo modelo. | Proposta |
-| 2026-09-26 | O transporte progressivo será `fetch` + Server-Sent Events sobre `POST`. | Proposta |
+| 2026-09-26 | O primeiro formato de saída editável é texto dividido em parágrafos, não JSON TipTap produzido pelo modelo. | Implementada |
+| 2026-09-26 | O transporte progressivo será `fetch` + Server-Sent Events sobre `POST`. | Implementada |
 | 2026-09-26 | Histórico conversacional persistente não bloqueou a primeira fatia vertical sem histórico. | Implementada; decisão posterior em `PA-06` |
 | 2026-09-26 | OpenAI Responses é o primeiro provider; `IAssistenteIaProvider` preserva a fronteira para alternativas. | Implementada, revisável |
 | 2026-09-26 | O provider envia `store: false`; histórico do produto não depende da retenção do provider. | Aceita; não equivale a ZDR, ver `PA-17` |
@@ -293,11 +298,11 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-04`: dados são minimizados e identificadores desnecessários são pseudonimizados antes do provider. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-05`: primeiro uso exige aviso versionado; a confirmação não é presumida como base legal geral. | Implementada em 2026-10-01; texto jurídico e URL definitiva da política ainda dependem do `PA-17` |
 | 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
-| 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Aceita; refinamento de UX e testes pendentes |
-| 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Aceita; implementação e testes pendentes |
+| 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Implementada e coberta por testes |
+| 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Implementada e coberta por testes |
 | 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Encerrado tecnicamente com a baseline `1.0.3` no commit `f6376df`; homologação jurídica formal permanece em `PA-17` |
 | 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; casos incorporados à baseline técnica e interface pendente |
-| 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Em implementação; tenancy de Contexto reforçada, logs de erro protegidos, `Retry-After` e testes dos limitadores entregues |
+| 2026-09-27 | `PA-11`: tenant vem apenas da identidade validada; logs não armazenam conteúdo; limites agregados são 30/minuto e 6 simultâneos por Organization. | Controles locais e testes entregues; validação da infraestrutura de produção e coordenação distribuída pendentes |
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Suíte automatizada executada; checklist manual permanece pendente |
 | 2026-10-01 | A confirmação do aviso de IA é persistida por usuário, Organization e versão; nova versão exige reconfirmação e a geração é bloqueada no backend até lá. | Implementada e coberta por testes backend, componente, E2E e axe-core |
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Kill switch persistido e auditoria implementados; rollout nominal pendente |
@@ -307,14 +312,14 @@ O prompt de sistema mantido no backend deve, no mínimo:
 ### Decisões pendentes
 
 As decisões pendentes, suas prioridades e critérios de fechamento são mantidos
-em [Pontos em aberto](pontos-em-aberto.md).
+em [Pontos em aberto](planejamento/pontos-em-aberto.md).
 
 ## Como manter este documento vivo
 
 Ao implementar uma fatia:
 
 1. atualize o estado e marque apenas critérios comprovados;
-2. ajuste primeiro o [contrato](contrato-api.md) quando a API mudar;
+2. ajuste primeiro o [contrato](especificacoes/contrato-api.md) quando a API mudar;
 3. registre divergências intencionais na tabela de decisões;
 4. acrescente links para classes, componentes, migrations e testes reais;
 5. remova o item de “fora do MVP” quando ele entrar formalmente no escopo;

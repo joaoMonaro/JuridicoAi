@@ -56,7 +56,7 @@ restrito e prazo definido.
 Logs e eventos de auditoria usam lista permitida de campos:
 
 A lista completa para aplicação, proxy, APM e exceções está no
-[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
+[Tópico 11 — Segurança, isolamento e logs](pa-11-seguranca-isolamento-logs.md).
 
 ```text
 OrganizationId

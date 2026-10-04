@@ -1,8 +1,8 @@
 # Plano de implementação — backend
 
-> **Estado:** primeira fatia vertical implementada
+> **Estado:** fatia vertical e controles técnicos principais implementados
 >
-> **Última atualização:** 2026-09-27
+> **Última atualização:** 2026-10-03
 >
 > **Projeto:** `src/JuridicoAI.Api`
 
@@ -20,12 +20,15 @@ falhas, custos e políticas próprios.
 
 ## Estado implementado
 
-Em 2026-09-27, estão disponíveis:
+Em 2026-10-03, estão disponíveis:
 
 - `GET /assistente/capacidades`;
+- `GET /assistente/transparencia` e confirmação versionada antes do primeiro uso;
 - `POST /pecas/{pecaId}/assistente/solicitacoes` em SSE;
 - kill switch global, feature flags por Organization e limites na seção
   `AssistenteIa`;
+- alteração operacional do kill switch e das flags com operador, justificativa
+  e trilha append-only;
 - validação antecipada de Peça, Caso, seleção, contexto e operação;
 - isolamento por Organization e autorização dos contextos do Caso;
 - deduplicação de `clientRequestId` enquanto uma geração está em andamento;
@@ -36,6 +39,7 @@ Em 2026-09-27, estão disponíveis:
 - rate limit e concorrência cumulativos por usuário e Organization;
 - `Retry-After` nas recusas por janela dos limitadores locais;
 - `CorrelationId` validado/gerado pelo backend e devolvido no header e no SSE;
+- sequência monotônica e identidade da solicitação em todos os eventos SSE;
 - limite próprio de payload para a rota de IA;
 - ledger técnico persistente de tokens, custo estimado, duração e estado final;
 - logs técnicos sem prompt, resposta ou PII, inclusive nos caminhos de erro da
@@ -46,7 +50,7 @@ Em 2026-09-27, estão disponíveis:
 - matriz de prompt injection para a separação entre instruções do sistema,
   conteúdo não confiável e operações permitidas;
 - suíte real focada em segurança em
-  [`avaliacoes/seguranca-ia`](../../../avaliacoes/seguranca-ia/README.md),
+  [`avaliacoes/seguranca-ia`](../../../../avaliacoes/seguranca-ia/README.md),
   separada da baseline jurídica congelada.
 
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
@@ -181,7 +185,7 @@ pesquisa externa, proíbe referência jurisprudencial concreta sem fonte, exige
 `REFERENCIA_NAO_VERIFICADA` para legislação não fornecida e impede inferir a
 natureza de objetos ou ampliar a ausência de uma prova para outros documentos.
 A política completa está no
-[Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
+[Tópico 10](../decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 
 Cada solicitação registra ao menos `promptVersion`, provider lógico, modelo,
 latência, contagem de entrada/saída, estado final e IDs técnicos. Alterar regras
@@ -189,9 +193,9 @@ de segurança exige nova versão e casos de avaliação. Prompts nunca ficam no
 frontend.
 
 O gate mínimo para mudanças de prompt ou modelo está definido no
-[Tópico 9 — Avaliação de qualidade jurídica](topico-09-avaliacao-qualidade-juridica.md).
+[Tópico 9 — Avaliação de qualidade jurídica](../decisoes/pa-09-avaliacao-qualidade-juridica.md).
 A suíte de 30 casos e seu executor já existem em
-[`avaliacoes/qualidade-juridica`](../../../avaliacoes/qualidade-juridica/README.md).
+[`avaliacoes/qualidade-juridica`](../../../../avaliacoes/qualidade-juridica/README.md).
 A baseline técnica `1.0.3`, no commit `f6376df`, encerrou o `PA-09` para a
 configuração congelada do MVP. Qualquer mudança no modelo, prompt, suíte ou
 avaliador cria uma nova configuração candidata e exige nova execução do gate.
@@ -205,12 +209,12 @@ fronteira de confiança.
 ## Configuração
 
 O alvo aprovado para modelo, tokens, orçamento, concorrência e retry está no
-[Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md). A configuração
+[Tópico 1 — Modelo e operação](../decisoes/pa-01-modelo-e-operacao.md). A configuração
 abaixo representa a primeira fatia atualmente implementada e ainda será
 migrada para os perfis definidos naquele documento.
 
 Retenção, histórico, exclusão, minimização de dados e transparência seguem o
-[Tópico 3 — Retenção, exclusão e LGPD](topico-03-retencao-exclusao-lgpd.md).
+[Tópico 3 — Retenção, exclusão e LGPD](../decisoes/pa-03-retencao-exclusao-lgpd.md).
 
 Configuração atual, com segredos reais fora do repositório:
 
@@ -286,7 +290,7 @@ Estado atualmente implementado:
 
 O alvo de métricas, ledger de custo, eventos de produto e `CorrelationId`
 ponta a ponta está no
-[Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md).
+[Tópico 14 — Observabilidade e métricas](../decisoes/pa-14-observabilidade-metricas.md).
 O estado atual ainda não possui dashboards, alertas ou exportador de métricas.
 
 O histórico persistente aprovado no Tópico 3 será implementado em entidades
@@ -317,7 +321,7 @@ evento final.
 ## Segurança e LGPD
 
 A política completa e seus critérios de comprovação estão no
-[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
+[Tópico 11 — Segurança, isolamento e logs](../decisoes/pa-11-seguranca-isolamento-logs.md).
 
 - consultar Peça e Contextos sempre pelo escopo fornecido por `IAuthContext`;
 - não aceitar `organizationId`, `casoId` ou `userId` como autoridade no corpo;
@@ -383,10 +387,10 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [x] Adicionar `CorrelationId`, limite de payload e ledger inicial de custo.
 - [ ] Adicionar bloqueio e alertas de orçamento por Organization.
 - [x] Implementar contagem exata de entrada e concorrência do
-      [Tópico 1](topico-01-modelo-e-operacao.md).
+      [Tópico 1](../decisoes/pa-01-modelo-e-operacao.md).
 - [ ] Implementar perfis de saída e retry do Tópico 1.
 - [x] Implementar o aviso versionado, a confirmação persistida e o bloqueio de
-      primeiro uso definidos no [Tópico 3](topico-03-retencao-exclusao-lgpd.md).
+      primeiro uso definidos no [Tópico 3](../decisoes/pa-03-retencao-exclusao-lgpd.md).
 - [ ] Implementar histórico, exclusão, retenção e as próximas camadas de
       minimização definidas no Tópico 3.
 - [x] Atualizar Swagger, `.env.example`, user-secrets e documentação operacional.

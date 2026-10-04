@@ -1,8 +1,8 @@
 # Plano de implementação — frontend
 
-> **Estado:** primeira fatia vertical implementada
+> **Estado:** fatia vertical e suíte automatizada implementadas
 >
-> **Última atualização:** 2026-10-01
+> **Última atualização:** 2026-10-03
 >
 > **Repositório:** `../JuridicoAi-frontend`
 
@@ -18,7 +18,7 @@ estado canônico do documento nem editar diretamente o JSON mantido no React.
 
 ## Estado implementado
 
-Em 2026-09-26, estão disponíveis:
+Em 2026-10-03, estão disponíveis:
 
 - painel lateral responsivo aberto pela toolbar ou por `Ctrl/Cmd + Alt + A`;
 - consulta antecipada e dinâmica de capacidades e limites do backend;
@@ -32,7 +32,8 @@ Em 2026-09-26, estão disponíveis:
 - resultado editável, comparação original/proposta, alertas e achados;
 - aplicação explícita no TipTap em uma transação, integrada ao undo/redo e ao
   autosave existente;
-- bloqueio da aplicação quando a revisão local mudou ou há conflito de versão.
+- bloqueio da aplicação quando a revisão local mudou, a âncora expirou ou o
+  autosave não está em `SALVO`;
 - aviso de transparência versionado antes do primeiro uso, com confirmação
   persistida pelo backend e nova apresentação quando a versão mudar;
 - suíte Vitest/Testing Library, Playwright e axe-core cobrindo o fluxo principal,
@@ -59,7 +60,7 @@ Para o rollout, essa consulta ocorre antes de renderizar a toolbar e o atalho.
 `AI_ASSISTANT` controla a entrada principal; `AI_EDIT`, `AI_REVIEW` e
 `AI_DOCUMENT_GENERATION` filtram modos e ações. A API repete todas as
 validações. Consulte o
-[Tópico 13 — Feature flags e rollout](topico-13-feature-flags-rollout.md).
+[Tópico 13 — Feature flags e rollout](../decisoes/pa-13-feature-flags-rollout.md).
 
 Estados principais:
 
@@ -143,7 +144,7 @@ No MVP, a interface também informa que o assistente não realiza pesquisa
 jurídica externa. Não deve existir botão, estado ou texto que sugira consulta ao
 scraper. Alertas `REFERENCIA_NAO_VERIFICADA` permanecem visíveis junto da
 resposta e antes da aplicação. Consulte o
-[Tópico 10 — Legislação, jurisprudência e fontes](topico-10-legislacao-jurisprudencia-fontes.md).
+[Tópico 10 — Legislação, jurisprudência e fontes](../decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 
 ### Validade da âncora
 
@@ -163,7 +164,7 @@ Mapeamento de posições através de transações pode ser acrescentado depois. 
 MVP privilegia segurança e previsibilidade.
 
 A política completa está no
-[Tópico 7 — Âncora expirada](topico-07-ancora-expirada.md). Inserir no cursor
+[Tópico 7 — Âncora expirada](../decisoes/pa-07-ancora-expirada.md). Inserir no cursor
 atual não é fallback do MVP; se existir futuramente, será uma operação explícita
 de inserção, não reaplicação da alteração original.
 
@@ -186,7 +187,7 @@ o retry de salvamento continuam disponíveis.
 Se o autosave iniciado depois de uma aplicação falhar, a alteração permanece
 local e pode ser desfeita, mas a interface não a apresenta como persistida e
 bloqueia novas aplicações. A política completa está no
-[Tópico 8 — Aplicação com autosave em erro](topico-08-autosave-em-erro.md).
+[Tópico 8 — Aplicação com autosave em erro](../decisoes/pa-08-autosave-em-erro.md).
 
 ## Painel e controles
 
@@ -282,7 +283,7 @@ Ctrl/Cmd + Alt + A -> abrir/focar assistente
 ## Testes mínimos
 
 A estratégia, ferramentas, matriz de cenários e critérios de fechamento estão
-no [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md).
+no [Tópico 12 — Testes e acessibilidade](../decisoes/pa-12-testes-acessibilidade.md).
 O alvo é Vitest para unidades, React Testing Library para componentes,
 Playwright para E2E e axe-core para verificações automatizadas.
 

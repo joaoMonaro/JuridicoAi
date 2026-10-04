@@ -101,7 +101,7 @@ Também serão aplicados limites agregados e configuráveis por Organization:
 Os limites de usuário e Organization são cumulativos. A solicitação precisa ter
 capacidade disponível nos dois níveis. A política detalhada de isolamento e
 liberação das vagas está no
-[Tópico 11 — Segurança, isolamento e logs](topico-11-seguranca-isolamento-logs.md).
+[Tópico 11 — Segurança, isolamento e logs](pa-11-seguranca-isolamento-logs.md).
 
 ### Retry e fallback
 
@@ -256,7 +256,7 @@ inclui instruções e a sobrecarga estrutural. Consulte
 - não perder instrução ou contexto quando uma solicitação for recusada;
 - criar métricas de tokens, custo, retries, bloqueios e latência sem conteúdo;
 - implementar o ledger e os indicadores conforme o
-  [Tópico 14 — Observabilidade e métricas](topico-14-observabilidade-metricas.md);
+  [Tópico 14 — Observabilidade e métricas](pa-14-observabilidade-metricas.md);
 - documentar ajuste de orçamento e preços por ambiente;
 - executar carga controlada e amostra de operações jurídicas antes do piloto.
 

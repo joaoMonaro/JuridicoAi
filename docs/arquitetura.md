@@ -101,14 +101,23 @@ somente metadados para não carregar documentos TipTap potencialmente grandes.
 ```text
 POST /pecas/{pecaId}/assistente/solicitacoes
     -> autentica User e Organization
+    -> valida configuração, kill switch e feature da Organization
+    -> exige confirmação da versão atual do aviso de transparência
     -> valida Peça, modo, seleção, operação e limites
     -> autoriza contextos no mesmo Caso
     -> monta contexto explicitamente selecionado
     -> solicita saída estruturada ao provider com store=false
     -> valida operação, tamanhos, alertas e achados
-    -> transmite eventos SSE ao cliente
+    -> transmite eventos SSE sequenciados ao cliente
+    -> registra somente metadados técnicos e de consumo
 ```
 
-Esse fluxo não chama atualização de Peça. A aplicação de uma sugestão será uma
-ação explícita do frontend no TipTap e será persistida posteriormente pelo
-`PATCH /pecas/{pecaId}` já existente.
+Esse fluxo não chama atualização de Peça. A aplicação de uma sugestão é uma
+ação explícita do frontend no TipTap, condicionada à âncora válida e ao
+autosave em `SALVO`, e é persistida posteriormente pelo `PATCH /pecas/{pecaId}`
+já existente. O `OrganizationId` nunca é aceito do corpo da requisição como
+fonte de autoridade.
+
+Consulte [Assistente de IA](backend/assistente-ia.md) para o comportamento
+estável e a [documentação viva](../implementacoes/features/assistente-ia/README.md)
+para decisões e pendências.

@@ -1,3 +1,15 @@
+# Visão inicial do produto
+
+> **Tipo:** documento histórico
+>
+> **Estado:** não normativo
+>
+> **Última revisão:** 2026-10-03
+
+Este texto preserva a concepção inicial do produto. Para o comportamento atual,
+consulte a [arquitetura](../arquitetura.md) e a
+[documentação do assistente](../backend/assistente-ia.md).
+
 A proposta parte de uma comparação com os copilotos utilizados por programadores.
 
 No desenvolvimento de software, ferramentas como Rider, Visual Studio e outros editores funcionam como ambientes centrais de trabalho. Embora existam diferenças entre eles, sua organização costuma seguir uma estrutura semelhante: um espaço para visualizar os arquivos do projeto, uma área central para produzir o conteúdo e um painel auxiliar para interações e ferramentas.

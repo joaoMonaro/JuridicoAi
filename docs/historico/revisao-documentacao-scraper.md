@@ -1,10 +1,14 @@
 # Revisão da documentação anterior do scraper
 
-Os documentos canônicos e revisados do scraper estão nesta pasta:
+> **Tipo:** registro histórico de auditoria
+>
+> **Estado:** não normativo; os links abaixo apontam para a documentação atual
 
-- [Visão geral e contratos](visao-geral.md)
-- [CLI e códigos de saída](cli.md)
-- [Fluxo técnico do TJSP](integracao-tjsp.md)
+Os documentos canônicos e revisados do scraper estão na pasta `docs/scraper`:
+
+- [Visão geral e contratos](../scraper/visao-geral.md)
+- [CLI e códigos de saída](../scraper/cli.md)
+- [Fluxo técnico do TJSP](../scraper/integracao-tjsp.md)
 - [Solução de problemas](../operacao/troubleshooting.md)
 
 Eles substituem, como referência de manutenção, o texto histórico em

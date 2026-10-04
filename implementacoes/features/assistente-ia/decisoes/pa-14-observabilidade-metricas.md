@@ -33,7 +33,7 @@ responsáveis e política de acesso existirem e forem testados.
 - dashboards agregados respeitam autorização e isolamento de tenant.
 
 A política de campos proibidos do
-[Tópico 11](topico-11-seguranca-isolamento-logs.md) também se aplica a métricas,
+[Tópico 11](pa-11-seguranca-isolamento-logs.md) também se aplica a métricas,
 traces, eventos de produto, exportadores e ferramentas de APM.
 
 ## 2. Identificadores de correlação
@@ -194,7 +194,7 @@ Indicadores mínimos:
 - diferença entre custo estimado e faturado, quando disponível.
 
 O ledger e o orçamento seguem o
-[Tópico 1 — Modelo e operação](topico-01-modelo-e-operacao.md).
+[Tópico 1 — Modelo e operação](pa-01-modelo-e-operacao.md).
 
 ## 5. Métricas de produto — “Está sendo útil?”
 
@@ -339,7 +339,7 @@ tendo precedência.
 
 Retenção superior ou uso financeiro/contratual do ledger deve ser alinhado com
 o `PA-17`. A política de logs e exclusão está no
-[Tópico 3](topico-03-retencao-exclusao-lgpd.md).
+[Tópico 3](pa-03-retencao-exclusao-lgpd.md).
 
 ## 10. Implementação técnica sugerida
 

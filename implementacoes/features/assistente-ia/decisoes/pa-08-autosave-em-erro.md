@@ -97,7 +97,7 @@ de chegar a `SALVO`, o usuário ainda confirma a ação explicitamente.
 Quando o retry terminar em `SALVO`, a aplicação só é reabilitada se a Peça, a
 revisão local e a âncora continuarem válidas. Se o usuário editou o documento
 nesse intervalo, prevalece a regra de âncora expirada do
-[Tópico 7](topico-07-ancora-expirada.md).
+[Tópico 7](pa-07-ancora-expirada.md).
 
 ## 5. Aplicação seguida de nova falha
 

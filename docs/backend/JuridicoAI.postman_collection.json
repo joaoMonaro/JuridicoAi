@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "e9bcfef9-449e-4e18-a493-715257fe4c51",
-    "name": "JuridicoAI - API completa",
-    "description": "Coleção completa da API JuridicoAI. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
+    "name": "JuridicoAI - API principal (sem assistente SSE)",
+    "description": "Coleção da API principal do JuridicoAI. O fluxo SSE do assistente de IA não está representado aqui e deve seguir o contrato versionado em implementacoes/features/assistente-ia/especificacoes/contrato-api.md. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -123,7 +123,7 @@
     },
     {
       "name": "01 - Autenticação",
-      "description": "Configure email e senha nas variáveis da coleção. O primeiro usuário deve ser provisionado pelo comando administrativo descrito na documentação.",
+      "description": "Configure email e senha nas variáveis da coleção. A requisição de registro cria a Organization e seu primeiro Owner; o comando administrativo de provisionamento permanece apenas como alternativa operacional controlada.",
       "item": [
         {
           "name": "Registrar organização e owner",

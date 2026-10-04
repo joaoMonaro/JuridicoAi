@@ -124,16 +124,39 @@ ingestão. O projeto não possui migração automática para esse cenário.
 
 ## Limitações de segurança e produção
 
-Antes de expor a aplicação:
+A API já exige autenticação JWT nas rotas privadas e aplica isolamento por
+Organization aos dados jurídicos. Isso não torna a configuração de
+desenvolvimento pronta para produção. Antes de expor a aplicação:
 
-- adicione autenticação e autorização;
-- restrinja CORS às origens reais;
-- não exponha dados brutos ou HTML sem controle de acesso;
-- proteja dados pessoais e informações de processos;
-- implemente logs sem segredos ou conteúdo sensível;
-- defina timeouts, retentativas e limites de requisição;
-- revise termos de uso e políticas do portal consultado;
-- crie testes para parser, classificador, repositórios e contratos HTTP.
+- defina `Auth:JwtSecret` e demais segredos em um secret manager apropriado;
+- restrinja CORS às origens reais e configure HTTPS/reverse proxy;
+- mantenha dados brutos, arquivos e rotas administrativas sob controle de acesso;
+- aplique a política de retenção e exclusão de dados e backups;
+- valide que logs e telemetria não recebem conteúdo jurídico ou credenciais;
+- configure preços, orçamento, métricas, dashboards e alertas da IA;
+- execute o rollout por Organization e preserve o kill switch testado;
+- conclua as revisões jurídicas de LGPD, contratos, suboperadores e
+  transferência internacional;
+- revise termos de uso e políticas do portal consultado antes de reativar o
+  scraper em um fluxo de produto.
+
+O roteiro detalhado do assistente está em
+[Segurança operacional](../../implementacoes/features/assistente-ia/evidencias/seguranca-operacional-producao.md).
+
+## O assistente não aparece ou informa indisponibilidade
+
+Verifique, nesta ordem:
+
+1. `AssistenteIa:Enabled=true`, com `ApiKey` e `Model` válidos;
+2. kill switch persistido `AI_ENABLED=true`;
+3. flag `AI_ASSISTANT` habilitada para a Organization;
+4. flag específica da operação (`AI_EDIT`, `AI_REVIEW` ou
+   `AI_DOCUMENT_GENERATION`), quando aplicável;
+5. confirmação da versão atual do aviso de transparência pelo usuário.
+
+Ausência de uma flag equivale a desabilitado. Os comandos administrativos estão
+em [User Secrets](../user-secrets.md). Não envie a saída de `user-secrets list`
+para logs ou suporte, pois ela contém valores completos.
 
 ## Diagnóstico recomendado
 

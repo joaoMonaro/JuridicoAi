@@ -13,8 +13,8 @@ dos arquivos com IA. Peças e seus templates são descritos separadamente em
 
 Os dados são persistidos no PostgreSQL por meio do Entity Framework Core e do
 provedor `Npgsql.EntityFrameworkCore.PostgreSQL`. O `JuridicoAiDbContext`
-expõe os conjuntos de casos, envolvidos, contextos, documentos, Peças e
-templates de Peça. Nomes de tabelas e colunas, tamanhos, conversões de enums,
+expõe os conjuntos de identidade, casos, envolvidos, contextos, documentos,
+Peças, templates e governança da IA. Nomes de tabelas e colunas, tamanhos, conversões de enums,
 índices, relacionamentos e checks são definidos explicitamente pela Fluent API
 em `Infrastructure/Database/EntityConfigurations.cs`.
 
@@ -34,6 +34,9 @@ export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;
 inicial do EF Core cria `casos`, `envolvidos_caso`, `contextos_caso` e
 `documentos_caso`. A migration `AddPecas` acrescenta `pecas` e
 `templates_peca`, com chaves estrangeiras, checks e índices de listagem.
+Migrations posteriores acrescentam identidade, sessões, consumo, feature flags,
+confirmações de transparência e auditoria operacional da IA; o diretório de
+migrations e `__EFMigrationsHistory` são a referência para a sequência completa.
 
 ### Compatibilidade com o banco anterior
 

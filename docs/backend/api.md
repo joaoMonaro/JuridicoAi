@@ -18,6 +18,16 @@ desenvolvimento, a interface Swagger está disponível em
 | `POST` | `/auth/refresh` | rotaciona o refresh token |
 | `POST` | `/auth/logout` | revoga a Session atual |
 | `GET` | `/auth/me` | retorna User, Organization e role atuais |
+| `POST` | `/casos` | cria um Caso |
+| `GET` | `/casos` | lista Casos, com filtro opcional de status |
+| `GET` | `/casos/{id}` | obtém um Caso |
+| `PUT` | `/casos/{id}` | atualiza um Caso |
+| `DELETE` | `/casos/{id}` | arquiva um Caso |
+| `POST` | `/casos/{casoId}/envolvidos` | adiciona envolvido ao Caso |
+| `GET` | `/casos/{casoId}/envolvidos` | lista envolvidos do Caso |
+| `GET` | `/casos/{casoId}/envolvidos/{id}` | obtém um envolvido |
+| `PUT` | `/casos/{casoId}/envolvidos/{id}` | atualiza um envolvido |
+| `DELETE` | `/casos/{casoId}/envolvidos/{id}` | remove um envolvido |
 | `POST` | `/api/jurisprudencias/ingest` | coleta e processa resultados do TJSP |
 | `GET` | `/api/jurisprudencias` | consulta jurisprudências processadas |
 | `GET` | `/api/jurisprudencias/raw` | consulta dados brutos |
@@ -27,12 +37,25 @@ desenvolvimento, a interface Swagger está disponível em
 | `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | obtém um endereço |
 | `PATCH` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | substitui os dados de um endereço |
 | `DELETE` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | remove um endereço |
+| `POST` | `/casos/{casoId}/contextos` | cria um contexto textual |
+| `GET` | `/casos/{casoId}/contextos` | lista contextos |
+| `GET` | `/casos/{casoId}/contextos/{id}` | obtém um contexto |
+| `PUT` | `/casos/{casoId}/contextos/{id}` | atualiza um contexto |
+| `DELETE` | `/casos/{casoId}/contextos/{id}` | remove um contexto |
+| `POST` | `/casos/{casoId}/documentos` | envia um documento |
+| `GET` | `/casos/{casoId}/documentos` | lista metadados de documentos |
+| `GET` | `/casos/{casoId}/documentos/{id}` | obtém metadados de um documento |
+| `GET` | `/casos/{casoId}/documentos/{id}/arquivo` | baixa o arquivo |
+| `DELETE` | `/casos/{casoId}/documentos/{id}` | remove documento e arquivo |
+| `GET` | `/casos/{id}/contexto-completo` | agrega Caso, envolvidos, contextos e metadados |
 | `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
 | `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
 | `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
 | `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
 | `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
 | `GET` | `/assistente/capacidades` | informa disponibilidade, modos e limites do assistente |
+| `GET` | `/assistente/transparencia` | retorna aviso atual e estado de confirmação |
+| `POST` | `/assistente/transparencia/confirmacoes` | confirma a versão atual do aviso |
 | `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera sugestão por IA em stream SSE, sem alterar a Peça |
 | `POST` | `/templates-peca` | cria um template de Peça |
 | `GET` | `/templates-peca` | lista templates de Peça |
@@ -43,7 +66,9 @@ desenvolvimento, a interface Swagger está disponível em
 Os contratos, exemplos, regras de cópia de template e controle de concorrência
 estão documentados em [Peças e templates](pecas.md).
 O contrato do assistente e seus eventos estão documentados em
-[Assistente de IA](../../implementacoes/features/assistente-ia/contrato-api.md).
+[Assistente de IA](../../implementacoes/features/assistente-ia/especificacoes/contrato-api.md).
+Para uma visão operacional do comportamento implementado, consulte também
+[Assistente de IA](assistente-ia.md).
 
 ## Registrar uma conta
 

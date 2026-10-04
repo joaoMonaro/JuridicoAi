@@ -120,8 +120,8 @@ Cobertura obrigatória:
 - aplicação bloqueada em `SALVANDO`, `NAO_SALVO`, `ERRO` e `CONFLITO`;
 - aplicação permitida em `SALVO`, quando as demais condições são válidas.
 
-Os testes de âncora seguem o [Tópico 7](topico-07-ancora-expirada.md), e os de
-sincronização seguem o [Tópico 8](topico-08-autosave-em-erro.md).
+Os testes de âncora seguem o [Tópico 7](pa-07-ancora-expirada.md), e os de
+sincronização seguem o [Tópico 8](pa-08-autosave-em-erro.md).
 
 ## 5. Componentes
 
@@ -356,7 +356,7 @@ Entregas iniciais concluídas no frontend:
   `SALVANDO`, `ERRO` ou `CONFLITO`, removendo-a quando retorna a `SALVO`;
 - as verificações que exigem hardware, sistema e tecnologia assistiva reais
   foram registradas no
-  [checklist manual de acessibilidade](checklist-manual-acessibilidade.md);
+  [checklist manual de acessibilidade](../evidencias/checklist-manual-acessibilidade.md);
 - `test:ci` executa Vitest e Playwright sequencialmente em modo não interativo;
 - o primeiro uso possui teste de componente e E2E para texto, foco inicial,
   confirmação pelo teclado, persistência e liberação posterior do compositor;

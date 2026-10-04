@@ -1,44 +1,60 @@
 # JuridicoAI
 
-## Pipeline de jurisprudencias
+Backend do JuridicoAI: uma API ASP.NET Core para autenticação e multitenancy,
+organização de Casos, edição persistente de Peças, assistência jurídica por IA
+e ingestão de jurisprudências.
 
-O fluxo de ingestao da API e:
+## Componentes principais
 
 ```text
-TJSP -> dado bruto -> normalizacao -> classificacao por regras -> MongoDB
+Frontend -> API .NET -> PostgreSQL
+                   |-> OpenAI Responses API
+                   |-> MongoDB
+                   `-> Scraper TJSP
 ```
 
-Configure os segredos por variaveis de ambiente (ou user-secrets em desenvolvimento):
+- PostgreSQL armazena identidade, organizações, Casos, Peças e governança da IA;
+- MongoDB armazena jurisprudências brutas e processadas;
+- o assistente gera respostas em SSE e nunca altera uma Peça sem aplicação
+  explícita no frontend;
+- o scraper do TJSP permanece no código, mas está fora do fluxo do MVP da IA.
+
+## Início rápido
+
+Configure `.env` para os bancos, suba os serviços e defina os segredos locais:
 
 ```bash
-export Mongo__ConnectionString="mongodb://usuario:senha@localhost:27017/"
-export Postgres__ConnectionString="Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=..."
-export Auth__JwtSecret="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
+cp .env.example .env
+docker compose up -d
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Postgres:ConnectionString" \
+  "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=..."
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "Auth:JwtSecret" \
+  "um-segredo-aleatorio-com-pelo-menos-32-caracteres"
+
+dotnet run --project src/JuridicoAI.Api
 ```
 
-Para iniciar os bancos pelo Compose, configure no `.env` as credenciais
-`MONGO_ROOT_*` e `POSTGRES_*`. A API usa as collections
-`jurisprudencias_raw` e `jurisprudencias` no MongoDB e o schema da fundação do
-caso no PostgreSQL.
+MongoDB é necessário para os fluxos de jurisprudência. A chave e o modelo da
+OpenAI são necessários somente para executar o assistente. Não versione
+segredos; consulte [User Secrets](docs/user-secrets.md).
 
-Os exemplos de ingestao, consulta e reprocessamento estao em
-`src/JuridicoAI.Api/JuridicoAI.http`.
+As migrations do Entity Framework Core são aplicadas na inicialização quando
+`Postgres:RunMigrations=true`.
 
-Os dados de casos, envolvidos, contextos, metadados de documentos, Peças e
-templates de Peça são persistidos no PostgreSQL por meio do Entity Framework
-Core. As migrations
-pendentes são aplicadas na inicialização da API quando
-`Postgres:RunMigrations` está habilitado.
+## Documentação
 
-A documentação dos endpoints de Peças, templates e concorrência otimista está
-em [`docs/backend/pecas.md`](docs/backend/pecas.md).
+- [Índice da documentação atual](docs/README.md)
+- [Configuração e execução](docs/configuracao-e-execucao.md)
+- [API HTTP](docs/backend/api.md)
+- [Assistente de IA](docs/backend/assistente-ia.md)
+- [Autenticação e multitenancy](docs/backend/autenticacao-e-multitenancy.md)
+- [Peças e templates](docs/backend/pecas.md)
+- [Implementações em andamento](implementacoes/README.md)
 
-A primeira fatia do assistente de IA para redação jurídica, seu contrato SSE e
-os planos de backend/frontend estão em
-[`implementacoes/features/assistente-ia/README.md`](implementacoes/features/assistente-ia/README.md).
-Ela permanece desabilitada por padrão até que provider, modelo e chave sejam
-configurados com segurança.
-
-Autenticação JWT, refresh token, provisionamento e isolamento por Organization
-estão documentados em
-[`docs/backend/autenticacao-e-multitenancy.md`](docs/backend/autenticacao-e-multitenancy.md).
+A documentação de `docs/` descreve o comportamento atual. Especificações,
+decisões e pendências de features em evolução ficam em `implementacoes/`, e as
+suítes de avaliação da IA ficam em `avaliacoes/`.

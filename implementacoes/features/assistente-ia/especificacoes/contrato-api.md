@@ -45,7 +45,7 @@ tratada pelo endpoint de solicitação.
 `features` contém as flags efetivas da Organization autenticada e `modos` é
 filtrado pelas mesmas regras usadas pela rota de geração. Sem `AI_ASSISTANT`,
 `habilitado` é `false` e nenhum modo fica disponível. Consulte o
-[Tópico 13 — Feature flags e rollout](./topico-13-feature-flags-rollout.md).
+[Tópico 13 — Feature flags e rollout](../decisoes/pa-13-feature-flags-rollout.md).
 
 ## Transparência antes do primeiro uso
 
@@ -110,12 +110,12 @@ O corpo não aceita `organizationId` como autoridade. O tenant é obtido da
 identidade, sessão e membership validadas pelo backend; `pecaId` e todos os IDs
 de contexto são consultados dentro desse tenant. Uma tentativa de usar recurso
 de outra Organization retorna 404/403 sem conteúdo e sem chamar o provider. Ver
-[Tópico 11 — Segurança, isolamento e logs](./topico-11-seguranca-isolamento-logs.md).
+[Tópico 11 — Segurança, isolamento e logs](../decisoes/pa-11-seguranca-isolamento-logs.md).
 
 O backend valida ou gera `X-Correlation-ID`, devolve-o no header da resposta e
 no evento `solicitacao.iniciada`. O ID é somente para rastreio e nunca participa
 da autorização. A geração do ID no frontend ainda está pendente. Consulte o
-[Tópico 14 — Observabilidade e métricas](./topico-14-observabilidade-metricas.md).
+[Tópico 14 — Observabilidade e métricas](../decisoes/pa-14-observabilidade-metricas.md).
 
 ### Requisição
 
@@ -233,7 +233,7 @@ pelo provedor nunca é injetado diretamente no DOM ou no editor.
 fornecidas e precisa ser conferida oficialmente. Esse alerta nunca transforma
 jurisprudência concreta inventada em conteúdo aceitável. O endpoint não aciona
 pesquisa externa ou scraper; consulte o
-[Tópico 10](topico-10-legislacao-jurisprudencia-fontes.md).
+[Tópico 10](../decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 
 No modo `Revisar`, a sugestão também contém `achados` estruturados, sem exigir
 que o frontend interprete bullets produzidos livremente:
@@ -304,7 +304,7 @@ e retomada por `Last-Event-ID` permanecem fora do MVP.
 Além da pré-condição específica da operação, toda escrita no editor exige
 autosave em `SALVO`. `SALVANDO`, `NAO_SALVO`, `ERRO` e `CONFLITO` bloqueiam a
 aplicação da sugestão, mas não a leitura, cópia ou geração da resposta. Consulte
-[Tópico 8 — Aplicação com autosave em erro](./topico-08-autosave-em-erro.md).
+[Tópico 8 — Aplicação com autosave em erro](../decisoes/pa-08-autosave-em-erro.md).
 
 Quando a âncora expirar, o frontend deve bloquear a aplicação da sugestão e
 oferecer: selecionar um novo trecho, gerar novamente ou descartar. A resposta
@@ -312,7 +312,7 @@ antiga nunca deve ser aplicada à nova seleção. “Inserir no cursor atual” 
 um fallback do MVP; se essa opção for criada futuramente, deverá iniciar uma
 nova operação de inserção explícita, sem reaproveitar a alteração original.
 
-Consulte [Tópico 7 — Âncora expirada e destino alternativo](./topico-07-ancora-expirada.md).
+Consulte [Tópico 7 — Âncora expirada e destino alternativo](../decisoes/pa-07-ancora-expirada.md).
 
 ## Erros HTTP antes do stream
 

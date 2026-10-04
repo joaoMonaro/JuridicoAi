@@ -1,7 +1,8 @@
 # Documentação do JuridicoAI
 
 Esta documentação descreve o comportamento implementado atualmente na solução
-`JuridicoAI.sln`.
+`JuridicoAI.sln`. Planos e decisões ainda em evolução ficam separados em
+[`implementacoes/`](../implementacoes/README.md).
 
 ## Visão geral
 
@@ -9,30 +10,11 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 - [Configuração e execução](configuracao-e-execucao.md)
 - [User Secrets no desenvolvimento](user-secrets.md)
 
-## Implementações em andamento
-
-- [Índice de implementações](../implementacoes/README.md)
-- [Assistente de IA para redação jurídica](../implementacoes/features/assistente-ia/README.md)
-  - [Contrato HTTP](../implementacoes/features/assistente-ia/contrato-api.md)
-  - [Plano do backend](../implementacoes/features/assistente-ia/backend.md)
-  - [Plano do frontend](../implementacoes/features/assistente-ia/frontend.md)
-  - [Pontos em aberto](../implementacoes/features/assistente-ia/pontos-em-aberto.md)
-  - [Tópico 1 — Modelo e operação](../implementacoes/features/assistente-ia/topico-01-modelo-e-operacao.md)
-  - [Tópico 3 — Retenção, exclusão e LGPD](../implementacoes/features/assistente-ia/topico-03-retencao-exclusao-lgpd.md)
-  - [Tópico 7 — Âncora expirada](../implementacoes/features/assistente-ia/topico-07-ancora-expirada.md)
-  - [Tópico 8 — Autosave em erro](../implementacoes/features/assistente-ia/topico-08-autosave-em-erro.md)
-  - [Tópico 9 — Avaliação de qualidade jurídica](../implementacoes/features/assistente-ia/topico-09-avaliacao-qualidade-juridica.md)
-    - [Suíte executável de 30 casos](../avaliacoes/qualidade-juridica/README.md)
-  - [Tópico 10 — Legislação, jurisprudência e fontes](../implementacoes/features/assistente-ia/topico-10-legislacao-jurisprudencia-fontes.md)
-  - [Tópico 11 — Segurança, isolamento e logs](../implementacoes/features/assistente-ia/topico-11-seguranca-isolamento-logs.md)
-  - [Tópico 12 — Testes e acessibilidade](../implementacoes/features/assistente-ia/topico-12-testes-acessibilidade.md)
-  - [Tópico 13 — Feature flags e rollout](../implementacoes/features/assistente-ia/topico-13-feature-flags-rollout.md)
-  - [Tópico 14 — Observabilidade e métricas](../implementacoes/features/assistente-ia/topico-14-observabilidade-metricas.md)
-
 ## Backend
 
 - [API HTTP](backend/api.md)
-- [Coleção Postman](backend/JuridicoAI.postman_collection.json)
+- [Assistente de IA](backend/assistente-ia.md)
+- [Coleção Postman principal, sem o stream do assistente](backend/JuridicoAI.postman_collection.json)
 - [Autenticação e multitenancy](backend/autenticacao-e-multitenancy.md)
 - [Fundação do caso](backend/casos.md)
 - [Peças e templates](backend/pecas.md)
@@ -46,22 +28,48 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 - [Uso pela linha de comando](scraper/cli.md)
 - [Integração técnica com o TJSP](scraper/integracao-tjsp.md)
 
+O scraper permanece disponível como componente técnico, mas está fora do fluxo
+e da apresentação do MVP do assistente de IA.
+
 ## Operação
 
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
+
+## Implementações em andamento
+
+- [Índice de implementações](../implementacoes/README.md)
+- [Assistente de IA para redação jurídica](../implementacoes/features/assistente-ia/README.md)
+  - [Especificações](../implementacoes/features/assistente-ia/especificacoes/)
+  - [Decisões](../implementacoes/features/assistente-ia/decisoes/)
+  - [Planejamento](../implementacoes/features/assistente-ia/planejamento/pontos-em-aberto.md)
+  - [Evidências](../implementacoes/features/assistente-ia/evidencias/)
+- [Suíte executável de qualidade jurídica](../avaliacoes/qualidade-juridica/README.md)
+
+## Histórico e auditorias
+
+- [Visão inicial do produto](historico/visao-inicial-produto.md)
+- [Revisão anterior da documentação do scraper](historico/revisao-documentacao-scraper.md)
+- [Auditoria documental de 2026-10-03](historico/auditoria-documentacao-2026-10-03.md)
+
+Documentos desta seção preservam contexto e decisões passadas, mas não são
+referência normativa para o comportamento atual.
 
 ## Escopo atual
 
 O projeto contém:
 
-- uma API ASP.NET Core em .NET 10;
-- um scraper do portal e-SAJ/TJSP, também em .NET 10;
-- persistência em MongoDB e PostgreSQL;
+- uma API ASP.NET Core em .NET 10 com autenticação JWT e Swagger em desenvolvimento;
+- cadastro inicial de organização e usuário, login e renovação de sessão;
 - casos, envolvidos, contextos, documentos, peças e templates de peças;
-- primeira fatia do assistente de IA para Peças, desabilitada por padrão;
+- editor de peças com autosave no frontend;
+- assistente de IA com geração em streaming, revisão e aplicação explícita no editor;
+- controles de tenant, confirmação de transparência, feature flags e kill switch da IA;
+- persistência em PostgreSQL e MongoDB;
+- scraper do portal e-SAJ/TJSP, pausado no fluxo do MVP;
 - classificação local de jurisprudências por regras;
-- testes unitários da fundação do caso e de peças.
+- testes automatizados de backend, frontend, segurança e qualidade jurídica.
 
-Não há, no estado atual do repositório, cadastro público, OpenAPI/Swagger,
-observabilidade distribuída ou contêiner da aplicação.
-O `docker-compose.yml` provisiona MongoDB e PostgreSQL.
+Ainda não há observabilidade distribuída nem contêiner da aplicação. O
+`docker-compose.yml` provisiona MongoDB e PostgreSQL. Rollout comercial,
+retenção automatizada, orçamento operacional completo e validações jurídicas
+continuam acompanhados na documentação de implementação.

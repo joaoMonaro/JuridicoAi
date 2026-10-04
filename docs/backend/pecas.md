@@ -2,8 +2,8 @@
 
 Uma Peça é um documento jurídico pertencente obrigatoriamente a um Caso. O
 backend armazena o documento contínuo e suas configurações, mas não renderiza
-páginas, HTML, PDF ou DOCX. O JSON TipTap/ProseMirror é a fonte canônica para o
-futuro editor.
+páginas, HTML, PDF ou DOCX. O JSON TipTap/ProseMirror é a fonte canônica usada
+pelo editor do frontend.
 
 Todos os endpoints de Peças e Templates exigem `Authorization: Bearer` e usam a
 Organization do token como fonte de autoridade.
@@ -203,8 +203,9 @@ Consultas e updates incluem a Organization autenticada; Caso e Template de
 outra Organization não podem ser usados para criar uma Peça. O locking
 otimista inclui `organizationId` além de identificador e versão.
 
-Não fazem parte dos endpoints de Peças editor visual, paginação, autosave no
-cliente, imagens, uploads, PDF, DOCX, histórico ou colaboração em tempo real.
-A geração de sugestões por IA existe em endpoints separados, consulta a Peça
-somente para autorização e **não** atualiza `conteudoJson`. Veja o
-[Assistente de IA](../../implementacoes/features/assistente-ia/README.md).
+Editor visual e autosave existem no frontend, mas não são responsabilidades dos
+endpoints de Peças. Paginação final, imagens embutidas, PDF, DOCX, histórico de
+versões e colaboração em tempo real continuam fora deste contrato. A geração
+de sugestões por IA usa endpoints separados, consulta a Peça para autorização
+e contexto e **não** atualiza `conteudoJson`. Veja o
+[Assistente de IA](assistente-ia.md).

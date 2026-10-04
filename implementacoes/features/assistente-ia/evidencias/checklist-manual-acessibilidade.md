@@ -2,7 +2,7 @@
 
 > **Estado:** pendente de execução manual
 >
-> **Relacionado:** [Tópico 12 — Testes e acessibilidade](topico-12-testes-acessibilidade.md)
+> **Relacionado:** [Tópico 12 — Testes e acessibilidade](../decisoes/pa-12-testes-acessibilidade.md)
 
 Este checklist registra somente verificações que a suíte automatizada não
 comprova integralmente. Os testes Playwright já cobrem atalhos simulados, foco
