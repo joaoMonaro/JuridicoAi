@@ -36,10 +36,10 @@ compatível com o endpoint atual.
 
 ## E2 — contexto automático
 
-- [ ] capturar seleção ao abrir ou focar o assistente;
-- [ ] exibir seleção como chip removível com dimensão;
+- [x] capturar seleção ao abrir ou focar o assistente;
+- [x] exibir seleção como chip removível com dimensão;
 - [x] implementar menu `Adicionar contexto`;
-- [ ] suportar seção atual, documento completo, dados do Caso, contexto
+- [x] suportar seção atual, documento completo, dados do Caso, contexto
       cadastrado e informação para o pedido;
 - [x] exibir resumo expansível dos contextos em cada mensagem enviada;
 - [x] garantir que nenhum contexto não selecionado entre no payload;
@@ -141,13 +141,15 @@ Implementado no frontend:
 Validação automatizada desta fatia:
 
 ```text
-Vitest: 61 testes aprovados
-Painel do assistente: 19 testes aprovados
+Vitest: 65 testes aprovados
+Painel do assistente: 23 testes aprovados
 ESLint: sem erros
 Build de produção: aprovado
 ```
 
 O endpoint, o parser SSE, as âncoras, a aplicação explícita e as regras de
-autosave não foram alterados. Continuam pendentes a separação estrutural em
-componentes menores, o chip automático de seleção e a validação visual/manual
-da nova experiência.
+autosave não foram alterados. A segunda fatia adicionou o snapshot automático
+da seleção, chip com dimensão e remoção efetiva do payload. Pedidos sem seleção
+agora começam sem conteúdo da Peça por padrão, evitando contexto implícito.
+Continuam pendentes a separação estrutural em componentes menores e a validação
+visual/manual da nova experiência.

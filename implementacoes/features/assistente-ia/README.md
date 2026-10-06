@@ -292,7 +292,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Especificar contexto automático, mensagens e cartões de sugestão.
 - [ ] Validar wireframe ou protótipo de baixa fidelidade.
 - [ ] Implementar estrutura de conversa e composer único.
-- [ ] Substituir formulário de contexto por chips e menu progressivo.
+- [x] Substituir formulário de contexto por chips e menu progressivo.
 - [ ] Levar resposta, revisão e proposta para o corpo da conversa.
 - [ ] Adicionar expansão/redimensionamento para respostas extensas.
 - [ ] Preservar conversa local por Peça durante a sessão.
@@ -342,7 +342,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Kill switch persistido e auditoria implementados; rollout nominal pendente |
 | 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |
 | 2026-09-27 | A validação jurídica, contratual e de transferência internacional permanece bloqueadora em `PA-17`. | Pendente |
-| 2026-10-06 | `PA-18`: o assistente adotará chat como interface principal, contexto por chips e propostas dentro da conversa, sem aplicação autônoma. | Primeira fatia conversacional implementada; chips automáticos e validação visual pendentes |
+| 2026-10-06 | `PA-18`: o assistente adotará chat como interface principal, contexto por chips e propostas dentro da conversa, sem aplicação autônoma. | Chat e chips automáticos implementados; validação visual pendente |
 
 ### Decisões pendentes
 

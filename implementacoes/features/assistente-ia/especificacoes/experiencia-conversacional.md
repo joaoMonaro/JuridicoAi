@@ -228,8 +228,8 @@ Nenhum evento armazena texto da mensagem, resposta, seleção ou Peça.
 ## 11. Critérios de aceite
 
 - [ ] O fluxo normal não exige escolher modo ou escopo técnico.
-- [ ] Seleção atual aparece automaticamente como chip removível.
-- [ ] É possível adicionar e remover contextos antes do envio.
+- [x] Seleção atual aparece automaticamente como chip removível.
+- [x] É possível adicionar e remover contextos antes do envio.
 - [ ] Perguntas e respostas aparecem como conversa.
 - [ ] Sugestões aparecem dentro da conversa com destino e ações explícitas.
 - [ ] Documento não muda antes de `Aceitar`.
