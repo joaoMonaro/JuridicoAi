@@ -1,14 +1,15 @@
 # Assistente de IA para redação jurídica
 
-> **Estado:** fatia vertical implementada e coberta por testes automatizados;
-> preparação operacional e validações manuais/comerciais ainda em andamento
+> **Estado:** núcleo funcional validado; redesign conversacional aprovado e
+> ainda não implementado
 >
-> **Última atualização:** 2026-10-03
+> **Última atualização:** 2026-10-06
 >
 > **Implementação atual:** geração, streaming, revisão e aplicação explícita
 > integrados; testes unitários, de componente, E2E, segurança e qualidade
-> jurídica executados. Permanecem rollout, observabilidade, retenção completa,
-> orçamento e validações manuais/jurídicas.
+> jurídica executados. A validação manual confirmou os fluxos, mas identificou
+> alta carga cognitiva e baixa legibilidade no painel atual. O próximo trabalho
+> de produto é a experiência conversacional do PA-18.
 >
 > **Documentos relacionados:** [contrato HTTP](especificacoes/contrato-api.md),
 > [backend](especificacoes/backend.md), [frontend](especificacoes/frontend.md) e
@@ -24,8 +25,13 @@
 > [PA-11 — Segurança, isolamento e logs](decisoes/pa-11-seguranca-isolamento-logs.md),
 > [roteiro de segurança operacional](evidencias/seguranca-operacional-producao.md),
 > [PA-12 — Testes e acessibilidade](decisoes/pa-12-testes-acessibilidade.md),
-> [PA-13 — Feature flags e rollout](decisoes/pa-13-feature-flags-rollout.md)
-> e [PA-14 — Observabilidade e métricas](decisoes/pa-14-observabilidade-metricas.md).
+> [PA-13 — Feature flags e rollout](decisoes/pa-13-feature-flags-rollout.md),
+> [PA-14 — Observabilidade e métricas](decisoes/pa-14-observabilidade-metricas.md)
+> e [PA-18 — Experiência conversacional](decisoes/pa-18-experiencia-conversacional.md).
+> Implementação do redesign:
+> [especificação de experiência](especificacoes/experiencia-conversacional.md),
+> [plano incremental](planejamento/redesign-conversacional.md) e
+> [evidência manual](evidencias/validacao-manual-experiencia-2026-10-06.md).
 
 Este diretório é a bancada viva da feature de assistência por IA no editor de
 Peças. Ele deve ser atualizado junto com cada mudança de escopo, contrato ou
@@ -47,6 +53,21 @@ Permitir que o profissional use IA durante a elaboração de uma Peça para:
 A IA trabalha como copiloto. Ela produz respostas e propostas, mas **nunca
 altera a Peça diretamente**. Toda alteração no editor exige revisão e uma ação
 explícita do usuário.
+
+## Direção atual da experiência
+
+O painel baseado em formulário cumpriu a primeira validação funcional, mas não
+será a interface definitiva. O produto adotará um chat integrado ao editor:
+
+- uma caixa única para perguntas e pedidos de alteração;
+- seleção e demais contextos representados por chips removíveis;
+- respostas, revisões e propostas no corpo da conversa;
+- aceitar, editar, rejeitar e gerar outra versão dentro da mensagem;
+- painel redimensionável ou expandido para conteúdo jurídico extenso;
+- modos e operações técnicas ocultos no fluxo normal.
+
+Essa mudança simplifica a interação sem conceder autonomia de escrita. Âncora,
+autosave, confirmação humana, isolamento e feature flags permanecem obrigatórios.
 
 ## Princípios invariantes
 
@@ -264,6 +285,19 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Restringir aplicação da IA ao estado `SALVO` conforme o PA-08.
 - [x] Configurar e executar a suíte frontend definida no PA-12.
 
+### F2.1 — experiência conversacional
+
+- [x] Validar manualmente os fluxos e registrar problemas da interface atual.
+- [x] Aprovar chat como interface principal e preservar controle humano.
+- [x] Especificar contexto automático, mensagens e cartões de sugestão.
+- [ ] Validar wireframe ou protótipo de baixa fidelidade.
+- [ ] Implementar estrutura de conversa e composer único.
+- [ ] Substituir formulário de contexto por chips e menu progressivo.
+- [ ] Levar resposta, revisão e proposta para o corpo da conversa.
+- [ ] Adicionar expansão/redimensionamento para respostas extensas.
+- [ ] Preservar conversa local por Peça durante a sessão.
+- [ ] Executar regressão automatizada e validação manual do PA-18.
+
 ### F3 — endurecimento e lançamento
 
 - [x] Revisar e aceitar tecnicamente a baseline atual da suíte do Tópico 9.
@@ -308,6 +342,7 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Kill switch persistido e auditoria implementados; rollout nominal pendente |
 | 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |
 | 2026-09-27 | A validação jurídica, contratual e de transferência internacional permanece bloqueadora em `PA-17`. | Pendente |
+| 2026-10-06 | `PA-18`: o assistente adotará chat como interface principal, contexto por chips e propostas dentro da conversa, sem aplicação autônoma. | Primeira fatia conversacional implementada; chips automáticos e validação visual pendentes |
 
 ### Decisões pendentes
 

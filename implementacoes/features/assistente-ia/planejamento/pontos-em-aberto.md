@@ -2,7 +2,7 @@
 
 > **Estado:** decisões pendentes
 >
-> **Última atualização:** 2026-10-03
+> **Última atualização:** 2026-10-06
 >
 > **Documento principal:** [Assistente de IA](../README.md)
 
@@ -23,18 +23,21 @@ homologação registrados no documento do tópico.
 | `PA-15` | Tamanho do bundle do frontend | Baixa | Não |
 | `PA-16` | Fluxo seguro de geração integral da Peça | Alta | Sim |
 | `PA-17` | Validação jurídica e contratual para comercialização | Crítica | Sim |
+| `PA-18` | Experiência conversacional do assistente | Alta | Sim para piloto externo |
 
 ## Ordem recomendada de decisão
 
-1. Implementar as partes operacionais ainda pendentes de `PA-01` a `PA-06`:
+1. Implementar e validar o redesign conversacional do `PA-18` antes de ampliar
+   as ferramentas visíveis do assistente.
+2. Implementar as partes operacionais ainda pendentes de `PA-01` a `PA-06`:
    perfis de saída/retry, orçamento, retenção, pseudonimização e histórico.
-2. Concluir a preparação de produção de `PA-11` e a auditoria manual de
+3. Concluir a preparação de produção de `PA-11` e a auditoria manual de
    acessibilidade de `PA-12`.
-3. Instrumentar `PA-14` e executar o rollout nominal previsto em `PA-13`.
-4. Submeter `PA-17` à revisão jurídica e contratual, incluindo homologação
+4. Instrumentar `PA-14` e executar o rollout nominal previsto em `PA-13`.
+5. Submeter `PA-17` à revisão jurídica e contratual, incluindo homologação
    formal das respostas, antes da comercialização.
-5. Definir o fluxo de geração integral em `PA-16`.
-6. Tratar a melhoria não bloqueante de bundle em `PA-15`.
+6. Definir o fluxo de geração integral em `PA-16`.
+7. Tratar a melhoria não bloqueante de bundle em `PA-15`.
 
 ## Pontos resolvidos
 
@@ -91,6 +94,31 @@ contrato que diferencie trecho, seção e documento completo.
 Critério de fechamento: fluxo de produto aprovado, contrato tipado, protótipo
 homologado e testes que comprovem que cancelar, rejeitar ou falhar não altera a
 Peça.
+
+### PA-18 — Experiência conversacional do assistente
+
+A decisão de produto está registrada em
+[PA-18 — Experiência conversacional](../decisoes/pa-18-experiencia-conversacional.md).
+A validação manual comprovou o núcleo funcional, mas o painel atual foi
+considerado complexo, pesado e inadequado para leitura das respostas.
+
+Direção aprovada:
+
+- chat como interface principal;
+- uma caixa única para pedido livre;
+- seleção e demais contextos como chips removíveis;
+- ações rápidas opcionais, sem seletor obrigatório de modo;
+- respostas, achados e propostas dentro da conversa;
+- aceitar, editar e rejeitar no cartão da proposta;
+- painel redimensionável ou expandido;
+- nenhuma alteração autônoma na Peça.
+
+A [especificação](../especificacoes/experiencia-conversacional.md) e o
+[plano incremental](redesign-conversacional.md) orientam a implementação.
+
+Critério de fechamento: primeira entrega conversacional implementada, testes de
+regressão aprovados e validação manual confirmando redução de complexidade e
+melhora de legibilidade.
 
 ## Segurança e validação
 

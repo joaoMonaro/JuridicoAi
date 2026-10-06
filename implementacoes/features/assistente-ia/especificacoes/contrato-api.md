@@ -8,6 +8,11 @@
 > conteúdo ainda é emitido como um único bloco após a validação da saída
 > estruturada; streaming incremental do campo `texto` permanece pendente.
 
+> **Redesign conversacional:** este contrato permanece vigente durante as
+> primeiras etapas do PA-18. Pedido livre com intenção automática deverá ser
+> especificado como evolução compatível antes da implementação da etapa E4; o
+> frontend não inferirá operações por palavras-chave frágeis.
+
 Este documento é o contrato compartilhado entre frontend e backend. Nomes e
 exemplos devem ser atualizados antes do código quando houver uma mudança
 incompatível.

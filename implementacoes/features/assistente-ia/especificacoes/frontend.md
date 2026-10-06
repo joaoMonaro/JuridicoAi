@@ -6,6 +6,11 @@
 >
 > **Repositório:** `../JuridicoAi-frontend`
 
+> **Evolução aprovada:** este documento descreve a fatia vertical atualmente
+> implementada. A interface alvo que substituirá o painel baseado em formulário
+> está em [Experiência conversacional](experiencia-conversacional.md), conforme
+> o [PA-18](../decisoes/pa-18-experiencia-conversacional.md).
+
 ## Base existente
 
 O frontend usa React 19, TypeScript, Vite, Tailwind e TipTap 3. A Peça é editada
