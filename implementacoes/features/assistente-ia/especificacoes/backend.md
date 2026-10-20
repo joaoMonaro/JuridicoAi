@@ -2,7 +2,7 @@
 
 > **Estado:** fatia vertical e controles técnicos principais implementados
 >
-> **Última atualização:** 2026-10-03
+> **Última atualização:** 2026-10-20
 >
 > **Projeto:** `src/JuridicoAI.Api`
 
@@ -56,8 +56,12 @@ Em 2026-10-03, estão disponíveis:
 O stream externo já usa os eventos do contrato. Nesta primeira fatia, o
 provider acumula e valida o JSON estruturado antes de emitir `conteudo.delta`,
 portanto esse evento contém o texto completo em um bloco. Extração incremental
-segura do campo `texto`, bloqueio por orçamento e testes HTTP end-to-end
-continuam pendentes.
+segura do campo `texto` e bloqueio por orçamento continuam pendentes. Já há
+testes HTTP com a API ASP.NET real, provider e repositórios de teste, cobrindo
+SSE, isolamento, limites, timeout e cancelamento. Esses testes não comprovam
+integração com bancos reais nem infraestrutura de produção. A
+[conferência de 2026-10-18](../evidencias/conferencia-documental-2026-10-18.md)
+não reexecutou as suítes.
 
 ## Arquitetura alvo
 
@@ -77,28 +81,33 @@ Dependências apontam para abstrações da camada Application. A implementação
 SDK/HTTP do provedor fica em `Infrastructure/AI`. Nenhum tipo do SDK aparece no
 controller, nos DTOs públicos ou no domínio.
 
-## Estrutura proposta
+## Estrutura implementada
 
 ```text
 src/JuridicoAI.Api/src/
 ├── Application/
 │   ├── Abstractions/
 │   │   ├── IAssistenteIaProvider.cs
-│   │   └── IAssistenteAuditSink.cs
+│   │   └── IAssistenteIaGovernance.cs
 │   ├── DTOs/AssistenteIaDtos.cs
 │   └── Services/
 │       ├── AssistenteIaApplicationService.cs
 │       ├── AssistenteContextBuilder.cs
-│       ├── AssistenteOutputValidator.cs
-│       └── AssistentePromptPolicy.cs
+│       ├── AssistentePromptPolicy.cs
+│       ├── AssistenteUsageLimiter.cs
+│       ├── AssistenteUsageRecorder.cs
+│       ├── AssistenteFeatureAccessService.cs
+│       └── AssistenteTransparencyService.cs
 ├── Controllers/Assistente/AssistenteController.cs
 └── Infrastructure/
-    ├── AI/<Provider>AssistenteIaProvider.cs
+    ├── AI/OpenAiAssistenteIaProvider.cs
     └── Settings/AssistenteIaSettings.cs
 ```
 
-O nome concreto do provider só será definido depois da decisão registrada no
-documento principal.
+A validação de saída está em `AssistenteIaApplicationService.ValidateProviderResult`;
+não existe classe separada `AssistenteOutputValidator`. Auditoria de uso é feita
+por `IAssistenteUsageRecorder`/`AssistenteUsageRecorder`, com persistência no
+ledger. A arquitetura alvo acima mantém as responsabilidades conceituais.
 
 ## Responsabilidades
 
@@ -144,32 +153,36 @@ silenciosamente.
 
 ### Provider
 
-A abstração deve representar a capacidade necessária, e não um SDK específico:
+A abstração atual retorna um resultado completo validado, sem expor SDK:
 
 ```csharp
 public interface IAssistenteIaProvider
 {
-    IAsyncEnumerable<AssistenteIaChunk> GerarAsync(
-        AssistenteIaInput input,
+    Task<AssistenteIaProviderResult> GerarAsync(
+        AssistenteIaProviderRequest request,
         CancellationToken cancellationToken);
 }
 ```
 
-O adapter concreto traduz mensagens, streaming, uso de tokens, finish reason e
-erros. Deve possuir timeout, descarte correto da resposta HTTP e tratamento de
-cancelamento. Retry automático só é permitido antes de qualquer delta ser
-entregue, para evitar texto duplicado.
+O adapter OpenAI consome o stream do provider internamente e acumula a saída
+estruturada. O controller publica `conteudo.delta` com o texto completo após a
+validação do resultado. Contagem de entrada usa a abstração separada
+`IAssistenteTokenCounter`. Timeout, descarte HTTP e cancelamento existem; retry
+automático e extração incremental segura ainda estão pendentes.
 
 ### Validador de saída
 
 - aceita somente operações previstas no contrato;
-- força `ResponderNoPainel` para `Perguntar` e `Revisar`;
+- restringe `Perguntar` e `Revisar` a `ResponderNoPainel`, rejeitando operações
+  incompatíveis;
 - limita título, texto, resumo e quantidade de alertas;
 - valida categoria, título e descrição de cada achado do modo `Revisar`;
-- descarta HTML e conteúdo estrutural inválido;
+- rejeita saída estrutural inválida; o texto não passa por remoção de HTML no
+  backend, e o frontend o converte em nós de texto TipTap sem interpretar tags;
 - garante que exista um evento final completo;
-- acrescenta alerta quando o resultado contiver referências que não foram
-  respaldadas por uma fonte fornecida;
+- valida estrutura e presença dos campos de alertas; a identificação semântica
+  de referências sem fonte depende do prompt/modelo e da avaliação, sem detector
+  determinístico adicional no backend;
 - trata saída inválida como `AI_PROVIDER_ERROR`, sem aplicar fallback inseguro.
 
 ## Prompt e versionamento
@@ -222,15 +235,18 @@ Configuração atual, com segredos reais fora do repositório:
 {
   "AssistenteIa": {
     "Enabled": false,
-    "Provider": "",
+    "Provider": "OpenAI",
     "Model": "",
     "ApiKey": "",
-    "BaseUrl": null,
+    "BaseUrl": "https://api.openai.com/v1/",
     "TimeoutSeconds": 90,
     "MaxInstructionCharacters": 4000,
     "MaxDocumentContextCharacters": 60000,
     "MaxAdditionalContextCharacters": 8000,
+    "MaxTotalContextCharacters": 80000,
+    "MaxInputTokens": 60000,
     "MaxOutputCharacters": 20000,
+    "MaxOutputTokens": 6000,
     "MaxRequestBodyBytes": 524288,
     "RequestsPerUserPerMinute": 10,
     "ConcurrentRequestsPerUser": 2,
@@ -315,8 +331,7 @@ não devem permitir reconstruir conteúdo jurídico.
 - mensagens amigáveis para 429, timeout e indisponibilidade.
 
 Não fazer fallback silencioso para modelo com política ou capacidade diferente.
-Quando existir fallback, ele precisa ser configurado, observável e indicado no
-evento final.
+O alvo aprovado do MVP não prevê fallback automático de modelo.
 
 ## Segurança e LGPD
 
@@ -378,9 +393,10 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [x] Criar provider fake e testes do serviço sem rede.
 - [x] Implementar autorização e builder de contexto.
 - [x] Implementar policy e validador de saída.
-- [ ] Ampliar avaliações sintéticas de comportamento e prompt injection.
+- [x] Ampliar avaliações sintéticas de comportamento e prompt injection.
 - [x] Implementar controller SSE.
-- [ ] Adicionar testes HTTP end-to-end do controller e protocolo SSE.
+- [x] Adicionar testes HTTP do controller e protocolo SSE com dependências simuladas.
+- [ ] Comprovar integração com bancos e infraestrutura reais no gate de produção.
 - [x] Adicionar adapter OpenAI Responses.
 - [x] Adicionar rate limit e concorrência por usuário e Organization.
 - [x] Adicionar feature flags por Organization e kill switch global.
@@ -394,4 +410,5 @@ Manter casos sintéticos versionados, sem dados reais, cobrindo:
 - [ ] Implementar histórico, exclusão, retenção e as próximas camadas de
       minimização definidas no Tópico 3.
 - [x] Atualizar Swagger, `.env.example`, user-secrets e documentação operacional.
-- [ ] Marcar critérios correspondentes no documento principal.
+- [x] Reconciliar critérios correspondentes no documento principal com código e
+      evidências registradas em 2026-10-18.

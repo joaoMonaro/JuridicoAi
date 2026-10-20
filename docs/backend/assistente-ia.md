@@ -25,6 +25,33 @@ o autosave está em `SALVO`. Âncora expirada, erro de sincronização ou confli
 de versão bloqueiam a aplicação sem impedir que o usuário continue editando
 manualmente.
 
+## Interface disponível
+
+O frontend apresenta um chat com composer único, ações rápidas, chips removíveis
+de contexto, respostas e cartões de proposta na conversa. A seleção é capturada
+ao abrir o painel ou ao transferir o foco do editor para ele. Sem seleção, o
+pedido começa sem conteúdo da Peça; os demais contextos são adicionados
+explicitamente pelo menu `Adicionar contexto`.
+
+Os cartões permitem editar, comparar com o original, copiar, rejeitar, tentar
+novamente e aplicar no destino indicado. Há larguras predefinidas e modo
+expandido. O pedido livre começa em `Perguntar`; ações rápidas selecionam
+reescrita, revisão ou redação. Intenção automática ainda não está implementada.
+
+A conversa permanece em memória ao fechar e reabrir o painel enquanto o editor
+da mesma Peça estiver montado. Trocar de Peça remonta o editor e perde esse
+estado; recarregar a página também o descarta. Não há histórico persistente nem
+envio das mensagens anteriores ao provider como contexto conversacional.
+
+Em propostas com seleção, `Tentar novamente` reutiliza o snapshot anterior.
+Após expiração da âncora, é necessário selecionar o trecho desejado e enviar um
+novo pedido pelo composer. A recuperação guiada ainda está pendente.
+
+A entrega visual está em implementação no PA-18: código e testes de componente
+existem, mas regressão completa e validação manual da nova experiência ainda
+não estão registradas como concluídas. Veja a
+[conferência documental de 2026-10-18](../../implementacoes/features/assistente-ia/evidencias/conferencia-documental-2026-10-18.md).
+
 ## Endpoints
 
 | Método | Rota | Função |
@@ -66,10 +93,19 @@ Os valores são configuráveis em `AssistenteIa` e possuem defaults para:
 - 30 solicitações por minuto e 6 simultâneas por Organization;
 - timeout do provider de 90 segundos.
 
+Rate limit e concorrência são mantidos em memória por instância. A coordenação
+distribuída permanece pendente antes de operar múltiplas instâncias. A saída usa
+um único teto configurável, de 6.000 tokens por padrão; perfis por operação e
+retry automático ainda não estão implementados.
+
 O sistema registra metadados técnicos de execução e consumo sem usar o
 conteúdo jurídico como telemetria. Orçamento mensal com bloqueio financeiro,
 retenção automatizada e dashboards completos ainda são itens da implementação
 em andamento.
+
+O transporte externo é SSE, mas o backend aguarda o provider acumular e validar
+a resposta estruturada antes de emitir o texto em um único `conteudo.delta`.
+Exibição incremental do texto durante a geração continua pendente.
 
 ## Configuração local
 

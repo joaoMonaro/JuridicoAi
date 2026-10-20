@@ -43,6 +43,7 @@ e da apresentação do MVP do assistente de IA.
   - [Decisões](../implementacoes/features/assistente-ia/decisoes/)
   - [Planejamento](../implementacoes/features/assistente-ia/planejamento/pontos-em-aberto.md)
   - [Evidências](../implementacoes/features/assistente-ia/evidencias/)
+  - [Conferência do estado implementado em 2026-10-18](../implementacoes/features/assistente-ia/evidencias/conferencia-documental-2026-10-18.md)
 - [Suíte executável de qualidade jurídica](../avaliacoes/qualidade-juridica/README.md)
 
 ## Histórico e auditorias
@@ -63,6 +64,8 @@ O projeto contém:
 - casos, envolvidos, contextos, documentos, peças e templates de peças;
 - editor de peças com autosave no frontend;
 - assistente de IA com geração em streaming, revisão e aplicação explícita no editor;
+- primeira interface conversacional com chips de contexto, propostas no chat e
+  painel expansível, ainda em validação no PA-18;
 - controles de tenant, confirmação de transparência, feature flags e kill switch da IA;
 - persistência em PostgreSQL e MongoDB;
 - scraper do portal e-SAJ/TJSP, pausado no fluxo do MVP;

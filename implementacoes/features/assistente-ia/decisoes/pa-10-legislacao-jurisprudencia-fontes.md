@@ -6,6 +6,8 @@
 >
 > **Data da decisão:** 2026-09-27
 >
+> **Última conferência documental:** 2026-10-18
+>
 > **Ponto relacionado:** `PA-10` encerrado como decisão; gate técnico executado
 > em `PA-09` e homologação jurídica formal mantida em `PA-17`
 
@@ -137,6 +139,14 @@ Para uma referência não verificada, exibir alerta semelhante a:
 
 Alertas não podem ficar escondidos apenas em log ou tooltip. Devem acompanhar a
 resposta antes de qualquer ação de aplicação no editor.
+
+No código atual, `SuggestionResult` exibe os alertas retornados pelo provider
+em `Verifique antes de usar`, junto da proposta e antes das ações. Ainda falta
+o aviso permanente de ausência de pesquisa externa no painel. O backend valida
+a estrutura dos alertas, mas não possui detector determinístico que acrescente
+automaticamente `REFERENCIA_NAO_VERIFICADA` a toda referência sem fonte; essa
+conduta depende do prompt/modelo e das avaliações. O critério completo continua
+pendente, conforme a [conferência](../evidencias/conferencia-documental-2026-10-18.md).
 
 ## 7. Regras para o prompt e o backend
 

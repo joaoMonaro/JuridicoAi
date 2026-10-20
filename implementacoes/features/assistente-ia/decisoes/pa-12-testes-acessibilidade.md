@@ -2,11 +2,22 @@
 
 > **Estado da decisão:** estratégia aprovada
 >
-> **Estado da implementação:** suíte automatizada concluída; auditoria manual pendente
+> **Estado da implementação:** suíte da fatia vertical executada; regressão
+> completa do chat e auditoria manual pendentes
 >
 > **Data da decisão:** 2026-09-27
 >
+> **Última conferência documental:** 2026-10-18
+>
 > **Ponto relacionado:** `PA-12` permanece aberto e bloqueia produção
+
+Os resultados de execução abaixo pertencem às datas e interfaces registradas.
+Após o redesign de 2026-10-06, há testes de componente adaptados para chat,
+chips, preservação ao fechar/reabrir, propostas e expansão, além da execução
+parcial registrada no plano. A regressão completa E2E/teclado/axe-core da nova
+interface permanece em E5 do PA-18. A
+[conferência estática de 2026-10-18](../evidencias/conferencia-documental-2026-10-18.md)
+não reexecutou as suítes nem substitui auditoria manual.
 
 Este documento define a suíte mínima do frontend para o assistente de IA. O
 `PA-12` só poderá ser encerrado quando os testes existirem, forem executáveis de

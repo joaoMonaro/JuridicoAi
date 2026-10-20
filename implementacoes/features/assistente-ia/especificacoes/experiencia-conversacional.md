@@ -1,8 +1,9 @@
 # Especificação — experiência conversacional do assistente
 
-> **Estado:** aprovada para implementação incremental
+> **Estado:** implementação parcial; primeira interface no código, validação
+> completa pendente
 >
-> **Última atualização:** 2026-10-06
+> **Última atualização:** 2026-10-18
 >
 > **Decisão:** [PA-18 — Experiência conversacional](../decisoes/pa-18-experiencia-conversacional.md)
 
@@ -176,8 +177,14 @@ frontend, não medidas duplicadas espalhadas pelo código.
 ### Primeira entrega
 
 A conversa vive na memória enquanto a mesma Peça estiver aberta. Fechar e
-reabrir o painel não apaga as mensagens. Trocar de Peça separa as conversas da
-sessão atual.
+reabrir o painel não apaga as mensagens. Trocar de Peça deve separar e preservar
+as conversas da sessão atual.
+
+Limite observado na implementação: o estado está no painel dentro de um editor
+montado com `key={peca.id}`. Trocar de Peça desmonta essa árvore; retornar não
+recupera a conversa. A preservação entre trocas ainda precisa ser implementada.
+O histórico exibido localmente não é enviado como contexto conversacional ao
+provider.
 
 ### Entrega posterior
 
@@ -227,15 +234,22 @@ Nenhum evento armazena texto da mensagem, resposta, seleção ou Peça.
 
 ## 11. Critérios de aceite
 
-- [ ] O fluxo normal não exige escolher modo ou escopo técnico.
+Os itens marcados correspondem ao código e aos testes existentes conferidos em
+2026-10-18. Não representam nova execução da suíte nem aprovação visual/manual
+do PA-18; veja a [evidência](../evidencias/conferencia-documental-2026-10-18.md).
+
+- [x] O fluxo normal não exige escolher modo ou escopo técnico.
 - [x] Seleção atual aparece automaticamente como chip removível.
 - [x] É possível adicionar e remover contextos antes do envio.
-- [ ] Perguntas e respostas aparecem como conversa.
-- [ ] Sugestões aparecem dentro da conversa com destino e ações explícitas.
-- [ ] Documento não muda antes de `Aceitar`.
-- [ ] Comparação pode ser expandida sem retirar a proposta do chat.
-- [ ] Fechar e reabrir o painel preserva a conversa da Peça na sessão.
-- [ ] Painel é redimensionável ou expansível.
-- [ ] Âncora expirada e autosave inseguro continuam bloqueando aplicação.
+- [x] Perguntas e respostas aparecem como conversa.
+- [x] Sugestões aparecem dentro da conversa com destino e ações explícitas.
+- [x] Documento não muda antes da ação explícita de inserir/substituir.
+- [x] Comparação pode ser expandida sem retirar a proposta do chat.
+- [x] Fechar e reabrir o painel preserva a conversa com o mesmo editor montado.
+- [ ] Trocar de Peça e retornar preserva sua conversa durante a sessão.
+- [x] Painel possui larguras predefinidas e modo expandido.
+- [x] Âncora expirada e autosave inseguro continuam bloqueando aplicação.
+- [x] Testes de componente cobrem chat, chips, aplicação, bloqueios e expansão.
 - [ ] Fluxos existentes de transparência, cancelamento, retry, undo e redo permanecem válidos.
 - [ ] Testes de componente, E2E, teclado e axe-core cobrem a nova interface.
+- [ ] Validação manual confirma compreensão e legibilidade da nova interface.

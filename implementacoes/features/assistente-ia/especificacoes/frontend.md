@@ -1,15 +1,17 @@
 # Plano de implementação — frontend
 
-> **Estado:** fatia vertical e suíte automatizada implementadas
+> **Estado:** fatia vertical implementada; interface conversacional parcial e
+> validação final pendente
 >
-> **Última atualização:** 2026-10-03
+> **Última atualização:** 2026-10-18
 >
 > **Repositório:** `../JuridicoAi-frontend`
 
-> **Evolução aprovada:** este documento descreve a fatia vertical atualmente
-> implementada. A interface alvo que substituirá o painel baseado em formulário
-> está em [Experiência conversacional](experiencia-conversacional.md), conforme
-> o [PA-18](../decisoes/pa-18-experiencia-conversacional.md).
+> **Evolução em andamento:** o formulário principal já foi substituído por chat,
+> composer e chips. A especificação completa está em
+> [Experiência conversacional](experiencia-conversacional.md), conforme o
+> [PA-18](../decisoes/pa-18-experiencia-conversacional.md). O estado foi conferido
+> estaticamente em [2026-10-18](../evidencias/conferencia-documental-2026-10-18.md).
 
 ## Base existente
 
@@ -23,7 +25,7 @@ estado canônico do documento nem editar diretamente o JSON mantido no React.
 
 ## Estado implementado
 
-Em 2026-10-03, estão disponíveis:
+No código conferido em 2026-10-18, estão disponíveis:
 
 - painel lateral responsivo aberto pela toolbar ou por `Ctrl/Cmd + Alt + A`;
 - consulta antecipada e dinâmica de capacidades e limites do backend;
@@ -42,12 +44,28 @@ Em 2026-10-03, estão disponíveis:
 - aviso de transparência versionado antes do primeiro uso, com confirmação
   persistida pelo backend e nova apresentação quando a versão mudar;
 - suíte Vitest/Testing Library, Playwright e axe-core cobrindo o fluxo principal,
-  resiliência, teclado, integridade e o diálogo de transparência.
+  resiliência, teclado, integridade e o diálogo de transparência;
+- conversa com composer único e respostas, achados e cartões de proposta no chat;
+- captura automática da seleção como snapshot, chip com dimensão e remoção do
+  conteúdo do payload ao remover o chip;
+- menu `Adicionar contexto`, sem documento completo anexado por padrão;
+- larguras predefinidas e painel expandido;
+- propostas anteriores preservadas ao gerar outra versão e bloqueio de aplicação
+  duplicada no cartão;
+- conversa preservada ao fechar/reabrir o painel com o mesmo editor montado.
 
 O código está concentrado em `src/features/ai-assistant`, com integração em
 `legal-document-editor.tsx` e uma variante de baixo nível `apiFetch` no cliente
-HTTP. Build e testes automatizados passam. A auditoria com teclado físico e
-leitor de tela real permanece manual e está registrada no checklist do PA-12.
+HTTP. Há execuções anteriores aprovadas de build e testes, registradas no PA-12
+e no plano do redesign; nenhuma suíte foi reexecutada nesta conferência.
+A regressão completa do chat, sua validação visual e a auditoria com teclado
+físico e leitor de tela real permanecem pendentes.
+
+O estado de conversa está no `AssistantPanel`. O workspace monta
+`LegalDocumentEditor` com `key={peca.id}`; trocar de Peça desmonta o editor e
+descarta suas conversas. Não há recuperação após retorno à Peça ou reload.
+Mensagens anteriores são exibidas localmente, mas não são enviadas como
+histórico ao provider. Intenção automática e histórico persistente são futuros.
 
 ## Experiência alvo
 
@@ -92,10 +110,13 @@ src/features/ai-assistant/
 ├── components/
 │   └── assistant-panel.tsx
 ├── editor.ts
+├── keyboard.ts
+├── sse-parser.ts
 └── types.ts
 ```
 
-Nesta fatia, o painel mantém o estado transitório da solicitação, enquanto
+Nesta fatia, o painel mantém os turnos da conversa e o estado da solicitação,
+com funções auxiliares de renderização no próprio arquivo, enquanto
 `api.ts` encapsula o stream e `editor.ts` reúne as funções puras de captura,
 validação de âncora e aplicação. A separação em componentes e hooks menores deve
 ser feita quando testes ou novos fluxos justificarem essa complexidade.
@@ -142,13 +163,15 @@ silenciosamente para o documento completo.
 
 O texto do documento deve ser serializado de forma determinística, preservando
 separação de parágrafos e títulos. Marcas visuais não necessárias não entram no
-MVP. A interface apresenta contagem aproximada e o nome de cada fonte de
-contexto antes do envio.
+MVP. A interface apresenta a dimensão da seleção e da informação adicional e o
+nome dos demais contextos. Contagem e feedback completos para todos os blocos
+antes do envio ainda são pendências da etapa E2.
 
-No MVP, a interface também informa que o assistente não realiza pesquisa
-jurídica externa. Não deve existir botão, estado ou texto que sugira consulta ao
-scraper. Alertas `REFERENCIA_NAO_VERIFICADA` permanecem visíveis junto da
-resposta e antes da aplicação. Consulte o
+No MVP, a interface deve informar que o assistente não realiza pesquisa
+jurídica externa; esse aviso permanente ainda está pendente. Não existe ação de
+pesquisa pelo scraper no painel. Alertas retornados pelo provider, inclusive
+`REFERENCIA_NAO_VERIFICADA`, são exibidos junto da resposta e antes da aplicação.
+Consulte o
 [Tópico 10 — Legislação, jurisprudência e fontes](../decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 
 ### Validade da âncora
@@ -198,20 +221,18 @@ bloqueia novas aplicações. A política completa está no
 
 ### Composer
 
-- seletor de modo;
-- textarea de instrução;
-- ações rápidas contextuais;
-- chips das fontes de contexto;
-- campo “Contexto adicional” separado da instrução;
-- botão enviar com resumo do que será compartilhado;
-- botão cancelar durante geração.
+- textarea única de instrução, com `Ctrl/Cmd + Enter` para enviar;
+- ações rápidas `Reescrever`, `Expandir`, `Revisar` e `Novo trecho`, conforme
+  as capacidades autorizadas;
+- chips removíveis de seleção, escopo do documento, dados do Caso, contextos
+  cadastrados e informação adicional;
+- menu `Adicionar contexto` com seletor de escopo, contextos opcionais e campo
+  de informação apenas para o pedido;
+- botão enviar e botão cancelar durante geração.
 
-Ações rápidas iniciais:
-
-- com seleção: `Reescrever`, `Expandir`, `Resumir`, `Corrigir clareza`;
-- sem seleção: `Redigir trecho`, `Sugerir melhorias`, `Perguntar sobre a peça`.
-
-As ações rápidas preenchem modo e instrução, mas permanecem editáveis.
+O modo começa em `Perguntar`. A ação rápida preenche modo e instrução; sua
+remoção retorna ao modo de pergunta. Não há seletor de modo obrigatório no
+fluxo principal. Escolha automática de operação por pedido livre depende de E4.
 
 ### Resultado
 
@@ -222,7 +243,13 @@ As ações rápidas preenchem modo e instrução, mas permanecem editáveis.
 - alertas separados e sempre visíveis;
 - achados de revisão estruturados, cada um com ação `Desenvolver`;
 - ações `Inserir/Substituir`, `Copiar`, `Rejeitar`, `Tentar novamente`;
-- `Desfazer no editor` após aplicação, usando o histórico TipTap existente.
+- indicação de aplicação ou rejeição no próprio cartão; undo/redo permanecem
+  no editor, sem botão dedicado de desfazer no cartão.
+
+Cada nova tentativa adiciona um turno sem apagar a proposta anterior. Para
+seleção, `Tentar novamente` reutiliza o snapshot do turno original; após âncora
+expirada, um novo pedido pelo composer captura o contexto atualizado. A
+recuperação guiada definida no PA-07 ainda não foi implementada.
 
 Editar a proposta no painel não afeta o documento. O botão de aplicação sempre
 mostra o verbo e o destino, por exemplo “Substituir seleção” ou “Inserir no
@@ -230,9 +257,8 @@ cursor atual”; evitar um botão genérico “Aceitar”.
 
 ## Consumo do stream
 
-`stream-assistant-request.ts` usa o `api-client` para obter autenticação, mas
-precisará de uma variante que exponha o `ReadableStream` em vez de desserializar
-JSON. O parser deve:
+`api.ts` usa `apiFetch` para autenticação e acesso ao corpo como `ReadableStream`.
+`sse-parser.ts` implementa o parser, com testes para:
 
 - aceitar chunks divididos no meio de uma linha UTF-8;
 - processar múltiplos eventos em um mesmo chunk;
@@ -251,14 +277,16 @@ automática de cliente, manter os nomes lado a lado e revisar ambos no mesmo PR.
 ## Autosave e concorrência
 
 A aplicação é uma edição normal do TipTap e entra na fila já existente de
-autosave. Para integrar o assistente com segurança, o hook de autosave deverá
-expor de forma tipada:
+autosave. O hook `use-peca-autosave.ts` expõe:
 
 - estado atual;
-- última versão confirmada;
-- `flush(): Promise` com resultado observável;
-- `retry(): Promise` com resultado observável;
-- indicação de conflito que possa desabilitar aplicação.
+- data do último salvamento;
+- `flush()` e `retry()` assíncronos;
+- indicação de conflito que desabilita aplicação.
+
+A versão confirmada fica em uma ref interna e é comunicada ao editor por
+`onPersisted`; falha e sucesso de `flush`/`retry` são observados pelo estado,
+sem retorno discriminado de resultado.
 
 O assistente envia a versão conhecida para diagnóstico, mas não depende de
 salvar antes de perguntar: o snapshot explícito representa exatamente o texto
@@ -339,12 +367,14 @@ Playwright para E2E e axe-core para verificações automatizadas.
 - [x] Implementar cartão, edição de proposta e comparação.
 - [x] Implementar validação de âncora e transações TipTap.
 - [x] Integrar autosave, conflito, cancelamento e troca de Peça.
-- [ ] Restringir aplicação da IA a `SALVO` e testar erro, retry e conflito.
+- [x] Restringir aplicação da IA a `SALVO` e testar erro, retry e conflito.
 - [ ] Refinar a UX de âncora expirada com seleção guiada e nova geração.
-- [ ] Adicionar infraestrutura e testes automatizados dos fluxos críticos.
-- [ ] Executar a suíte e auditoria de acessibilidade definidas no Tópico 12.
+- [x] Adicionar infraestrutura e testes automatizados dos fluxos críticos.
+- [x] Registrar execução da suíte da fatia vertical conforme o Tópico 12.
+- [ ] Concluir regressão E2E/axe-core da interface conversacional.
+- [ ] Executar auditoria manual de acessibilidade definida no Tópico 12.
 - [ ] Adicionar telemetria sem conteúdo sensível.
-- [ ] Consumir capacidades por Organization e ocultar toolbar, atalho e modos
+- [x] Consumir capacidades por Organization e ocultar toolbar, atalho e modos
       conforme o Tópico 13.
 - [ ] Propagar `CorrelationId` e emitir eventos de produto sem conteúdo conforme
       o Tópico 14.

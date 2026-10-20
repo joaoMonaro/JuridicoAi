@@ -2,9 +2,12 @@
 
 > **Estado da decisão:** aprovado
 >
-> **Estado da implementação:** parcial
+> **Estado da implementação:** regra de aplicação em `SALVO` implementada e
+> coberta por testes; regressão completa do redesign pendente no PA-18
 >
 > **Data da decisão:** 2026-09-27
+>
+> **Última conferência documental:** 2026-10-18
 >
 > **Ponto encerrado:** `PA-08`
 
@@ -121,16 +124,18 @@ Já está implementado:
 - edição manual independente do estado do autosave;
 - retry de salvamento;
 - undo local por meio das transações do TipTap;
-- bloqueio da aplicação da IA em `CONFLITO`.
-
-Ainda precisa ser implementado ou refinado:
-
-- permitir aplicação somente em `SALVO`;
+- aplicação somente em `SALVO`, validada no botão e em `applySuggestion`;
 - mensagens específicas para `SALVANDO`, `ERRO` e `NAO_SALVO`;
-- reavaliação conjunta de autosave e âncora após retry;
-- indicação de que uma sugestão aplicada pode continuar apenas local caso o
-  autosave posterior falhe;
-- testes automatizados do fluxo completo.
+- reavaliação conjunta de autosave e âncora após retry, sem aplicação agendada;
+- indicação de conteúdo não sincronizado no status do editor;
+- testes unitários e de componente para os estados bloqueados e E2E para
+  recuperação do autosave e conflito HTTP 409.
+
+O PA-12 registra execuções anteriores aprovadas. A conferência estática de
+2026-10-18 não executou novamente a suíte; a regressão completa da interface
+conversacional continua em E5 do PA-18. Um cenário dedicado de falha do autosave
+imediatamente após aplicar, seguido de undo, ainda deve ser comprovado.
+Veja a [evidência](../evidencias/conferencia-documental-2026-10-18.md).
 
 ## 7. Plano técnico do frontend
 
@@ -165,11 +170,12 @@ Ainda precisa ser implementado ou refinado:
 
 ## 9. Critérios de aceite
 
-- [ ] Somente `SALVO` permite iniciar a aplicação de uma sugestão.
-- [ ] Edição manual permanece disponível em `ERRO` e `NAO_SALVO`.
-- [ ] `SALVANDO` nunca agenda aplicação automática.
-- [ ] A mensagem de conteúdo local não salvo é exibida nos estados aplicáveis.
-- [ ] Retry de autosave permanece disponível e tem resultado observável.
-- [ ] Undo local permanece disponível após aplicação e falha posterior.
-- [ ] Âncora e estado de sincronização são validados no momento do clique.
-- [ ] Testes automatizados comprovam permissões, recuperação e conflito 409.
+- [x] Somente `SALVO` permite iniciar a aplicação de uma sugestão.
+- [x] Edição manual permanece disponível em `ERRO` e `NAO_SALVO`.
+- [x] `SALVANDO` nunca agenda aplicação automática.
+- [x] A mensagem de conteúdo local não salvo é exibida nos estados aplicáveis.
+- [x] Retry de autosave permanece disponível, com resultado observável pelo estado.
+- [x] Undo local permanece disponível após aplicação.
+- [ ] Cenário dedicado comprova undo após falha do autosave posterior à aplicação.
+- [x] Âncora e estado de sincronização são validados no momento do clique.
+- [x] Testes automatizados cobrem permissões, recuperação e conflito 409.

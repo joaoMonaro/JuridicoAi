@@ -2,9 +2,12 @@
 
 > **Estado da decisão:** aprovado
 >
-> **Estado da implementação:** parcial
+> **Estado da implementação:** bloqueio seguro implementado e coberto por
+> testes; recuperação guiada parcial
 >
 > **Data da decisão:** 2026-09-27
+>
+> **Última conferência documental:** 2026-10-18
 >
 > **Ponto encerrado:** `PA-07`
 
@@ -130,7 +133,15 @@ Ainda precisa ser refinado:
 - habilitação de `Gerar novamente` somente após seleção válida nos modos que a
   exigem;
 - nomenclatura `Descartar` no lugar de `Rejeitar` para a âncora expirada;
-- testes automatizados cobrindo todo o fluxo e a ausência de escrita indevida.
+- cobertura completa da recuperação guiada; os testes existentes já cobrem
+  bloqueio e ausência de transação em âncora expirada.
+
+Na interface conversacional atual, `Tentar novamente` cria outro identificador,
+mas reutiliza o `selectionSnapshot` do turno original. Essa ação não captura uma
+nova seleção. O usuário precisa selecionar o trecho no editor e enviar um novo
+pedido pelo composer para usar outro snapshot. Selecionar texto não torna a
+proposta antiga aplicável. A [conferência de código](../evidencias/conferencia-documental-2026-10-18.md)
+preserva os itens de recuperação como pendentes.
 
 ## 6. Plano técnico
 
@@ -169,12 +180,12 @@ como metadado da sugestão, sem gravar conteúdo no log técnico.
 
 ## 7. Critérios de aceite
 
-- [ ] Sugestão expirada nunca pode chamar a transação de aplicação.
-- [ ] A interface explica por que a aplicação foi bloqueada.
-- [ ] O usuário consegue voltar ao editor para selecionar outro trecho.
-- [ ] Nova geração usa exclusivamente a nova seleção e uma nova âncora.
-- [ ] A sugestão antiga permanece apenas legível/copiável até ser descartada.
-- [ ] Descartar não altera Peça, versão ou autosave.
-- [ ] Não existe fallback automático para cursor atual.
+- [x] Sugestão expirada não executa transação de aplicação.
+- [x] A interface explica por que a aplicação foi bloqueada.
+- [ ] Ação guiada devolve o foco ao editor para selecionar outro trecho.
+- [ ] Regeneração guiada usa exclusivamente a nova seleção e uma nova âncora.
+- [x] A sugestão antiga continua visível/copiável e não pode ser aplicada.
+- [x] Rejeitar não altera Peça, versão ou autosave.
+- [x] Não existe fallback automático para cursor atual.
 - [ ] Testes automatizados cobrem mudança, undo, troca de Peça e nova geração.
 

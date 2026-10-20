@@ -2,9 +2,12 @@
 
 > **Estado da decisão:** aceita
 >
-> **Estado da implementação:** pendente
+> **Estado da implementação:** parcial; chat, chips e propostas implementados;
+> regressão completa e validação manual pendentes
 >
 > **Data da decisão:** 2026-10-06
+>
+> **Última conferência documental:** 2026-10-18
 >
 > **Evidência:** [validação manual da experiência atual](../evidencias/validacao-manual-experiencia-2026-10-06.md)
 
@@ -97,6 +100,13 @@ As garantias dos PA-07, PA-08, PA-10, PA-11 e PA-13 permanecem invariantes.
 - tela administrativa de feature flags.
 
 ## Critério de fechamento
+
+A conferência de código encontrou composer único, mensagens, chips removíveis,
+cartões com ações e comparação, larguras predefinidas e expansão. Fechar e
+reabrir o painel mantém as mensagens com o mesmo editor montado; trocar de Peça
+ou recarregar descarta o estado. Intenção automática e histórico persistente não
+estão implementados. Veja a
+[evidência da conferência](../evidencias/conferencia-documental-2026-10-18.md).
 
 O PA-18 pode ser encerrado quando:
 

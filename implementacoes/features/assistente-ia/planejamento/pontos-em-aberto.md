@@ -1,8 +1,8 @@
 # Pontos em aberto — Assistente de IA
 
-> **Estado:** decisões pendentes
+> **Estado:** decisões de produto restantes e entregas/validações pendentes
 >
-> **Última atualização:** 2026-10-06
+> **Última atualização:** 2026-10-18
 >
 > **Documento principal:** [Assistente de IA](../README.md)
 
@@ -11,6 +11,25 @@ arquitetura. Um ponto decisório pode ser encerrado quando existe uma decisão
 registrada e um responsável. Isso não marca automaticamente a implementação
 como entregue: comportamentos aplicáveis continuam pendentes até haver teste ou
 homologação registrados no documento do tópico.
+
+## Retrato conferido em 2026-10-18
+
+A [conferência documental](../evidencias/conferencia-documental-2026-10-18.md)
+comparou código e testes existentes dos dois repositórios, sem executar
+novamente as suítes ou homologar a interface.
+
+| Frente | Já implementado | O que continua pendente |
+|---|---|---|
+| PA-01/02 | modelo configurável, contagem exata de entrada, rate limit e concorrência locais, ledger de consumo | perfis de saída, retry automático, orçamento com alertas/bloqueio e coordenação entre instâncias |
+| PA-03 a PA-06 | contexto explícito, `store=false` e aviso versionado com confirmação | histórico persistente, exclusão/recuperação/purga, retenção operacional e pseudonimização adicional |
+| PA-07/08 | bloqueio por âncora e autosave, mensagens de erro e testes | recuperação guiada da âncora e cenário dedicado de falha de autosave após aplicação com undo |
+| PA-18 | chat, composer, chips, propostas, comparação, larguras predefinidas e expansão | feedback completo de limites, preservação entre trocas de Peça, regressão E5 e validação visual/manual |
+| PA-11 a PA-14 | controles locais, flags, kill switch auditado, suítes existentes, correlação backend e ledger | infraestrutura real, auditoria manual de acessibilidade, rollout nominal, métricas, dashboards e alertas |
+
+O pedido livre ainda começa em `Perguntar`; intenção automática é E4. Fechar o
+painel preserva as mensagens enquanto o editor estiver montado, mas trocar de
+Peça ou recarregar descarta a conversa local. Exibir turnos anteriores não
+significa enviá-los como histórico ao modelo.
 
 ## Resumo e prioridade
 
@@ -116,6 +135,14 @@ Direção aprovada:
 A [especificação](../especificacoes/experiencia-conversacional.md) e o
 [plano incremental](redesign-conversacional.md) orientam a implementação.
 
+Estado conferido em 2026-10-18: E1 a E3 já possuem implementação substancial,
+incluindo testes de componente para chat, chips, propostas e expansão. A
+separação estrutural do painel, o feedback completo de limites e a preservação
+entre trocas de Peça permanecem pendentes. E5 ainda exige regressão E2E,
+teclado, axe-core e validação manual da nova interface; os resultados anteriores
+do painel não encerram esse gate. E4 e E6 são entregas posteriores à primeira
+validação visual.
+
 Critério de fechamento: primeira entrega conversacional implementada, testes de
 regressão aprovados e validação manual confirmando redução de complexidade e
 melhora de legibilidade.
@@ -183,6 +210,11 @@ integridade, teclado simulado e acessibilidade automatizada possuem testes
 aprovados. Permanecem a auditoria com teclado físico em plataformas reais e o
 smoke test com leitor de tela, registrados no
 [checklist manual](../evidencias/checklist-manual-acessibilidade.md).
+
+Após o redesign de 2026-10-06 há testes de componente adaptados e uma execução
+parcial registrada no plano. A conferência de 2026-10-18 não atribui os
+resultados históricos de E2E/axe-core à regressão completa da interface nova;
+essa comprovação permanece em E5 do PA-18.
 
 ## Lançamento e operação
 

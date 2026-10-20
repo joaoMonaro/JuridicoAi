@@ -1,15 +1,18 @@
 # Assistente de IA para redação jurídica
 
-> **Estado:** núcleo funcional validado; redesign conversacional aprovado e
-> ainda não implementado
+> **Estado:** núcleo funcional validado; primeira entrega conversacional
+> parcialmente implementada, com validação final pendente
 >
-> **Última atualização:** 2026-10-06
+> **Última atualização:** 2026-10-18
 >
 > **Implementação atual:** geração, streaming, revisão e aplicação explícita
 > integrados; testes unitários, de componente, E2E, segurança e qualidade
 > jurídica executados. A validação manual confirmou os fluxos, mas identificou
-> alta carga cognitiva e baixa legibilidade no painel atual. O próximo trabalho
-> de produto é a experiência conversacional do PA-18.
+> alta carga cognitiva e baixa legibilidade no painel anterior. Chat, composer
+> único, chips removíveis, propostas na conversa e expansão já estão no frontend.
+> O PA-18 ainda depende de regressão completa e validação manual da nova interface.
+> A [conferência documental de 2026-10-18](evidencias/conferencia-documental-2026-10-18.md)
+> distingue código existente, evidências anteriores e pendências reais.
 >
 > **Documentos relacionados:** [contrato HTTP](especificacoes/contrato-api.md),
 > [backend](especificacoes/backend.md), [frontend](especificacoes/frontend.md) e
@@ -56,8 +59,8 @@ explícita do usuário.
 
 ## Direção atual da experiência
 
-O painel baseado em formulário cumpriu a primeira validação funcional, mas não
-será a interface definitiva. O produto adotará um chat integrado ao editor:
+O painel baseado em formulário cumpriu a primeira validação funcional. Sua
+substituição por um chat integrado ao editor está parcialmente implementada:
 
 - uma caixa única para perguntas e pedidos de alteração;
 - seleção e demais contextos representados por chips removíveis;
@@ -65,6 +68,11 @@ será a interface definitiva. O produto adotará um chat integrado ao editor:
 - aceitar, editar, rejeitar e gerar outra versão dentro da mensagem;
 - painel redimensionável ou expandido para conteúdo jurídico extenso;
 - modos e operações técnicas ocultos no fluxo normal.
+
+Pedidos livres começam em `Perguntar`; ações rápidas selecionam as demais
+operações. A escolha automática da intenção ainda depende da etapa E4. A
+conversa sobrevive ao fechamento do painel enquanto o editor permanecer
+montado; trocar de Peça ou recarregar a página descarta esse estado local.
 
 Essa mudança simplifica a interação sem conceder autonomia de escrita. Âncora,
 autosave, confirmação humana, isolamento e feature flags permanecem obrigatórios.
@@ -105,7 +113,8 @@ autosave, confirmação humana, isolamento e feature flags permanecem obrigatór
 - inserção no cursor, após uma seleção ou substituição da seleção;
 - geração integral de Peça em fluxo próprio, com proposta separada, revisão e
   aplicação explícita (planejada no MVP; fluxo pendente em `PA-16`);
-- histórico de interações mantido no JuridicoAI, com exclusão independente;
+- histórico de interações mantido no JuridicoAI, com exclusão independente
+  (planejado em `PA-06`; atualmente há somente conversa local no frontend);
 - integração com undo/redo e autosave existentes;
 - cancelamento, limites de uso, erros compreensíveis e auditoria técnica.
 
@@ -269,7 +278,10 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Montagem de contexto com isolamento por Organization e Caso.
 - [x] Endpoint autenticado com SSE e cancelamento.
 - [x] Resposta por JSON Schema, política de prompt e códigos de erro.
-- [ ] Completar limites por Organization, orçamento e métricas operacionais.
+- [x] Implementar limites de requisições e concorrência por usuário e Organization
+      em memória, por instância.
+- [ ] Completar orçamento e métricas operacionais; coordenar limites entre
+      instâncias antes de escalar horizontalmente.
 - [x] Implementar limite exato de 60.000 tokens de entrada.
 - [ ] Implementar perfis de saída por operação e retry definidos no Tópico 1.
 - [x] Testes unitários e HTTP do serviço, isolamento, limites e adapter OpenAI.
@@ -291,11 +303,12 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Aprovar chat como interface principal e preservar controle humano.
 - [x] Especificar contexto automático, mensagens e cartões de sugestão.
 - [ ] Validar wireframe ou protótipo de baixa fidelidade.
-- [ ] Implementar estrutura de conversa e composer único.
+- [x] Implementar estrutura de conversa e composer único.
 - [x] Substituir formulário de contexto por chips e menu progressivo.
-- [ ] Levar resposta, revisão e proposta para o corpo da conversa.
-- [ ] Adicionar expansão/redimensionamento para respostas extensas.
-- [ ] Preservar conversa local por Peça durante a sessão.
+- [x] Levar resposta, revisão e proposta para o corpo da conversa.
+- [x] Adicionar larguras predefinidas e expansão para respostas extensas.
+- [x] Preservar conversa ao fechar e reabrir o painel com o mesmo editor montado.
+- [ ] Preservar conversa local ao trocar de Peça e retornar durante a sessão.
 - [ ] Executar regressão automatizada e validação manual do PA-18.
 
 ### F3 — endurecimento e lançamento
@@ -304,7 +317,8 @@ O prompt de sistema mantido no backend deve, no mínimo:
 - [x] Testes de isolamento, prompt injection e vazamento em logs na aplicação.
 - [x] Aprovar manualmente a execução real da suíte `seguranca-ia` `1.0.0`.
 - [ ] Implementar e comprovar o gate de segurança do Tópico 11.
-- [ ] Limites por usuário/Organization e orçamento operacional.
+- [x] Limites locais por usuário/Organization com testes automatizados.
+- [ ] Orçamento operacional com alertas e bloqueio financeiro.
 - [ ] Política de retenção/exclusão implementada e documentada.
 - [x] Implementar e testar os controles técnicos de feature flags do Tópico 13.
 - [x] Preparar o kill switch operacional e a auditoria do Tópico 13.
@@ -323,16 +337,16 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-26 | OpenAI Responses é o primeiro provider; `IAssistenteIaProvider` preserva a fronteira para alternativas. | Implementada, revisável |
 | 2026-09-26 | O provider envia `store: false`; histórico do produto não depende da retenção do provider. | Aceita; não equivale a ZDR, ver `PA-17` |
 | 2026-09-26 | O atalho inicial do painel é `Ctrl/Cmd + Alt + A`, evitando conflito com ferramentas do navegador. | Implementada, sujeita a teste multiplataforma |
-| 2026-09-27 | `PA-01`: o modelo único do MVP é `gpt-5.6-terra`; não haverá roteamento nem fallback automático de modelo. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-01`: o modelo único do MVP é `gpt-5.6-terra`; não haverá roteamento nem fallback automático de modelo. | Modelo configurável e usado na baseline técnica; sem roteamento/fallback; configuração de produção não verificada |
 | 2026-09-27 | `PA-01`: falhas transitórias permitem até duas novas tentativas, respeitando `Retry-After`, sem retry após delta. | Aceita; implementação pendente |
-| 2026-09-27 | `PA-02`: entrada limitada a 60 mil tokens e saída definida por perfil entre 2 mil e 8 mil tokens. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-02`: entrada limitada a 60 mil tokens e saída definida por perfil entre 2 mil e 8 mil tokens. | Contagem exata e bloqueio de entrada implementados; perfis de saída pendentes, com teto único configurável de 6.000 tokens por padrão |
 | 2026-09-27 | `PA-02`: orçamento inicial de US$ 10/mês por Organization, alertas em 70%/90% e bloqueio em 100%. | Aceita; implementação pendente |
-| 2026-09-27 | `PA-02`: usuário limitado a 10 solicitações/minuto e 2 simultâneas, sem orçamento financeiro individual. | Aceita; implementação pendente |
+| 2026-09-27 | `PA-02`: usuário limitado a 10 solicitações/minuto e 2 simultâneas, sem orçamento financeiro individual. | Limites implementados e cobertos por testes; coordenação entre instâncias pendente |
 | 2026-09-27 | `PA-03`: dados do Caso e histórico acompanham o Caso; logs duram 90 dias, backups até 30 dias e exclusão tem recuperação por 30 dias. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-04`: dados são minimizados e identificadores desnecessários são pseudonimizados antes do provider. | Aceita; implementação pendente |
 | 2026-09-27 | `PA-05`: primeiro uso exige aviso versionado; a confirmação não é presumida como base legal geral. | Implementada em 2026-10-01; texto jurídico e URL definitiva da política ainda dependem do `PA-17` |
 | 2026-09-27 | `PA-06`: histórico persistente por Caso ficará no JuridicoAI e poderá ser excluído separadamente. | Aceita; implementação pendente |
-| 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Implementada e coberta por testes |
+| 2026-09-27 | `PA-07`: âncora expirada bloqueia aplicação; é necessário selecionar outro trecho e gerar novamente, ou descartar. | Bloqueio implementado e coberto por testes; recuperação guiada pendente; retry de seleção reutiliza o snapshot anterior |
 | 2026-09-27 | `PA-08`: edição manual continua permitida, mas aplicação da IA exige autosave em `SALVO`. | Implementada e coberta por testes |
 | 2026-09-27 | `PA-09`: avaliação inicial terá 30 casos fictícios, rubrica de 0 a 10 e falhas impeditivas que não podem ser compensadas pela média. | Encerrado tecnicamente com a baseline `1.0.3` no commit `f6376df`; homologação jurídica formal permanece em `PA-17` |
 | 2026-09-27 | `PA-10`: o MVP não pesquisa externamente; só trata como confirmadas fontes fornecidas no contexto e mantém o scraper fora do fluxo e da apresentação. | Aceita; casos incorporados à baseline técnica e interface pendente |
@@ -340,9 +354,10 @@ O prompt de sistema mantido no backend deve, no mínimo:
 | 2026-09-27 | `PA-12`: frontend terá testes unitários com Vitest, componentes com Testing Library, E2E com Playwright e acessibilidade com axe-core e auditoria manual. | Suíte automatizada executada; checklist manual permanece pendente |
 | 2026-10-01 | A confirmação do aviso de IA é persistida por usuário, Organization e versão; nova versão exige reconfirmação e a geração é bloqueada no backend até lá. | Implementada e coberta por testes backend, componente, E2E e axe-core |
 | 2026-09-27 | `PA-13`: `AI_ENABLED` será o kill switch; quatro flags por Organization controlarão capacidades e o rollout será nominal, sem percentual. | Kill switch persistido e auditoria implementados; rollout nominal pendente |
-| 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Estratégia aceita; coleta, dashboards e alertas pendentes |
+| 2026-09-27 | `PA-14`: métricas técnicas, financeiras e de produto usarão `CorrelationId` ponta a ponta sem armazenar conteúdo jurídico. | Correlação no backend e ledger de tokens/custo estimado implementados; propagação explícita pelo frontend, métricas, eventos de produto, dashboards e alertas pendentes |
 | 2026-09-27 | A validação jurídica, contratual e de transferência internacional permanece bloqueadora em `PA-17`. | Pendente |
 | 2026-10-06 | `PA-18`: o assistente adotará chat como interface principal, contexto por chips e propostas dentro da conversa, sem aplicação autônoma. | Chat e chips automáticos implementados; validação visual pendente |
+| 2026-10-18 | Estados e checklists reconciliados com os commits `597bf29` do backend e `23a8e3c` do frontend. | Conferência estática registrada; não constitui nova execução dos testes nem homologação do PA-18 |
 
 ### Decisões pendentes
 

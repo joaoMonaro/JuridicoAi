@@ -2,11 +2,14 @@
 
 > **Estado das decisões técnicas:** aprovado
 >
-> **Estado da implementação:** pendente
+> **Estado da implementação:** parcial; aviso versionado e `store=false`
+> implementados; histórico, retenção, exclusão e pseudonimização adicional pendentes
 >
 > **Estado jurídico/contratual:** validação obrigatória antes da comercialização
 >
 > **Data da decisão:** 2026-09-27
+>
+> **Última conferência documental:** 2026-10-18
 >
 > **Pontos técnicos encerrados:** `PA-03`, `PA-04`, `PA-05` e `PA-06`
 >
@@ -353,7 +356,8 @@ de tratamento permanece sujeita à análise prevista em `PA-17` e ao
 - [ ] PII desnecessária é removida ou pseudonimizada antes do provider.
 - [ ] Dados sensíveis não são enviados sem necessidade e confirmação visível.
 - [ ] Mapas de pseudonimização não são persistidos nem registrados.
-- [ ] O provider recebe `store=false` e o histórico não depende dele.
+- [x] O provider recebe `store=false`, com teste de contrato; o produto não usa
+      histórico persistido no provider.
 - [ ] O sistema não promete ZDR sem configuração e contrato que a sustentem.
 - [x] Primeiro uso exige confirmação versionada do aviso de transparência.
 - [ ] Cancelar, falhar ou excluir não reutiliza conteúdo para outra finalidade.
