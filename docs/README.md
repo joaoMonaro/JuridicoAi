@@ -35,15 +35,14 @@ e da apresentação do MVP do assistente de IA.
 
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
 
-## Implementações em andamento
+## Implementações: ativa, entregas e espera
 
 - [Índice de implementações](../implementacoes/README.md)
-- [Assistente de IA para redação jurídica](../implementacoes/features/assistente-ia/README.md)
-  - [Especificações](../implementacoes/features/assistente-ia/especificacoes/)
-  - [Decisões](../implementacoes/features/assistente-ia/decisoes/)
-  - [Planejamento](../implementacoes/features/assistente-ia/planejamento/pontos-em-aberto.md)
-  - [Evidências](../implementacoes/features/assistente-ia/evidencias/)
-  - [Conferência do estado implementado em 2026-10-18](../implementacoes/features/assistente-ia/evidencias/conferencia-documental-2026-10-18.md)
+- [Geração de minutas por pedido livre — ainda a implementar](../implementacoes/features/geracao-minutas-ia/README.md)
+- [Entregas registradas — alreadyDone](../implementacoes/alreadyDone/README.md)
+- [Pendências em espera — standBy](../implementacoes/standBy/README.md)
+- [Dossiê anterior do assistente — em espera](../implementacoes/standBy/assistente-ia/README.md)
+- [Conferência do estado implementado em 2026-10-18](../implementacoes/alreadyDone/assistente-ia/evidencias/conferencia-documental-2026-10-18.md)
 - [Suíte executável de qualidade jurídica](../avaliacoes/qualidade-juridica/README.md)
 
 ## Histórico e auditorias

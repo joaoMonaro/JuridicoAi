@@ -22,7 +22,7 @@ O scraper retorna:
 > componente técnico isolado, mas não é chamado pelo assistente de IA, não
 > alimenta seus prompts e não integra a apresentação funcional do MVP. A
 > política e as condições para uma integração futura estão no
-> [Tópico 10 — Legislação, jurisprudência e fontes](../../implementacoes/features/assistente-ia/decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
+> [Tópico 10 — Legislação, jurisprudência e fontes](../../implementacoes/standBy/assistente-ia/decisoes/pa-10-legislacao-jurisprudencia-fontes.md).
 
 ## Estratégia híbrida
 

@@ -1,8 +1,11 @@
 # Assistente de IA
 
 Esta página resume o comportamento implementado do assistente. Especificações,
-decisões e pendências em evolução permanecem na
-[documentação viva da feature](../../implementacoes/features/assistente-ia/README.md).
+decisões e pendências anteriores permanecem no
+[dossiê em espera](../../implementacoes/standBy/assistente-ia/README.md).
+A [geração de minutas por pedido livre](../../implementacoes/features/geracao-minutas-ia/README.md)
+é a nova implementação ativa, ainda a implementar; não integra o comportamento
+disponível descrito nesta página.
 
 ## Comportamento atual
 
@@ -47,10 +50,10 @@ Em propostas com seleção, `Tentar novamente` reutiliza o snapshot anterior.
 Após expiração da âncora, é necessário selecionar o trecho desejado e enviar um
 novo pedido pelo composer. A recuperação guiada ainda está pendente.
 
-A entrega visual está em implementação no PA-18: código e testes de componente
-existem, mas regressão completa e validação manual da nova experiência ainda
+A entrega visual permanece parcial no PA-18, cujo restante está em espera.
+Código e testes de componente existem, mas regressão completa e validação manual da nova experiência ainda
 não estão registradas como concluídas. Veja a
-[conferência documental de 2026-10-18](../../implementacoes/features/assistente-ia/evidencias/conferencia-documental-2026-10-18.md).
+[conferência documental de 2026-10-18](../../implementacoes/alreadyDone/assistente-ia/evidencias/conferencia-documental-2026-10-18.md).
 
 ## Endpoints
 
@@ -62,7 +65,7 @@ não estão registradas como concluídas. Veja a
 | `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera uma resposta ou sugestão em stream SSE |
 
 Todas as rotas exigem JWT. O contrato detalhado da solicitação e dos eventos
-SSE está na [especificação HTTP](../../implementacoes/features/assistente-ia/especificacoes/contrato-api.md).
+SSE está na [especificação HTTP](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md).
 
 ## Controles de acesso e segurança
 
@@ -81,7 +84,7 @@ SSE está na [especificação HTTP](../../implementacoes/features/assistente-ia/
 Os comandos administrativos para flags e kill switch estão em
 [User Secrets no desenvolvimento](../user-secrets.md). O roteiro de preparação
 para produção está em
-[segurança operacional](../../implementacoes/features/assistente-ia/evidencias/seguranca-operacional-producao.md).
+[segurança operacional](../../implementacoes/standBy/assistente-ia/evidencias/seguranca-operacional-producao.md).
 
 ## Limites implementados
 
@@ -101,7 +104,7 @@ retry automático ainda não estão implementados.
 O sistema registra metadados técnicos de execução e consumo sem usar o
 conteúdo jurídico como telemetria. Orçamento mensal com bloqueio financeiro,
 retenção automatizada e dashboards completos ainda são itens da implementação
-em andamento.
+em espera.
 
 O transporte externo é SSE, mas o backend aguarda o provider acumular e validar
 a resposta estruturada antes de emitir o texto em um único `conteudo.delta`.

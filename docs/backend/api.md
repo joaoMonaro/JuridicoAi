@@ -66,7 +66,7 @@ desenvolvimento, a interface Swagger está disponível em
 Os contratos, exemplos, regras de cópia de template e controle de concorrência
 estão documentados em [Peças e templates](pecas.md).
 O contrato do assistente e seus eventos estão documentados em
-[Assistente de IA](../../implementacoes/features/assistente-ia/especificacoes/contrato-api.md).
+[Assistente de IA](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md).
 Para uma visão operacional do comportamento implementado, consulte também
 [Assistente de IA](assistente-ia.md).
 

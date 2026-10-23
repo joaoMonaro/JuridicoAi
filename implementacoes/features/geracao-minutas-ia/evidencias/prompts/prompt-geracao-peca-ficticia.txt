@@ -1,0 +1,61 @@
+Este é um teste. Todos os nomes, documentos, endereços e acontecimentos abaixo são fictícios. Os números de identificação são intencionalmente inválidos.
+
+Elabore uma minuta de petição inicial sobre cobrança indevida, usando exclusivamente as informações fornecidas. Produza a minuta completa e apresente eventuais observações separadamente.
+
+DADOS PARA O ENDEREÇAMENTO
+- Estado: São Paulo.
+- Comarca: São Paulo.
+- Juízo indicado para este exercício: Juizado Especial Cível da Comarca de São Paulo/SP.
+- A adequação desse endereçamento será conferida pelo profissional responsável.
+
+AUTORA
+- Nome: Maria de Teste.
+- Nacionalidade: brasileira.
+- Estado civil: solteira.
+- Profissão: auxiliar administrativa.
+- Idade: 35 anos.
+- CPF fictício: 000.000.000-00.
+- Endereço fictício: Rua Exemplo de Teste, nº 100, apartamento 12, Bairro Vila Fictícia, São Paulo/SP.
+- E-mail: maria.teste@example.com.
+
+RÉ
+- Razão social: Empresa Exemplo de Telefonia Ltda.
+- CNPJ fictício: 00.000.000/0000-00.
+- Endereço fictício: Avenida Demonstração, nº 500, sala 20, Bairro Centro Fictício, São Paulo/SP.
+- E-mail: atendimento@example.com.
+
+REPRESENTAÇÃO
+- Advogado fictício: João Advogado de Teste.
+- Inscrição fictícia: OAB/SP 000000.
+- Endereço profissional fictício: Rua Escritório de Teste, nº 200, sala 3, São Paulo/SP.
+- E-mail: advogado.teste@example.com.
+
+FATOS
+- A autora cancelou o serviço de telefonia em 10/08/2026 e recebeu confirmação do cancelamento.
+- Apesar disso, recebeu cobranças de R$ 149,90 referentes a setembro e outubro de 2026.
+- Pagou apenas a cobrança de setembro, por receio de consequências pelo não pagamento.
+- Tentou resolver a situação pelo atendimento da empresa em 05/10/2026, sob o protocolo fictício TESTE-001, sem solução.
+- Não houve negativação informada.
+- Estão disponíveis: confirmação do cancelamento, as duas cobranças e comprovante de pagamento de setembro.
+
+OBJETIVOS
+- Reconhecimento da inexigibilidade das cobranças posteriores ao cancelamento.
+- Restituição simples dos R$ 149,90 pagos indevidamente.
+- Cessação de novas cobranças relacionadas ao serviço cancelado.
+- Não incluir pedido de dano moral.
+
+ESTRUTURA
+1. Endereçamento e qualificação.
+2. Fatos.
+3. Fundamentação.
+4. Pedidos.
+5. Provas e fechamento.
+
+REGRAS
+- Não invente outros fatos ou documentos.
+- Use [PREENCHER] para informações que ainda faltarem.
+- Não cite jurisprudência, números de processos ou dispositivos legais específicos.
+- Redija a fundamentação em termos gerais, para posterior revisão profissional.
+- Apresente primeiro a minuta, com aproximadamente 800 palavras.
+- Depois, em bloco separado, liste eventuais dados faltantes e pontos que exigem revisão.
+- Os avisos devem acompanhar a minuta, sem substituir sua elaboração.

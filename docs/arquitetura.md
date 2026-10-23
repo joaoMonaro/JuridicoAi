@@ -119,5 +119,6 @@ já existente. O `OrganizationId` nunca é aceito do corpo da requisição como
 fonte de autoridade.
 
 Consulte [Assistente de IA](backend/assistente-ia.md) para o comportamento
-estável e a [documentação viva](../implementacoes/features/assistente-ia/README.md)
-para decisões e pendências.
+estável, o [dossiê anterior em espera](../implementacoes/standBy/assistente-ia/README.md)
+para decisões e pendências e a [geração de minutas](../implementacoes/features/geracao-minutas-ia/README.md)
+para a nova implementação ativa, ainda não entregue.

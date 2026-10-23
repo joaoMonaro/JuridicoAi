@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e9bcfef9-449e-4e18-a493-715257fe4c51",
     "name": "JuridicoAI - API principal (sem assistente SSE)",
-    "description": "Coleção da API principal do JuridicoAI. O fluxo SSE do assistente de IA não está representado aqui e deve seguir o contrato versionado em implementacoes/features/assistente-ia/especificacoes/contrato-api.md. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
+    "description": "Coleção da API principal do JuridicoAI. O fluxo SSE do assistente de IA não está representado aqui e deve seguir o contrato versionado em implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {

@@ -141,7 +141,7 @@ desenvolvimento pronta para produção. Antes de expor a aplicação:
   scraper em um fluxo de produto.
 
 O roteiro detalhado do assistente está em
-[Segurança operacional](../../implementacoes/features/assistente-ia/evidencias/seguranca-operacional-producao.md).
+[Segurança operacional](../../implementacoes/standBy/assistente-ia/evidencias/seguranca-operacional-producao.md).
 
 ## O assistente não aparece ou informa indisponibilidade
 

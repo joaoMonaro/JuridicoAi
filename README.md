@@ -54,7 +54,9 @@ As migrations do Entity Framework Core são aplicadas na inicialização quando
 - [Autenticação e multitenancy](docs/backend/autenticacao-e-multitenancy.md)
 - [Peças e templates](docs/backend/pecas.md)
 - [Implementações em andamento](implementacoes/README.md)
+- [Geração de minutas por pedido livre — ainda a implementar](implementacoes/features/geracao-minutas-ia/README.md)
 
 A documentação de `docs/` descreve o comportamento atual. Especificações,
-decisões e pendências de features em evolução ficam em `implementacoes/`, e as
-suítes de avaliação da IA ficam em `avaliacoes/`.
+decisões e pendências ficam em `implementacoes/`, separadas entre a feature
+ativa em `features/`, entregas registradas em `alreadyDone/` e trabalho em espera
+em `standBy/`. As suítes de avaliação da IA ficam em `avaliacoes/`.
