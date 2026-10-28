@@ -27,6 +27,13 @@ da execução manual não foram capturados. A ausência relatada do texto da min
 continua exigindo diagnóstico: `ResponderNoPainel` limita a aplicação, mas não
 explica sozinho uma resposta somente com alertas.
 
+**Atualização da validação em 2026-10-24:** o usuário apresentou uma minuta
+gerada com os dados fictícios. A produção do texto foi observada nessa nova
+tentativa; modo/operação efetivos, aplicação e persistência ainda não foram
+confirmados. Esse resultado não comprova intenção automática ou entrega do
+fluxo próprio de documento completo. O acompanhamento está na
+[evidência manual](evidencias/validacao-manual-experiencia-2026-10-23.md#vm-03--minuta-apresentada-pelo-usuário-em-2026-10-24).
+
 ## Objetivo de produto
 
 Dentro de uma Peça aberta, o usuário descreve o caso em linguagem natural,

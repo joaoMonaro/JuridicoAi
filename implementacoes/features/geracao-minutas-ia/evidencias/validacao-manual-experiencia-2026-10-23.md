@@ -2,6 +2,8 @@
 
 > **Estado:** em andamento, conduzida com o usuário
 >
+> **Última observação:** 2026-10-24
+>
 > **Método:** uso da interface pelo usuário e relato dos resultados na conversa
 >
 > **Ambiente e versões em execução:** ainda não confirmados
@@ -91,3 +93,38 @@ essencial. Foi registrada a [nova implementação](../README.md), ainda a
 implementar, para receber o pedido, apresentar a proposta e permitir aplicação
 explícita. A sessão permanece uma evidência de problema e definição de objetivo,
 sem aprovação funcional do novo fluxo.
+
+## VM-03 — Minuta apresentada pelo usuário em 2026-10-24
+
+**Resultado observado no relato:** o usuário colou na conversa uma minuta com
+endereçamento, qualificações, título da ação, fatos, fundamentação, pedidos,
+provas e fechamento. Isso comprova a obtenção de texto de minuta nesta
+tentativa, sem comprovar a operação enviada, a aplicação ou a persistência.
+
+**Aderência ao cenário fictício:**
+
+- preserva o cancelamento de 10/08/2026, as cobranças de setembro e outubro de
+  R$ 149,90 e o pagamento somente da cobrança de setembro;
+- mantém a tentativa de atendimento de 05/10/2026 e o protocolo TESTE-001;
+- pede restituição simples de R$ 149,90 e não formula pedido de dano moral;
+- não contém números de artigos, jurisprudência ou processos externos;
+- usa `[PREENCHER]` para valor da causa e data do fechamento.
+
+**Ajuste de redação identificado:** o texto afirma que os documentos “instruem
+a presente demanda”. O prompt apenas informa que os documentos estão
+disponíveis. Disponibilidade não comprova anexação; a minuta deve distinguir
+documentos disponíveis dos efetivamente anexados.
+
+**Contexto da interface:** foi esclarecido na conversa que o botão visível
+`Novo trecho` muda o modo interno para `Redigir`, preenche um pedido padrão e
+mostra o chip `Redigir trecho`. O usuário pode substituir o texto preenchido.
+Não houve confirmação explícita da ação usada nesta tentativa; não se atribui
+o resultado a uma mudança de prompt ou de modo sem essa confirmação.
+
+**Pendências do teste:** confirmar a operação/botão de aplicação, se o texto
+permaneceu como proposta até confirmação, o destino, autosave, undo/redo e
+persistência após recarregar. O pedido livre com intenção automática e o
+contrato próprio de geração integral continuam sem homologação.
+
+Esta conferência verifica a aderência textual ao cenário de teste, sem concluir
+adequação jurídica, processual ou autorização de uso da minuta.
