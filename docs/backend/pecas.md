@@ -1,9 +1,9 @@
 # Peças e templates
 
 Uma Peça é um documento jurídico pertencente obrigatoriamente a um Caso. O
-backend armazena o documento contínuo e suas configurações, mas não renderiza
-páginas, HTML, PDF ou DOCX. O JSON TipTap/ProseMirror é a fonte canônica usada
-pelo editor do frontend.
+backend armazena o documento contínuo e suas configurações e permite exportá-lo
+para DOCX e PDF. O JSON TipTap/ProseMirror permanece como fonte canônica usada
+pelo editor do frontend; os arquivos são gerados sob demanda.
 
 Todos os endpoints de Peças e Templates exigem `Authorization: Bearer` e usam a
 Organization do token como fonte de autoridade.
@@ -40,6 +40,7 @@ como `Rascunho`, com `versao` igual a 1.
 | `GET` | `/pecas/{pecaId}` | obtém o documento completo |
 | `PATCH` | `/pecas/{pecaId}` | atualiza parcialmente com controle de versão |
 | `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente com controle de versão |
+| `POST` | `/pecas/{pecaId}/exportar` | baixa DOCX ou PDF da versão solicitada |
 
 ### Criação sem template
 
@@ -157,6 +158,31 @@ versões. Ele existe exclusivamente para impedir sobrescrita concorrente.
 - as quatro margens precisam ser números não negativos em milímetros;
 - o backend não valida profundamente todos os nós TipTap.
 
+### Exportação Word e PDF
+
+`POST /pecas/{pecaId}/exportar` recebe `{"formato":"docx","versao":7}` ou
+`{"formato":"pdf","versao":7}` e retorna um arquivo binário com nome derivado
+do título, MIME correspondente, `Content-Disposition: attachment` e
+`Cache-Control: no-store, private`. A configuração de CORS expõe o nome do arquivo.
+
+O frontend aguarda os salvamentos em andamento e as alterações pendentes antes
+de enviar a versão confirmada. O backend lê a peça completa uma vez, verifica
+a versão e usa sua apresentação armazenada, sem consultar o modelo original.
+Exportar não altera conteúdo, versão ou status. Rascunhos e finalizadas são aceitos.
+
+O DOCX tem conteúdo editável, cabeçalho/rodapé próprios e listas nativas. O PDF
+é convertido desse DOCX pelo LibreOffice e mantém texto selecionável. Ambos
+repetem a identidade visual em todas as páginas. A paginação da tela continua
+independente, e o Word pode repaginar conforme suas fontes e aplicativo.
+
+Formato/documento/configuração não suportados retornam 400; versão diferente,
+409; peça inexistente, excluída ou de outra Organization, 404. Conversão
+indisponível/ocupada retorna 503; timeout, 504. Erros seguem `application/problem+json`.
+Arquivos temporários são privados e removidos após a execução.
+
+Detalhes: [escopo e aceite](../features/exportacao-word-pdf.md) e
+[configuração do conversor e fontes](../operacao/exportacao-word-pdf.md).
+
 ## Endpoints de templates
 
 | Método | Rota | Resultado |
@@ -214,8 +240,8 @@ São aceitos PNG/JPEG de até 1 MB, 16 megapixels e 8.192 pixels por dimensão.
 A API verifica assinatura, dimensões e limites, recusa URLs externas e SVG.
 O navegador também confere se consegue abrir a imagem antes de permitir salvar.
 Editar o modelo não modifica Peças existentes; criar uma Peça ou escolher esse
-modelo no seletor aplica seu cabeçalho. A repetição por página depende de uma
-evolução da paginação; o editor atual continua apresentando um cabeçalho no topo.
+modelo no seletor aplica seu cabeçalho. O editor atual apresenta um cabeçalho
+no topo; os arquivos Word/PDF exportados repetem o cabeçalho por página.
 
 ### Rodapé textual configurável
 
@@ -234,8 +260,8 @@ Não há migração de banco.
 
 Criar uma Peça ou trocar seu modelo copia o rodapé e sua apresentação sem
 substituir o corpo da Peça. Alterar o modelo não atualiza Peças existentes.
-O rodapé aparece no final do documento contínuo atual; repetição por página,
-notas de rodapé e imagem de rodapé não fazem parte desta implementação.
+No editor, o rodapé aparece no final do documento contínuo; nos arquivos Word/PDF
+exportados ele se repete por página. Notas e imagem de rodapé não estão disponíveis.
 
 ## Exclusão lógica e consultas
 
@@ -254,8 +280,9 @@ outra Organization não podem ser usados para criar uma Peça. O locking
 otimista inclui `organizationId` além de identificador e versão.
 
 Editor visual e autosave existem no frontend, mas não são responsabilidades dos
-endpoints de Peças. Paginação final, imagens embutidas, PDF, DOCX, histórico de
-versões e colaboração em tempo real continuam fora deste contrato. A geração
+endpoints de Peças. A paginação final ocorre na exportação, sem criar entidades
+de página ou mudar a representação do editor. Imagens no corpo, importação de
+arquivos, histórico de versões e colaboração em tempo real continuam fora deste contrato. A geração
 de sugestões por IA usa endpoints separados, consulta a Peça para autorização
 e contexto e **não** atualiza `conteudoJson`. Veja o
 [Assistente de IA](assistente-ia.md).

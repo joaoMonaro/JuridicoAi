@@ -1,7 +1,8 @@
 # Documentação do JuridicoAI
 
 Esta documentação descreve o comportamento implementado atualmente na solução
-`JuridicoAI.sln`. Planos e decisões ainda em evolução ficam separados em
+`JuridicoAI.sln`. Especificações de novas features ficam em `docs/features/`,
+com status explícito. Outros planos e decisões em evolução permanecem em
 [`implementacoes/`](../implementacoes/README.md).
 
 ## Visão geral
@@ -9,6 +10,10 @@ Esta documentação descreve o comportamento implementado atualmente na soluçã
 - [Arquitetura e fluxos](arquitetura.md)
 - [Configuração e execução](configuracao-e-execucao.md)
 - [User Secrets no desenvolvimento](user-secrets.md)
+
+## Features
+
+- [Exportação de peças para Word e PDF — escopo e aceite](features/exportacao-word-pdf.md)
 
 ## Backend
 
@@ -34,6 +39,7 @@ e da apresentação do MVP do assistente de IA.
 ## Operação
 
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
+- [Configuração da exportação Word e PDF](operacao/exportacao-word-pdf.md)
 
 ## Implementações: ativa, entregas e espera
 
@@ -62,6 +68,7 @@ O projeto contém:
 - cadastro inicial de organização e usuário, login e renovação de sessão;
 - casos, envolvidos, contextos, documentos, peças e templates de peças;
 - editor de peças com autosave no frontend;
+- exportação de peças para Word editável e PDF, com conversor local configurável;
 - assistente de IA com geração em streaming, revisão e aplicação explícita no editor;
 - primeira interface conversacional com chips de contexto, propostas no chat e
   painel expansível, ainda em validação no PA-18;

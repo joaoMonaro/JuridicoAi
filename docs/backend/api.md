@@ -53,6 +53,7 @@ desenvolvimento, a interface Swagger está disponível em
 | `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
 | `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
 | `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
+| `POST` | `/pecas/{pecaId}/exportar` | baixa Word ou PDF da versão solicitada |
 | `GET` | `/assistente/capacidades` | informa disponibilidade, modos e limites do assistente |
 | `GET` | `/assistente/transparencia` | retorna aviso atual e estado de confirmação |
 | `POST` | `/assistente/transparencia/confirmacoes` | confirma a versão atual do aviso |

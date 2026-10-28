@@ -10,6 +10,7 @@ using JuridicoAI.Api.Infrastructure.Http;
 using JuridicoAI.Api.Infrastructure.Auth;
 using JuridicoAI.Api.Infrastructure.Repositories;
 using JuridicoAI.Api.Infrastructure.Settings;
+using JuridicoAI.Api.Infrastructure.Export;
 using JuridicoAI.Api.Infrastructure.Storage;
 using JuridicoAI.Api.Infrastructure.AI;
 using Microsoft.AspNetCore.Http.Features;
@@ -95,6 +96,7 @@ builder.Services.AddCors(options =>
             })
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .WithExposedHeaders("Content-Disposition")
             .AllowCredentials();
     });
 });
@@ -159,6 +161,10 @@ builder.Services.AddScoped<JurisprudenciaClassifierService>();
 builder.Services.AddScoped<JurisprudenciaIngestionService>();
 builder.Services.AddScoped<CasoApplicationService>();
 builder.Services.AddScoped<PecaApplicationService>();
+builder.Services.Configure<PecaExportSettings>(builder.Configuration.GetSection("PecaExport"));
+builder.Services.AddSingleton<PecaDocxGenerator>();
+builder.Services.AddSingleton<IPecaPdfConverter, LibreOfficePdfConverter>();
+builder.Services.AddScoped<PecaExportApplicationService>();
 builder.Services.AddScoped<TemplatePecaApplicationService>();
 builder.Services.AddScoped<AuthApplicationService>();
 builder.Services.AddScoped<OrganizationApplicationService>();
