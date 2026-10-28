@@ -14,12 +14,17 @@ public sealed record AtualizarPecaRequest(
     JsonElement? HeaderJson = null,
     JsonElement? FooterJson = null,
     JsonElement? Styles = null,
-    PecaStatusEnum? Status = null);
+    PecaStatusEnum? Status = null,
+    JsonElement TemplateId = default);
 
 public sealed record PecaListaDto(
     Guid Id, string Titulo, PecaStatusEnum Status, int Versao, Guid? TemplateId, DateTime DataAtualizacao);
 
-public sealed record PecaAtualizadaDto(Guid Id, int Versao, DateTime DataAtualizacao);
+public sealed record PecaApresentacaoDto(Guid? TemplateId, JsonElement PageConfig, JsonElement Styles,
+    JsonElement? HeaderJson, JsonElement? FooterJson);
+
+public sealed record PecaAtualizadaDto(Guid Id, int Versao, DateTime DataAtualizacao,
+    PecaApresentacaoDto? Apresentacao = null);
 
 public sealed record CriarTemplatePecaRequest(
     string Nome,

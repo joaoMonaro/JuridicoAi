@@ -65,7 +65,7 @@ papel A4, margens em milímetros e estilos jurídicos básicos com Times New Rom
 ```
 
 Na criação, `conteudoJson`, `pageConfig`, `headerJson`, `footerJson` e `styles`
-são copiados do template. A Peça conserva o `templateId` como rastreabilidade,
+são copiados do template. A Peça conserva o `templateId` como referência ao modelo selecionado,
 mas os JSONs passam a pertencer à Peça. Alterar ou excluir logicamente o
 template posteriormente não modifica Peças existentes.
 
@@ -112,6 +112,15 @@ Content-Type: application/json
 
 Também podem ser atualizados `pageConfig`, `headerJson`, `footerJson`, `styles`
 e `status`. Ao menos um campo além de `versao` precisa ser enviado.
+
+Durante a edição, o seletor **Modelo** também usa esse endpoint:
+`{"versao":4,"templateId":"id-do-modelo"}` copia margens, estilos, cabeçalho e
+rodapé do modelo da mesma Organization, preservando o texto da Peça.
+`templateId:null` remove o vínculo e restaura a apresentação padrão; omitir o
+campo mantém o modelo atual. Vínculo e apresentação são gravados juntos, sob
+o mesmo controle de versão. A resposta inclui `apresentacao` com os valores
+aplicados quando há troca de modelo. Na interface, a apresentação muda de
+imediato e a troca é salva junto de eventuais edições de texto pendentes.
 
 O repositório executa um update condicional por `id`, `versao` e ausência de
 exclusão lógica. O incremento ocorre na mesma instrução SQL. Se a versão 4 for

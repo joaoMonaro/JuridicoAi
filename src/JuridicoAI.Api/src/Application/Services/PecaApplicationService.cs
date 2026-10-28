@@ -63,11 +63,25 @@ public sealed class PecaApplicationService(IPecaRepository repository, IAuthCont
         ValidarDocumento(request.HeaderJson, "headerJson", false);
         ValidarDocumento(request.FooterJson, "footerJson", false);
         ValidarObjeto(request.Styles, "styles");
+        var trocarModelo = request.TemplateId.ValueKind != JsonValueKind.Undefined;
+        Guid? templateId = null;
+        if (trocarModelo && request.TemplateId.ValueKind != JsonValueKind.Null)
+        {
+            if (request.TemplateId.ValueKind != JsonValueKind.String || !request.TemplateId.TryGetGuid(out var parsed))
+                throw new RequisicaoInvalidaException("templateId deve ser um identificador de modelo ou null.");
+            templateId = parsed;
+        }
         if (request.Titulo is null && request.ConteudoJson is null && request.PageConfig is null &&
-            request.HeaderJson is null && request.FooterJson is null && request.Styles is null && request.Status is null)
+            request.HeaderJson is null && request.FooterJson is null && request.Styles is null && request.Status is null && !trocarModelo)
             throw new RequisicaoInvalidaException("Informe ao menos um campo para atualizar.");
 
         var peca = await ObterAsync(id, ct);
+        if (peca.Versao != request.Versao)
+            throw new ConflitoDeVersaoException("A peca foi alterada por outra requisicao.");
+        TemplatePeca? template = null;
+        if (templateId is { } modeloId)
+            template = await repository.ObterTemplateAsync(modeloId, auth.OrganizationId, ct)
+                ?? throw new RecursoNaoEncontradoException("Modelo não encontrado.");
         if (request.Titulo is not null) peca.Titulo = request.Titulo.Trim();
         if (request.ConteudoJson is { } conteudo) peca.ConteudoJson = Documento(conteudo);
         if (request.PageConfig is { } pagina) peca.PageConfig = Documento(pagina);
@@ -75,11 +89,21 @@ public sealed class PecaApplicationService(IPecaRepository repository, IAuthCont
         if (request.FooterJson is { } footer) peca.FooterJson = Documento(footer);
         if (request.Styles is { } styles) peca.Styles = Documento(styles);
         if (request.Status is { } novoStatus) peca.Status = novoStatus;
+        if (trocarModelo)
+        {
+            peca.TemplateId = templateId;
+            peca.PageConfig = template is null ? PecaDefaults.NovaPagina() : PecaDefaults.Copiar(template.PageConfig);
+            peca.Styles = template is null ? PecaDefaults.NovosEstilos() : PecaDefaults.Copiar(template.Styles);
+            peca.HeaderJson = template?.HeaderJson is null ? null : PecaDefaults.Copiar(template.HeaderJson);
+            peca.FooterJson = template?.FooterJson is null ? null : PecaDefaults.Copiar(template.FooterJson);
+        }
         peca.DataAtualizacao = DateTime.UtcNow;
         peca.UpdatedById = auth.UserId;
         if (!await repository.AtualizarPecaAsync(peca, request.Versao, ct))
             throw new ConflitoDeVersaoException("A peca foi alterada por outra requisicao.");
-        return new PecaAtualizadaDto(peca.Id, request.Versao + 1, peca.DataAtualizacao);
+        var apresentacao = trocarModelo ? new PecaApresentacaoDto(peca.TemplateId, peca.PageConfig.RootElement,
+            peca.Styles.RootElement, peca.HeaderJson?.RootElement, peca.FooterJson?.RootElement) : null;
+        return new PecaAtualizadaDto(peca.Id, request.Versao + 1, peca.DataAtualizacao, apresentacao);
     }
 
     public async Task ExcluirAsync(Guid id, int versao, CancellationToken ct)

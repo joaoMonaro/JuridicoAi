@@ -12,7 +12,7 @@ public sealed class Peca
     public Guid UpdatedById { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public JsonDocument ConteudoJson { get; set; } = null!;
-    public Guid? TemplateId { get; init; }
+    public Guid? TemplateId { get; set; }
     public JsonDocument PageConfig { get; set; } = null!;
     public JsonDocument? HeaderJson { get; set; }
     public JsonDocument? FooterJson { get; set; }
