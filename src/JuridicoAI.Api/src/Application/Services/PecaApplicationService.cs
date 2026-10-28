@@ -129,6 +129,8 @@ public sealed class PecaApplicationService(IPecaRepository repository, IAuthCont
             throw new RequisicaoInvalidaException($"O campo {campo} deve ser um objeto JSON.");
         if (exigirDoc && (!value.Value.TryGetProperty("type", out var type) || type.GetString() != "doc"))
             throw new RequisicaoInvalidaException($"O campo {campo} deve representar um documento TipTap.");
+        if (campo == "headerJson") DocumentHeaderValidator.Validate(value.Value);
+        if (campo == "footerJson") DocumentFooterValidator.Validate(value.Value);
     }
 
     internal static void ValidarObjeto(JsonElement? value, string campo) => ValidarDocumento(value, campo, false);

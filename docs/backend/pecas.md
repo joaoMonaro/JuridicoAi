@@ -196,6 +196,47 @@ Campos JSON omitidos recebem os mesmos defaults usados na criação de Peças.
 Templates também usam soft delete. A chave estrangeira permanece preservada
 para que uma Peça continue indicando seu template de origem.
 
+### Imagem de cabeçalho ou logotipo
+
+O gerenciador oferece **Apenas texto**, **Imagem de cabeçalho** (composição
+completa da marca) e **Logotipo**. Os dois modos de imagem permitem largura e
+alinhamento; altura máxima, distância do topo e distância do texto ficam em
+ajustes recolhidos. A prévia usa a mesma apresentação do editor, mantém a
+proporção da imagem e reserva espaço antes do corpo.
+
+O texto continua em `headerJson.content`. A propriedade opcional
+`headerJson.presentation` contém `mode` (`banner` ou `logo`), `imageDataUrl`,
+`widthMm`, `maxHeightMm`, `align`, `offsetTopMm` e `gapMm`. Modelos textuais
+anteriores continuam válidos. A imagem fica incorporada nesse JSON e acompanha
+a cópia para a Peça, sem tabela ou migração adicional.
+
+São aceitos PNG/JPEG de até 1 MB, 16 megapixels e 8.192 pixels por dimensão.
+A API verifica assinatura, dimensões e limites, recusa URLs externas e SVG.
+O navegador também confere se consegue abrir a imagem antes de permitir salvar.
+Editar o modelo não modifica Peças existentes; criar uma Peça ou escolher esse
+modelo no seletor aplica seu cabeçalho. A repetição por página depende de uma
+evolução da paginação; o editor atual continua apresentando um cabeçalho no topo.
+
+### Rodapé textual configurável
+
+O gerenciador permite texto com múltiplas linhas, tamanho de 7 a 16 pt, cor
+`#RRGGBB`, alinhamento à esquerda/centro/direita, linha divisória opcional e
+distância de 0 a 30 mm da borda inferior. A fonte acompanha a fonte do modelo.
+A prévia e o editor usam o mesmo componente; o rodapé ocupa espaço próprio,
+com separação do corpo, expandindo a área inferior quando necessário.
+
+O texto permanece em parágrafos de `footerJson.content`, incluindo linhas
+vazias. `footerJson.presentation` armazena `fontSize`, `color`, `align`,
+`separator` e `offsetBottomMm`. A API valida esses valores ao criar/editar
+modelos e ao editar Peças. Rodapés antigos sem `presentation` continuam aceitos,
+com fonte equivalente aos 10 px anteriores e alinhamento centralizado.
+Não há migração de banco.
+
+Criar uma Peça ou trocar seu modelo copia o rodapé e sua apresentação sem
+substituir o corpo da Peça. Alterar o modelo não atualiza Peças existentes.
+O rodapé aparece no final do documento contínuo atual; repetição por página,
+notas de rodapé e imagem de rodapé não fazem parte desta implementação.
+
 ## Exclusão lógica e consultas
 
 `DELETE` define `dataExclusao`; os registros não aparecem em listagens nem em
