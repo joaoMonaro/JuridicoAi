@@ -1,6 +1,6 @@
 # Implementações do JuridicoAI
 
-> **Organização atualizada em:** 2026-10-23
+> **Organização atualizada em:** 2026-11-10
 
 Este diretório separa a implementação ativa, as entregas já registradas e as
 pendências colocadas em espera. A referência do comportamento disponível
@@ -14,6 +14,15 @@ continua em [`docs/`](../docs/README.md).
 
 Esta é a única feature ativa nesta reorganização. Seu registro não significa
 que a implementação foi iniciada ou entregue.
+
+## Ampliação de escopo em discussão
+
+- [Assistente conversacional com edição da Peça e contexto persistente](features/assistente-conversacional/README.md).
+
+A proposta amplia a geração de minutas para uma jornada com documentos,
+continuidade da conversa e edição mediante aprovação visual. Está em discussão;
+não altera o comportamento disponível nem inicia a implementação. As limitações
+e estimativas do plano anterior não representam esta ampliação.
 
 ## Entregas registradas e pendências em espera
 
@@ -31,6 +40,9 @@ aprova testes, não conclui homologações e não libera produção ou comercial
 implementacoes/
 ├── README.md
 ├── features/
+│   ├── assistente-conversacional/
+│   │   ├── README.md
+│   │   └── desenho-tecnico.md
 │   └── geracao-minutas-ia/
 │       ├── README.md
 │       └── evidencias/
