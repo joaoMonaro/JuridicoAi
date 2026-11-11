@@ -3,15 +3,18 @@
 Esta página resume o comportamento implementado do assistente. Especificações,
 decisões e pendências anteriores permanecem no
 [dossiê em espera](../../implementacoes/standBy/assistente-ia/README.md).
-A [geração de minutas por pedido livre](../../implementacoes/features/geracao-minutas-ia/README.md)
-é a nova implementação ativa, ainda a implementar; não integra o comportamento
-disponível descrito nesta página.
+O [assistente conversacional](../../implementacoes/features/assistente-conversacional/README.md)
+é a implementação ativa. A revisão persistida já possui integração atrás de
+flag. Histórico usado como contexto e conversa livre com intenção automática
+também estão integrados. Memória para conversas extensas, leitura documental,
+worker e avaliação com modelo real permanecem pendentes.
 
 ## Comportamento atual
 
 O assistente atua sobre uma Peça acessível ao usuário autenticado e pode
 responder, redigir, reescrever ou revisar conteúdo. A API gera uma sugestão,
-mas nunca grava diretamente `Peca.ConteudoJson`.
+e a geração não grava `Peca.ConteudoJson`. O fluxo padrão, com
+`AssistenteIa:ReviewV2Enabled=false`, funciona assim:
 
 ```text
 solicitação do usuário
@@ -28,7 +31,34 @@ o autosave está em `SALVO`. Âncora expirada, erro de sincronização ou confli
 de versão bloqueiam a aplicação sem impedir que o usuário continue editando
 manualmente.
 
-## Interface disponível
+Com `ReviewV2Enabled=true` e `AI_EDIT` autorizado, a capacidade
+`suportaRevisaoPersistida` permite registrar sugestões para revisão no documento.
+Nesse fluxo, a aprovação chama um serviço determinístico que grava a Peça,
+decisões e recibo em uma transação; o editor reconcilia a versão sem novo PATCH.
+Propostas e pedidos associados ficam privados e persistidos. A flag fica
+desligada por padrão. Veja [rotas, ativação e limites implementados](../../implementacoes/features/assistente-conversacional/evidencias/e1-revisao-persistida-2026-11-11.md).
+
+Com `ConversationV2Enabled=true` (que exige `ReviewV2Enabled`), a capacidade
+`suportaHistorico` ativa mensagens/respostas persistidas e recuperação no painel.
+O gerador recebe o histórico elegível da própria conversa e a Peça atual do
+servidor, dentro dos limites de contexto. Os modos ainda são os existentes.
+Veja [contratos efetivos, evidências e limites](../../implementacoes/features/assistente-conversacional/evidencias/e1-e3-historico-2026-11-11.md).
+
+Com `AutomaticConversationEnabled=true` (exige as duas flags anteriores),
+`suportaConversaLivre` remove a escolha de modos do frontend. O endpoint
+`POST /assistente/v2/conversas/{id}/interacoes` recebe texto natural e versão da
+Peça. A mesma geração decide entre responder, propor edição e gerar minuta.
+Propostas abrem diretamente a comparação; só a aprovação grava a Peça.
+Pedidos seguintes podem ajustar uma proposta pendente, preservando o aplicado.
+Conversa exige `AI_ASSISTANT`; propostas e aplicação exigem `AI_EDIT`; minuta
+inicial/substituição integral também exigem `AI_DOCUMENT_GENERATION`.
+Veja [ativação, contratos, testes e limites](../../implementacoes/features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md).
+
+## Interface legada e compatibilidade
+
+O comportamento abaixo corresponde às flags conversacionais desligadas. Com a
+conversa livre ativa, Peça e histórico são automáticos, modos ficam ocultos e
+propostas persistidas vão diretamente à revisão no documento.
 
 O frontend apresenta um chat com composer único, ações rápidas, chips removíveis
 de contexto, respostas e cartões de proposta na conversa. A seleção é capturada
@@ -39,12 +69,16 @@ explicitamente pelo menu `Adicionar contexto`.
 Os cartões permitem editar, comparar com o original, copiar, rejeitar, tentar
 novamente e aplicar no destino indicado. Há larguras predefinidas e modo
 expandido. O pedido livre começa em `Perguntar`; ações rápidas selecionam
-reescrita, revisão ou redação. Intenção automática ainda não está implementada.
+reescrita, revisão ou redação. Intenção automática exige a flag adicional descrita acima.
 
 A conversa permanece em memória ao fechar e reabrir o painel enquanto o editor
 da mesma Peça estiver montado. Trocar de Peça remonta o editor e perde esse
-estado; recarregar a página também o descarta. Não há histórico persistente nem
-envio das mensagens anteriores ao provider como contexto conversacional.
+estado; recarregar a página também o descarta. No fluxo padrão não há histórico
+persistente. O recorte de revisão persistida recupera propostas e salva seus
+pedidos/respostas, mas ainda não recupera todas as mensagens na UI nem envia o
+histórico ao provider como contexto conversacional. `suportaHistorico` permanece
+`false` nesse recorte isolado; a flag adicional `ConversationV2Enabled` ativa a
+integração de histórico descrita acima.
 
 Em propostas com seleção, `Tentar novamente` reutiliza o snapshot anterior.
 Após expiração da âncora, é necessário selecionar o trecho desejado e enviar um

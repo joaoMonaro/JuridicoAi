@@ -33,7 +33,7 @@ public sealed class AssistenteFeatureAccessService(
         // AI_DOCUMENT_GENERATION permanece persistível para rollout futuro, mas
         // não é anunciada até que o endpoint de geração integral exista.
         var visibleFeatures = features
-            .Where(x => x != OrganizationFeatureEnum.AI_DOCUMENT_GENERATION)
+            .Where(x => x != OrganizationFeatureEnum.AI_DOCUMENT_GENERATION || options.CurrentValue.AutomaticConversationEnabled)
             .Order()
             .ToArray();
 

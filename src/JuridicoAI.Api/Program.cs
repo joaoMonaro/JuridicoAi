@@ -30,6 +30,10 @@ builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("P
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
 builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.GetSection("AssistenteIa"))
+    .Validate(x => !x.ConversationV2Enabled || x.ReviewV2Enabled,
+        "AssistenteIa:ConversationV2Enabled exige ReviewV2Enabled.")
+    .Validate(x => !x.AutomaticConversationEnabled || x.ConversationV2Enabled,
+        "AssistenteIa:AutomaticConversationEnabled exige ConversationV2Enabled.")
     .Validate(x => x.TimeoutSeconds > 0 && x.MaxInstructionCharacters > 0 &&
                    x.MaxDocumentContextCharacters > 0 && x.MaxAdditionalContextCharacters > 0 &&
                    x.MaxTotalContextCharacters > 0 && x.MaxInputTokens > 0 && x.MaxOutputCharacters > 0 &&
@@ -169,6 +173,10 @@ builder.Services.AddScoped<TemplatePecaApplicationService>();
 builder.Services.AddScoped<AuthApplicationService>();
 builder.Services.AddScoped<OrganizationApplicationService>();
 builder.Services.AddScoped<AssistenteIaApplicationService>();
+builder.Services.AddScoped<AssistenteWorkspaceService>();
+builder.Services.AddScoped<AssistenteChatService>();
+builder.Services.AddSingleton<AssistentePatchCompiler>();
+builder.Services.AddScoped<IAssistenteWorkspaceRepository, AssistenteWorkspaceRepository>();
 builder.Services.AddScoped<IAssistenteTransparencyService, AssistenteTransparencyService>();
 builder.Services.AddScoped<AssistenteContextBuilder>();
 builder.Services.AddSingleton<AssistentePromptPolicy>();

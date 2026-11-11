@@ -11,6 +11,30 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteTransparencyServiceTests
 {
     [Fact]
+    public async Task ConversaPersistida_NaoReutilizaAceiteLimitadoAPropostas()
+    {
+        var setup = Create();
+        setup.Options.Current.ReviewV2Enabled = true;
+        await setup.Service.ConfirmarAsync(new("ai-transparency-v1-review-v2"), default);
+        setup.Options.Current.ConversationV2Enabled = true;
+        var notice = await setup.Service.ObterAsync(default);
+        Assert.False(notice.Confirmado);
+        Assert.Equal("ai-transparency-v1-conversation-v2", notice.Versao);
+        Assert.Contains("histórico dessa conversa será utilizado", notice.Mensagem);
+    }
+    [Fact]
+    public async Task RevisaoPersistida_ExigeAvisoNovoSobreArmazenamento()
+    {
+        var setup = Create();
+        await setup.Service.ConfirmarAsync(new("ai-transparency-v1"), default);
+        setup.Options.Current.ReviewV2Enabled = true;
+        var status = await setup.Service.ObterAsync(default);
+        Assert.False(status.Confirmado);
+        Assert.Equal("ai-transparency-v1-review-v2", status.Versao);
+        Assert.Contains("salvos em uma conversa individual", status.Mensagem);
+        await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.ExigirConfirmacaoAsync(default));
+    }
+    [Fact]
     public async Task Confirmar_EIdempotenteParaUsuarioOrganizationEVersao()
     {
         var setup = Create();

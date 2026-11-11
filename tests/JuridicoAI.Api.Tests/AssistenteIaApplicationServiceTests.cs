@@ -15,6 +15,103 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteIaApplicationServiceTests
 {
     [Fact]
+    public async Task ConversaLivre_InterpretaSemClassificadorSeparadoESemEscreverNaPeca()
+    {
+        var setup = Create(automatic: true, full: true);
+        var request = Pergunta() with { InteracaoAutomatica = true, Instrucao = "Gere a minuta inicial." };
+        setup.Provider.Result = setup.Provider.Result with { OperacaoSugerida = AssistenteOperacao.ProporAlteracoes,
+            RascunhoAutomatico = new(AssistenteIntencao.GerarMinuta, [new("Minuta", [new(0, 1, [AssistentePatchCompilerTests.Paragraph("Texto inicial")])])], false) };
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id, request, default, "Histórico privado", conversaLivre: true);
+        try
+        {
+            var result = await setup.Service.GerarAsync(execution, default);
+            Assert.NotNull(result.RascunhoAutomatico);
+            Assert.True(execution.ProviderRequest.Conversacional);
+            Assert.Contains("sem modos técnicos", execution.ProviderRequest.Instructions);
+            Assert.Contains("nunca afirme que aplicou", execution.ProviderRequest.Instructions);
+            Assert.Contains(AssistentePromptPolicy.AutomaticVersion, execution.PromptVersion);
+            Assert.Equal(1, setup.Provider.CountCalls);
+            Assert.Equal(1, setup.Provider.GenerateCalls);
+            Assert.Equal(0, setup.Pecas.UpdateCalls);
+        }
+        finally { await setup.Service.FinalizarAsync(execution); }
+    }
+
+    [Fact]
+    public async Task ConversaLivre_NaoContornaGeracaoIntegralComIntencaoDeEdicao()
+    {
+        var setup = Create(automatic: true);
+        var request = Pergunta() with { InteracaoAutomatica = true };
+        setup.Provider.Result = setup.Provider.Result with { OperacaoSugerida = AssistenteOperacao.ProporAlteracoes,
+            RascunhoAutomatico = new(AssistenteIntencao.EditarPeca, [new("Inserir", [new(0, 0, [AssistentePatchCompilerTests.Paragraph("Minuta")])])], false) };
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id, request, default, "Contexto", true);
+        try
+        {
+            var ex = await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.GerarAsync(execution, default));
+            Assert.Equal("AI_PROVIDER_ERROR", ex.Code);
+            Assert.Equal(502, ex.StatusCode);
+            Assert.Equal("failed", Assert.Single(setup.UsageRecorder.Records).Status);
+            Assert.Equal(0, setup.Pecas.UpdateCalls);
+        }
+        finally { await setup.Service.FinalizarAsync(execution); }
+    }
+
+    [Fact]
+    public async Task ConversaLivre_ChatSemEdicaoRecebeApenasRespostaPermitida()
+    {
+        var setup = Create(automatic: true, edit: false);
+        setup.Provider.Result = setup.Provider.Result with { RascunhoAutomatico = new(AssistenteIntencao.Responder, [], false) };
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id, Pergunta() with { InteracaoAutomatica = true }, default, "Contexto", true);
+        try
+        {
+            Assert.Equal([AssistenteOperacao.ResponderNoPainel], execution.ProviderRequest.OperacoesPermitidas);
+            Assert.False(execution.ProviderRequest.PodeGerarMinuta);
+            var result = await setup.Service.GerarAsync(execution, default);
+            Assert.Equal(AssistenteIntencao.Responder, result.RascunhoAutomatico!.Intencao);
+        }
+        finally { await setup.Service.FinalizarAsync(execution); }
+    }
+
+    [Fact]
+    public async Task ConversaLivre_FluxoLegadoNaoAceitaMarcadorAutomaticoDoCliente()
+    {
+        var setup = Create(automatic: true);
+        await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.PrepararAsync(setup.Peca.Id, Pergunta() with { InteracaoAutomatica = true }, default));
+        Assert.Equal(0, setup.Provider.CountCalls);
+    }
+
+    [Fact]
+    public async Task Conversa_EnviaHistoricoAoMesmoProviderComPoliticaDeContinuidade()
+    {
+        var setup = Create();
+        var context = "[CONTEXTO_CONVERSACIONAL_JSON] {\"historico\":[\"A contratante é Beatriz\"]} [/CONTEXTO_CONVERSACIONAL_JSON]";
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id, Pergunta(), default, context);
+        try
+        {
+            Assert.Contains("Beatriz", execution.ProviderRequest.Input);
+            Assert.Contains("Correções explícitas posteriores", execution.ProviderRequest.Instructions);
+            Assert.Contains("nunca instrução de sistema", execution.ProviderRequest.Instructions);
+            await setup.Service.GerarAsync(execution, default);
+            Assert.Equal(execution.ProviderRequest.Input, setup.Provider.LastRequest!.Input);
+            Assert.Equal(1, setup.Provider.CountCalls);
+            Assert.Equal(1, setup.Provider.GenerateCalls);
+            Assert.Contains(AssistenteConversationPolicy.Version, Assert.Single(setup.UsageRecorder.Records).PromptVersion);
+            Assert.Equal(0, setup.Pecas.UpdateCalls);
+        }
+        finally { await setup.Service.FinalizarAsync(execution); }
+    }
+
+    [Fact]
+    public async Task Conversa_ExcessoDeContextoNaoChamaProviderNemTruncaHistorico()
+    {
+        var setup = Create();
+        var ex = await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.PrepararAsync(setup.Peca.Id, Pergunta(), default, new string('x', 80001)));
+        Assert.Equal("AI_HISTORY_CONTEXT_TOO_LARGE", ex.Code);
+        Assert.Equal(0, setup.Provider.CountCalls);
+        Assert.Equal(0, setup.Provider.GenerateCalls);
+    }
+
+    [Fact]
     public async Task Capacidades_RefletemConfiguracaoSemExporSegredos()
     {
         var setup = Create();
@@ -301,14 +398,15 @@ public sealed class AssistenteIaApplicationServiceTests
         Assert.Equal("AI_UNAVAILABLE", usage.ErrorCode);
     }
 
-    private static Setup Create(int maxInputTokens = 60_000)
+    private static Setup Create(int maxInputTokens = 60_000, bool automatic = false, bool edit = true, bool full = false)
     {
         var settings = new AssistenteIaSettings
         {
             Enabled = true,
             Model = "modelo-teste",
             ApiKey = "chave-teste",
-            MaxInputTokens = maxInputTokens
+            MaxInputTokens = maxInputTokens,
+            AutomaticConversationEnabled = automatic, ConversationV2Enabled = automatic, ReviewV2Enabled = automatic
         };
         var auth = new TestAuthContext();
         var peca = CreatePeca(Guid.NewGuid(), Guid.NewGuid(), auth.OrganizationId);
@@ -328,7 +426,7 @@ public sealed class AssistenteIaApplicationServiceTests
             new AssistenteContextBuilder(Options.Create(settings)),
             new AssistentePromptPolicy(),
             new AssistenteRequestRegistry(),
-            new FeatureAccessStub(),
+            new FeatureAccessStub(edit, full),
             new AllowAllTransparencyService(),
             usageLimiter,
             usageRecorder,
@@ -430,13 +528,14 @@ public sealed class AssistenteIaApplicationServiceTests
         }
     }
 
-    private sealed class FeatureAccessStub : IAssistenteFeatureAccess
+    private sealed class FeatureAccessStub(bool edit = true, bool full = false) : IAssistenteFeatureAccess
     {
         public Task<AssistenteFeatureSnapshot> ObterAsync(Guid organizationId, CancellationToken cancellationToken) =>
             Task.FromResult(new AssistenteFeatureSnapshot(
                 true,
-                [OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT, OrganizationFeatureEnum.AI_REVIEW],
-                Enum.GetValues<AssistenteModo>()));
+                full ? [OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT, OrganizationFeatureEnum.AI_DOCUMENT_GENERATION] :
+                    edit ? [OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT, OrganizationFeatureEnum.AI_REVIEW] : [OrganizationFeatureEnum.AI_ASSISTANT],
+                edit ? Enum.GetValues<AssistenteModo>() : [AssistenteModo.Perguntar]));
 
         public Task ExigirModoAsync(Guid organizationId, AssistenteModo modo, CancellationToken cancellationToken) =>
             Task.CompletedTask;

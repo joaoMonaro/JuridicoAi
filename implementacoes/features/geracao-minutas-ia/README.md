@@ -2,7 +2,8 @@
 
 > **Estado:** ainda a implementar
 >
-> **Prioridade atual:** única feature ativa após a reorganização documental
+> **Plano atual:** incorporado ao [assistente conversacional](../assistente-conversacional/README.md),
+> cuja E0 do editor foi iniciada. Este documento preserva o planejamento anterior.
 >
 > **Data:** 2026-10-23
 >

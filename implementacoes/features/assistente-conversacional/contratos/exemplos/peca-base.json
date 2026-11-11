@@ -1,0 +1,35 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": {
+        "level": 2
+      },
+      "content": [
+        {
+          "type": "text",
+          "text": "DOS FATOS"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "O autor entrou em contato com a empresa, porém não recebeu resposta."
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "content": [
+        {
+          "type": "text",
+          "text": "O pagamento ocorreu em 10/10/2026, no valor de R$ 850,00."
+        }
+      ]
+    }
+  ]
+}

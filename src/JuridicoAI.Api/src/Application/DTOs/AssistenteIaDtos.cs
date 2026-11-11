@@ -14,8 +14,11 @@ public enum AssistenteOperacao
     InserirNoCursor,
     InserirAposSelecao,
     SubstituirSelecao,
-    CriarSecao
+    CriarSecao,
+    ProporAlteracoes
 }
+
+public enum AssistenteIntencao { Responder, EditarPeca, GerarMinuta }
 
 public enum AssistenteEscopoDocumento
 {
@@ -61,7 +64,9 @@ public sealed record CriarSolicitacaoAssistenteRequest(
     string? Instrucao,
     int VersaoPeca,
     AssistenteOperacao? OperacaoPreferida,
-    AssistenteContextoRequest? Contexto);
+    AssistenteContextoRequest? Contexto,
+    bool InteracaoAutomatica = false,
+    Guid? PropostaReferenciadaId = null);
 
 public sealed record AssistenteLimitesDto(
     int InstrucaoCaracteres,
@@ -74,7 +79,9 @@ public sealed record AssistenteCapacidadesDto(
     AssistenteLimitesDto Limites,
     bool SuportaStreaming,
     bool SuportaHistorico,
-    IReadOnlyList<string>? Features = null);
+    IReadOnlyList<string>? Features = null,
+    bool SuportaRevisaoPersistida = false,
+    bool SuportaConversaLivre = false);
 
 public sealed record AssistenteTransparenciaDto(
     string Versao,
@@ -112,7 +119,8 @@ public sealed record AssistenteSugestaoDto(
     string Resumo,
     IReadOnlyList<AssistenteAlertaDto> Alertas,
     IReadOnlyList<AssistenteAchadoDto> Achados,
-    AssistenteAncoraDto Ancora);
+    AssistenteAncoraDto Ancora,
+    Guid? MensagemUsuarioId = null);
 
 public sealed record AssistenteUsoDto(int? EntradaTokens, int? SaidaTokens, int? EntradaTokensEmCache = null);
 
@@ -124,7 +132,12 @@ public sealed record AssistenteSolicitacaoIniciadaDto(
 public sealed record AssistenteSolicitacaoConcluidaDto(
     AssistenteSugestaoDto Sugestao,
     AssistenteUsoDto Uso,
-    string Modelo);
+    string Modelo,
+    AssistentePropostaDto? Proposta = null,
+    [property: System.Text.Json.Serialization.JsonIgnore] AssistenteRascunhoAutomatico? RascunhoAutomatico = null);
+
+public sealed record AssistenteRascunhoAutomatico(AssistenteIntencao Intencao,
+    IReadOnlyList<AssistenteGrupoRequest> Grupos, bool SubstituirPropostaReferenciada);
 
 public sealed record AssistenteSolicitacaoFalhouDto(
     string Code,

@@ -3,6 +3,9 @@ namespace JuridicoAI.Api.Infrastructure.Settings;
 public sealed class AssistenteIaSettings
 {
     public bool Enabled { get; set; }
+    public bool ReviewV2Enabled { get; set; }
+    public bool ConversationV2Enabled { get; set; }
+    public bool AutomaticConversationEnabled { get; set; }
     public string Provider { get; set; } = "OpenAI";
     public string Model { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;

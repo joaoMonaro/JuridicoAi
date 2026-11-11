@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "assistente-v2",
+  "conversaId": "00000000-0000-4000-8000-000000000001",
+  "mensagemId": "00000000-0000-4000-8000-000000000006",
+  "execucaoId": "00000000-0000-4000-8000-000000000007",
+  "sequencia": 1,
+  "eventosUrl": "/assistente/v2/conversas/00000000-0000-4000-8000-000000000001/eventos?apos=0"
+}

@@ -7,7 +7,9 @@ public sealed record AssistenteIaProviderRequest(
     string Input,
     AssistenteModo Modo,
     IReadOnlyList<AssistenteOperacao> OperacoesPermitidas,
-    int MaxOutputTokens);
+    int MaxOutputTokens,
+    bool Conversacional = false,
+    bool PodeGerarMinuta = false);
 
 public sealed record AssistenteIaProviderResult(
     string Titulo,
@@ -19,7 +21,8 @@ public sealed record AssistenteIaProviderResult(
     int? EntradaTokens,
     int? EntradaTokensEmCache,
     int? SaidaTokens,
-    string Modelo);
+    string Modelo,
+    AssistenteRascunhoAutomatico? RascunhoAutomatico = null);
 
 public interface IAssistenteIaProvider
 {

@@ -1,0 +1,9 @@
+{
+  "status": 409,
+  "title": "Conflict",
+  "detail": "A Peça mudou desde a preparação da proposta.",
+  "code": "AI_PROPOSAL_STALE",
+  "retryable": false,
+  "correlationId": "00000000-0000-4000-8000-000000000020",
+  "versaoPecaAtual": 9
+}

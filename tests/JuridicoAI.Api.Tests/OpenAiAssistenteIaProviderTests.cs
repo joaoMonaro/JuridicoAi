@@ -11,6 +11,51 @@ namespace JuridicoAI.Api.Tests;
 
 public sealed class OpenAiAssistenteIaProviderTests
 {
+    [Theory]
+    [InlineData("""{"titulo":"Resposta","texto":"Texto","resumo":"","intencao":"Responder","alertas":[],"grupos":[]}""")]
+    [InlineData("""{"titulo":"Resposta","texto":"Texto","resumo":"","intencao":"Responder","alertas":[],"grupos":[],"substituirPropostaReferenciada":false,"aplicarAgora":true}""")]
+    public async Task ConversaLivre_RecusaResultadoIncompletoOuComComandoExtra(string output)
+    {
+        var delta = JsonSerializer.Serialize(new { type = "response.output_text.delta", delta = output });
+        var handler = new StubHandler(_ => new(HttpStatusCode.OK) { Content = new StringContent($"data: {delta}\n\ndata: {{\"type\":\"response.completed\"}}\n\n", Encoding.UTF8, "text/event-stream") });
+        var error = await Assert.ThrowsAsync<AssistenteIaProviderException>(() => CreateProvider(handler).GerarAsync(
+            new("Política", "Contexto", AssistenteModo.Perguntar, [AssistenteOperacao.ResponderNoPainel], 1000, true), default));
+        Assert.Equal("AI_PROVIDER_ERROR", error.Code);
+    }
+
+    [Fact]
+    public async Task ConversaLivre_UsaSchemaFechadoComIntencaoEGruposTipados()
+    {
+        var text = """{"titulo":"Minuta","texto":"Preparei a minuta para revisão.","resumo":"","intencao":"GerarMinuta","alertas":[],"grupos":[{"explicacao":"Criar minuta","operacoes":[{"startIndex":0,"deleteCount":1,"novosBlocos":[{"type":"paragraph","attrs":{"textAlign":null},"content":[{"type":"text","text":"Corpo jurídico","marks":[]}]}]}]}],"substituirPropostaReferenciada":false}""";
+        var delta = JsonSerializer.Serialize(new { type = "response.output_text.delta", delta = text });
+        var handler = new StubHandler(_ => new(HttpStatusCode.OK) { Content = new StringContent($"data: {delta}\n\ndata: {{\"type\":\"response.completed\"}}\n\n", Encoding.UTF8, "text/event-stream") });
+        var result = await CreateProvider(handler).GerarAsync(new("Política", "Contexto", AssistenteModo.Perguntar,
+            [AssistenteOperacao.ResponderNoPainel, AssistenteOperacao.ProporAlteracoes], 1000, true, true), default);
+        Assert.Equal(AssistenteOperacao.ProporAlteracoes, result.OperacaoSugerida);
+        Assert.Equal(AssistenteIntencao.GerarMinuta, result.RascunhoAutomatico!.Intencao);
+        Assert.Single(result.RascunhoAutomatico.Grupos);
+        using var body = JsonDocument.Parse(handler.RequestBody!);
+        var format = body.RootElement.GetProperty("text").GetProperty("format");
+        Assert.Equal("assistente_conversacional_response", format.GetProperty("name").GetString());
+        Assert.True(format.GetProperty("strict").GetBoolean());
+        Assert.False(body.RootElement.GetProperty("store").GetBoolean());
+        var schema = format.GetProperty("schema");
+        Assert.False(schema.GetProperty("additionalProperties").GetBoolean());
+        Assert.True(schema.GetProperty("$defs").TryGetProperty("Node", out _));
+        Assert.Contains("GerarMinuta", schema.GetProperty("properties").GetProperty("intencao").GetProperty("enum").EnumerateArray().Select(x => x.GetString()));
+    }
+
+    [Fact]
+    public async Task ConversaLivre_CatalogoDeChatNaoAnunciaOperacoesDeEdicao()
+    {
+        var handler = new StubHandler(_ => new(HttpStatusCode.OK) { Content = new StringContent("{\"input_tokens\":10}") });
+        await CreateProvider(handler).ContarTokensEntradaAsync(new("Política", "Contexto", AssistenteModo.Perguntar,
+            [AssistenteOperacao.ResponderNoPainel], 1000, true, false), default);
+        using var body = JsonDocument.Parse(handler.RequestBody!);
+        var values = body.RootElement.GetProperty("text").GetProperty("format").GetProperty("schema").GetProperty("properties").GetProperty("intencao").GetProperty("enum");
+        Assert.Equal("Responder", Assert.Single(values.EnumerateArray()).GetString());
+    }
+
     [Fact]
     public async Task ContarTokensEntrada_UsaEndpointOficialComOMesmoInput()
     {

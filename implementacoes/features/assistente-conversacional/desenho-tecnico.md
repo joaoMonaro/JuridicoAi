@@ -1,10 +1,40 @@
 # Desenho técnico proposto — assistente conversacional
 
-> **Estado:** proposta técnica para revisão; não implementada.
+> **Estado:** conversa livre, propostas automáticas, revisão persistida e contexto
+> de histórico integrados ao editor atrás de flags. Resumos, documentos, worker
+> e avaliação com modelo real pendentes.
 >
-> **Data:** 2026-11-10
+> **Atualizado em:** 2026-11-11
 >
 > **Base:** [escopo e decisões de produto](README.md).
+
+## Detalhamento técnico
+
+As especificações abaixo concretizam esta visão de arquitetura. Quando houver
+diferença de detalhe, prevalecem os contratos versionados das especificações:
+
+1. [Dados, índices e autorização](especificacoes/01-dados-e-autorizacao.md).
+2. [API, estados, eventos e execução durável](especificacoes/02-api-e-execucao.md).
+3. [Editor, ancoragem, comparação e aplicação](especificacoes/03-editor-e-aplicacao.md).
+4. [IA, documentos, OCR, memória e limites](especificacoes/04-ia-documentos-e-limites.md).
+5. [Etapas e matriz de validação](especificacoes/05-entrega-e-validacao.md).
+6. [JSON Schema e exemplos de contrato](contratos/README.md).
+7. [Diagramas de componentes, aprovação e dados](diagramas.md).
+8. [Conferência deste detalhamento](evidencias/detalhamento-tecnico-2026-11-11.md).
+
+Frontend atual conferido em `../JuridicoAi-frontend`, commit `7700c51`. A
+indisponibilidade da cópia antiga não é mais uma pendência. A integração
+transacional possui testes PostgreSQL; calibração de OCR e medições de custo
+ainda não foram executadas.
+
+Atualização: além da [prova local do editor](evidencias/e0-editor-2026-11-11.md),
+há [revisão persistida e aplicação no editor real](evidencias/e1-revisao-persistida-2026-11-11.md).
+Também há [histórico persistente usado no contexto](evidencias/e1-e3-historico-2026-11-11.md),
+com geração ainda ligada à requisição e limite explícito de janela.
+O recorte de [conversa livre](evidencias/e3-conversa-livre-2026-11-11.md) reutiliza
+o provedor existente, com intenção e grupos em uma saída estruturada, sem chamada
+separada de classificação nem gravação pelo modelo. Ainda não implementa o loop
+de ferramentas, worker e arquitetura conversacional completa descritos abaixo.
 
 ## 1. Direção arquitetural
 
@@ -28,7 +58,8 @@ processo separado posteriormente, sem substituir o modelo de dados.
 
 O MongoDB e o scraper permanecem no fluxo atual de jurisprudências, fora desta
 alteração. O assistente usa a integração de IA existente por uma interface
-ampliada; escolha de modelo, OCR e bibliotecas será validada separadamente.
+ampliada. O detalhamento mantém o modelo configurável e propõe extração/OCR
+locais; versões e qualidade precisam ser validadas na etapa E0.
 
 ## 2. Modelo de dados proposto
 
@@ -82,10 +113,17 @@ Permissões são verificadas novamente no processamento em segundo plano e antes
 de publicar resultados ou aplicar mudanças. Revogação de acesso interrompe novas
 operações sobre a Peça, sem apagar automaticamente o histórico retido.
 
-Propõe-se uma área autenticada separada para o titular consultar/excluir seu
-histórico retido quando a Peça não estiver mais disponível. Essa solução precisa
-de decisão final sobre acesso ao conteúdo histórico após revogação; não libera
-acesso ao Caso atual e não pode ser implementada como contorno às permissões.
+Está aprovada a leitura do histórico privado pelo titular autenticado mesmo após
+perda de acesso à Peça. Implementar uma área de histórico independente da abertura
+do editor, com autorização por titularidade para consulta e exclusão. Consultar
+conteúdo já persistido na conversa não exige acesso atual à Peça; operar sobre o
+documento ou atualizar o contexto exige autorização vigente.
+
+Após revogação, a área é somente de consulta, além da exclusão manual autorizada:
+não permite enviar novos pedidos sobre a Peça, executar ferramentas, aplicar
+propostas ou carregar novamente dados/fontes compartilhadas do Caso. Referências
+históricas não podem funcionar como links que contornem a revogação. As rotas
+de consulta devem separar essas permissões das rotas de geração e aplicação.
 
 ## 4. Mensagens, execução e eventos
 
@@ -211,9 +249,11 @@ versão da Peça e operações tipadas. Cada operação registra:
 - Grupo de dependência, explicação e estado de decisão.
 
 Não confiar em posições absolutas de caracteres geradas pelo modelo. O backend
-fornece identificadores de blocos do snapshot e resolve os alvos. Identificadores
-estáveis no editor são a direção proposta; compatibilidade com o schema atual e
-exportação deve ser verificada no frontend correto antes de definir a migração.
+fornece identificadores de blocos do snapshot e resolve os alvos. Na v1 esses
+aliases são locais à versão do snapshot, sem adicionar IDs persistentes ao
+ConteudoJson existente. O contrato concreto usa SpliceBlocos e versionamento,
+conforme a especificação do editor. IDs estáveis entre versões ficam para uma
+eventual evolução de rebase, sem serem dependência desta entrega.
 Modificações dentro de blocos precisam de correspondência exata com o original,
 preservando marcas e nós fora do escopo da operação.
 
@@ -270,22 +310,11 @@ para regeneração; não é necessário implementar rebase automático.
 
 ## 10. Contrato HTTP indicativo
 
-Rotas são propostas, ainda sem compromisso de compatibilidade pública.
-
-| Método/rota | Função |
-|---|---|
-| `POST /pecas/{pecaId}/assistente/conversa` | Obter ou criar a conversa do usuário autenticado |
-| `GET /assistente/conversas/{id}/mensagens?cursor=...` | Histórico paginado privado |
-| `POST /assistente/conversas/{id}/mensagens` | Persistir pedido e retornar execução aceita |
-| `POST /assistente/conversas/{id}/anexos` | Upload privado e processamento assíncrono |
-| `GET /assistente/conversas/{id}/anexos/{anexoId}` | Estado/metadados; download em rota autenticada própria |
-| `GET /assistente/conversas/{id}/eventos?apos=...` | SSE com retomada por sequência |
-| `POST /assistente/execucoes/{id}/cancelamento` | Cancelamento explícito |
-| `GET /assistente/propostas/{id}` | Revisão corrente, grupos e comparação |
-| `POST /assistente/propostas/{id}/aplicacoes` | Aprovar e aplicar grupos atomicamente |
-| `GET /assistente/propostas/{id}/aplicacoes/{chave}` | Resolver resultado após desconexão |
-| `POST /assistente/propostas/{id}/rejeicoes` | Rejeitar grupos ou proposta |
-| `DELETE /assistente/conversas/{id}` | Exclusão solicitada pelo titular, com acompanhamento |
+As rotas novas usam `/assistente/v2` e coexistem com o contrato atual. A relação
+completa, autenticação pessoal e erros estão na
+[especificação HTTP](especificacoes/02-api-e-execucao.md); os payloads críticos
+estão em [contratos](contratos/README.md). Não utilizar os nomes indicativos da
+primeira versão deste desenho como contrato de implementação.
 
 O envio de mensagens pode retornar `202` com IDs persistidos. A aprovação retorna
 o recibo e a versão salva; conflito não vira aplicação automática em outro alvo.
@@ -351,15 +380,17 @@ preservação do texto existente, ferramentas permitidas e mudanças sem aprova�
 Testes determinísticos não substituem avaliação semântica nem validação manual
 da comparação no editor.
 
-## 14. Definições técnicas ainda necessárias
+## 14. Validações pendentes de implementação
 
-- Identificar o frontend atual e confirmar schema, extensões e histórico do editor.
-- Selecionar e calibrar extratores/OCR com amostras fictícias representativas.
-- Fechar schema das operações, alvos e estratégia de IDs de blocos.
-- Definir limites numéricos e orçamento por operação, usando medições reais.
-- Validar qualidade de recuperação textual antes de decidir busca semântica.
-- Escolher armazenamento de produção e política de backups/exclusão.
-- Fechar a decisão de acesso ao histórico privado após revogação de acesso à Peça.
+- Calibrar os critérios propostos com corpus fictício e fixar versões de OCR/extratores.
+- Provar diff, preservação de formatação e undo com os splices no TipTap atual.
+- Executar os contratos de ferramentas e avaliações com o modelo configurado.
+- Medir limites, completar preços e configurar orçamento financeiro do piloto.
+- Validar busca e cobertura antes de adicionar busca semântica.
+- Provisionar armazenamento persistente e validar rotina de backup/exclusão.
+
+As decisões de engenharia e contratos estão nas especificações. Essas validações
+não são perguntas de produto pendentes nem funcionalidades já entregues.
 
 Este documento propõe a arquitetura; não instala bibliotecas, escolhe serviços
 externos, cria migrations ou inicia a implementação.

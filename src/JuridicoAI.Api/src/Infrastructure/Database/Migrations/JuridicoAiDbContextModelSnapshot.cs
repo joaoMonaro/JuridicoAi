@@ -291,6 +291,297 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAplicacaoRecibo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<JsonDocument>("ConteudoJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("conteudo_json");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<JsonDocument>("GruposAplicados")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("grupos_aplicados");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PropostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("proposta_id");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("request_id");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_sha256");
+
+                    b.Property<int>("VersaoAnterior")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_anterior");
+
+                    b.Property<int>("VersaoResultante")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_resultante");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("ConversaId", "RequestId")
+                        .IsUnique();
+
+                    b.HasIndex("PropostaId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_application_receipts", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteConversa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PecaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peca_id");
+
+                    b.Property<long>("ProximaSequencia")
+                        .HasColumnType("bigint")
+                        .HasColumnName("proxima_sequencia");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("titulo");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("PecaId", "OrganizationId");
+
+                    b.HasIndex("OrganizationId", "UserId", "PecaId")
+                        .IsUnique();
+
+                    b.ToTable("ai_conversations", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Autor")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("autor");
+
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<string>("CodigoErro")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("codigo_erro");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Concluida")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime?>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid?>("PropostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("proposta_id");
+
+                    b.Property<string>("RequestSha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_sha256");
+
+                    b.Property<Guid?>("RespostaAId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resposta_aid");
+
+                    b.Property<JsonDocument>("Resultado")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("resultado");
+
+                    b.Property<long>("Sequencia")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sequencia");
+
+                    b.Property<JsonDocument>("Solicitacao")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("solicitacao");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("texto");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("ConversaId")
+                        .IsUnique()
+                        .HasFilter("estado = 'Gerando'");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ConversaId", "ClientRequestId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("ConversaId", "RespostaAId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversaId", "Sequencia")
+                        .IsUnique();
+
+                    b.HasIndex("PropostaId", "ConversaId", "OrganizationId");
+
+                    b.HasIndex("RespostaAId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_messages", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<JsonDocument>("DocumentoBase")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("documento_base");
+
+                    b.Property<JsonDocument>("Grupos")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("grupos");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("RequestSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("request_sha256");
+
+                    b.Property<int>("Revisao")
+                        .HasColumnType("integer")
+                        .HasColumnName("revisao");
+
+                    b.Property<Guid>("SnapshotId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("snapshot_id");
+
+                    b.Property<Guid?>("SubstituidaPorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("substituida_por_id");
+
+                    b.Property<int>("VersaoDecisoes")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_decisoes");
+
+                    b.Property<int>("VersaoPecaAplicavel")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_peca_aplicavel");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("ConversaId", "ClientRequestId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("SubstituidaPorId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_proposals", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Caso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1133,6 +1424,101 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAplicacaoRecibo", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("PropostaId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteConversa", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Peca", null)
+                        .WithMany()
+                        .HasForeignKey("PecaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("PropostaId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("RespostaAId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("SubstituidaPorId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Caso", b =>

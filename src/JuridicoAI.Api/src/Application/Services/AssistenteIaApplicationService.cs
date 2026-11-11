@@ -4,6 +4,8 @@ using JuridicoAI.Api.Application.Exceptions;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
+using System.Text.Json;
+using JuridicoAI.Api.Domain.Enums;
 
 namespace JuridicoAI.Api.Application.Services;
 
@@ -19,7 +21,9 @@ public sealed record AssistenteIaExecucao(
     AssistenteIaProviderRequest ProviderRequest,
     int? InputTokensContados,
     long StartedAtTimestamp,
-    IAsyncDisposable UsageLease);
+    IAsyncDisposable UsageLease,
+    string PromptVersion = AssistentePromptPolicy.Version,
+    JsonElement? DocumentoBase = null);
 
 public sealed class AssistenteIaApplicationService(
     IPecaRepository pecaRepository,
@@ -52,16 +56,22 @@ public sealed class AssistenteIaApplicationService(
                 settings.MaxDocumentContextCharacters,
                 settings.MaxAdditionalContextCharacters),
             SuportaStreaming: true,
-            SuportaHistorico: false,
-            snapshot.Features.Select(x => x.ToString()).ToArray());
+            SuportaHistorico: settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
+            snapshot.Features.Select(x => x.ToString()).ToArray(),
+            SuportaRevisaoPersistida: settings.ReviewV2Enabled && snapshot.Modos.Contains(AssistenteModo.Redigir),
+            SuportaConversaLivre: settings.AutomaticConversationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado);
     }
 
     public async Task<AssistenteIaExecucao> PrepararAsync(
         Guid pecaId,
         CriarSolicitacaoAssistenteRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? contextoConversa = null,
+        bool conversaLivre = false)
     {
         ValidateBaseRequest(pecaId, request);
+        if (request.InteracaoAutomatica != conversaLivre || conversaLivre && (!Settings.AutomaticConversationEnabled || contextoConversa is null))
+            throw Invalid("O fluxo de conversa solicitado não está disponível.");
         await featureAccess.ExigirModoAsync(authContext.OrganizationId, request.Modo, cancellationToken);
         await transparencyService.ExigirConfirmacaoAsync(cancellationToken);
 
@@ -73,7 +83,12 @@ public sealed class AssistenteIaApplicationService(
 
         var contextoRequest = request.Contexto!;
         var documento = contextoRequest.Documento!;
-        var operacoesPermitidas = GetAllowedOperations(request.Modo);
+        var snapshot = conversaLivre ? await featureAccess.ObterAsync(authContext.OrganizationId, cancellationToken) : null;
+        IReadOnlyList<AssistenteOperacao> operacoesPermitidas = conversaLivre ?
+            snapshot!.Modos.Contains(AssistenteModo.Redigir) ? [AssistenteOperacao.ResponderNoPainel, AssistenteOperacao.ProporAlteracoes] : [AssistenteOperacao.ResponderNoPainel]
+            : GetAllowedOperations(request.Modo);
+        var podeGerarMinuta = conversaLivre && snapshot!.Modos.Contains(AssistenteModo.Redigir) && snapshot.Features.Contains(OrganizationFeatureEnum.AI_DOCUMENT_GENERATION);
+        if (conversaLivre && peca.Versao != request.VersaoPeca) throw AssistentePatchCompiler.Stale();
         var operacaoPreferida = request.OperacaoPreferida ?? GetDefaultOperation(request.Modo);
         ValidateDocumentContext(request.Modo, operacaoPreferida, documento);
 
@@ -106,6 +121,12 @@ public sealed class AssistenteIaApplicationService(
             caso,
             envolvidos,
             contextos);
+        if (contextoConversa is not null)
+        {
+            input = contextoConversa + input;
+            if (input.Length > Settings.MaxTotalContextCharacters)
+                throw new AssistenteIaException(413, "AI_HISTORY_CONTEXT_TOO_LARGE", "O histórico permanece salvo, mas o contexto completo excede o limite desta etapa.");
+        }
 
         var usageLease = await usageLimiter.AdquirirAsync(
             authContext.OrganizationId,
@@ -128,11 +149,12 @@ public sealed class AssistenteIaApplicationService(
             documento.RevisaoEditor,
             documento.Selecao?.TextoOriginal);
         var providerRequest = new AssistenteIaProviderRequest(
-            promptPolicy.CriarInstrucoes(request.Modo, operacoesPermitidas),
+            (conversaLivre ? promptPolicy.CriarInstrucoesLivres(operacoesPermitidas.Contains(AssistenteOperacao.ProporAlteracoes), podeGerarMinuta) :
+                promptPolicy.CriarInstrucoes(request.Modo, operacoesPermitidas)) + (contextoConversa is null ? "" : AssistenteConversationPolicy.Instrucoes),
             input,
             request.Modo,
             operacoesPermitidas,
-            Settings.MaxOutputTokens);
+            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta);
         var solicitationId = Guid.NewGuid();
         var startedAt = TimeProvider.System.GetTimestamp();
         var execution = new AssistenteIaExecucao(
@@ -147,7 +169,9 @@ public sealed class AssistenteIaApplicationService(
             providerRequest,
             InputTokensContados: null,
             StartedAtTimestamp: startedAt,
-            UsageLease: usageLease);
+            UsageLease: usageLease,
+            PromptVersion: (conversaLivre ? AssistentePromptPolicy.AutomaticVersion : AssistentePromptPolicy.Version) + (contextoConversa is null ? "" : "/" + AssistenteConversationPolicy.Version),
+            DocumentoBase: conversaLivre ? peca.ConteudoJson.RootElement.Clone() : null);
 
         try
         {
@@ -168,7 +192,7 @@ public sealed class AssistenteIaApplicationService(
                 documento.Escopo,
                 request.VersaoPeca,
                 peca.Versao,
-                AssistentePromptPolicy.Version,
+                execution.PromptVersion,
                 inputTokens);
 
             return execution;
@@ -247,6 +271,21 @@ public sealed class AssistenteIaApplicationService(
             using var timeout = CreateTimeout(cancellationToken, startedAt);
             var result = providerResult = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
             ValidateProviderResult(result, execution.Modo, execution.ProviderRequest.OperacoesPermitidas);
+            if (execution.ProviderRequest.Conversacional)
+            {
+                var draft = result.RascunhoAutomatico;
+                if (draft is null || !Enum.IsDefined(draft.Intencao) || draft.Grupos is null ||
+                    (draft.Intencao == AssistenteIntencao.Responder) != (result.OperacaoSugerida == AssistenteOperacao.ResponderNoPainel) ||
+                    (draft.Intencao == AssistenteIntencao.Responder ? draft.Grupos.Count != 0 || draft.SubstituirPropostaReferenciada : draft.Grupos.Count == 0))
+                    throw ProviderOutputInvalid("A IA retornou uma intenção ou proposta inconsistente.");
+                if (draft.Intencao != AssistenteIntencao.Responder)
+                {
+                    try { new AssistentePatchCompiler().Compilar(execution.DocumentoBase!.Value, Guid.NewGuid(), draft.Grupos); }
+                    catch (AssistenteIaException) { throw ProviderOutputInvalid("A IA retornou alterações que não puderam ser validadas. A Peça foi preservada."); }
+                    if ((draft.Intencao == AssistenteIntencao.GerarMinuta || AssistenteAutomaticProposalPolicy.CobreDocumento(execution.DocumentoBase!.Value, draft.Grupos)) && !execution.ProviderRequest.PodeGerarMinuta)
+                        throw ProviderOutputInvalid("A proposta abrange a Peça inteira sem autorização de geração integral.");
+                }
+            }
             var inputTokens = result.EntradaTokens ?? execution.InputTokensContados;
 
             var suggestion = new AssistenteSugestaoDto(
@@ -286,7 +325,8 @@ public sealed class AssistenteIaApplicationService(
             return new AssistenteSolicitacaoConcluidaDto(
                 suggestion,
                 new AssistenteUsoDto(inputTokens, result.SaidaTokens, result.EntradaTokensEmCache),
-                result.Modelo);
+                result.Modelo,
+                RascunhoAutomatico: execution.ProviderRequest.Conversacional ? result.RascunhoAutomatico : null);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -369,6 +409,12 @@ public sealed class AssistenteIaApplicationService(
             throw TooLarge("O contexto do documento ultrapassa o limite permitido.");
         if ((request.Contexto.ContextoCasoIds?.Count ?? 0) > 20)
             throw TooLarge("Foram selecionados contextos do caso em excesso.");
+    }
+
+    public void ValidarEntrada(Guid pecaId, CriarSolicitacaoAssistenteRequest request)
+    {
+        ValidateBaseRequest(pecaId, request);
+        ValidateDocumentContext(request.Modo, request.OperacaoPreferida ?? GetDefaultOperation(request.Modo), request.Contexto!.Documento!);
     }
 
     private static void ValidateDocumentContext(
@@ -511,7 +557,7 @@ public sealed class AssistenteIaApplicationService(
             operation,
             Settings.Provider,
             model,
-            AssistentePromptPolicy.Version,
+            execution.PromptVersion,
             AttemptCount: 1,
             inputTokens,
             cachedInputTokens,

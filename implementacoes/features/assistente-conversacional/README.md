@@ -1,8 +1,12 @@
 # Assistente conversacional com edição da Peça e contexto persistente
 
-> **Estado:** proposta de escopo para discussão; implementação não iniciada.
+> **Estado:** conversa livre, propostas automáticas, revisão persistida e histórico
+> usados no editor real, atrás de flags (recorte de E1/E3/E4). Conversas extensas
+> com resumo, documentos, worker e avaliação com modelo real ainda pendentes.
 >
 > **Data:** 2026-11-10
+>
+> **Detalhamento técnico atualizado em:** 2026-11-11
 >
 > **Origem:** conversa com o responsável pelo produto.
 >
@@ -48,6 +52,9 @@ segunda pergunta de confirmação no chat.
   mensagens, anexos privados, propostas e contexto derivado do chat, preservando
   o conteúdo já aprovado na Peça. Exclusão ou arquivamento da Peça não autoriza
   apagar automaticamente sua conversa.
+- O titular autenticado pode ler o histórico privado do chat após perder acesso
+  à Peça e continua podendo autorizar sua exclusão. Essa consulta não libera
+  acesso à Peça atual, ao Caso ou a novas consultas às suas fontes compartilhadas.
 - Leitura de PDF com texto, DOCX, TXT, PDF digitalizado e imagens, incluindo OCR
   na primeira entrega.
 - Somente trechos com leitura confiável podem ser usados. Conteúdo ilegível,
@@ -72,8 +79,8 @@ segunda pergunta de confirmação no chat.
   “continue”. Limites impeditivos são informados e o trabalho é preservado,
   sem apresentar conteúdo truncado como minuta completa.
 
-Permanecem abertas as decisões listadas ao final. Os detalhes técnicos e visuais
-precisam concretizar os comportamentos acima antes da implementação.
+O detalhamento técnico concretiza os comportamentos acima. Permanecem pendentes
+as provas de compatibilidade, calibração e medições listadas ao final.
 
 ## Jornada proposta para a primeira entrega
 
@@ -191,9 +198,12 @@ material do Caso. Não recupera o histórico privado excluído.
 
 Excluir ou arquivar a Peça, ou retirar o acesso do usuário, não equivale a
 autorizar exclusão do chat. Essas operações não devem acionar exclusão em cascata
-da conversa ou dos seus anexos. A retenção não concede acesso a dados da Peça
-após revogação das permissões; os detalhes de consulta e exclusão do histórico
-nessa situação precisam ser especificados no desenho técnico.
+da conversa ou dos seus anexos. Após revogação das permissões, o titular
+autenticado mantém a leitura do histórico privado já persistido e a possibilidade
+de excluí-lo. Essa consulta não atualiza o contexto com dados da Peça ou do Caso,
+não permite aplicar propostas e não reabre fontes compartilhadas cujo acesso foi
+revogado. O histórico deve ser acessível por uma área própria, sem depender de
+abrir a Peça. A consulta não autoriza continuar operações de IA sobre a Peça.
 
 O desenho técnico também deve definir a conclusão da exclusão de derivados e
 cópias de armazenamento, sem apresentar remoção parcial como exclusão concluída.
@@ -295,6 +305,7 @@ Esses itens exigem escopo próprio se forem desejados.
 - [ ] Reabrir a página recupera mensagens, anexos disponíveis e estados das propostas.
 - [ ] Conversas não são excluídas automaticamente por prazo, inatividade ou exclusão da Peça, sem autorização explícita.
 - [ ] O usuário pode excluir sua conversa; mensagens, anexos privados e derivados deixam de integrar o contexto, preservando o texto aprovado na Peça.
+- [ ] Após perder acesso à Peça, o titular autenticado pode ler e excluir seu histórico privado sem acessar a Peça atual, atualizar fontes do Caso ou aplicar propostas.
 - [ ] Uma nova conversa não recupera conteúdo privado excluído e utiliza somente o contexto automático autorizado.
 - [ ] Outro usuário autorizado da mesma Peça recebe seu próprio chat, sem acesso a mensagens, propostas ou anexos privados do primeiro.
 - [ ] Anexos privados, OCR, extrações e resumos não vazam por buscas, referências ou contexto automático de outros chats.
@@ -310,23 +321,43 @@ Esses itens exigem escopo próprio se forem desejados.
 - [ ] Limites impeditivos preservam o trabalho e não expõem texto truncado como minuta pronta para aplicação.
 - [ ] Testes pertinentes, avaliações atualizadas e validação manual cobrem a jornada completa.
 
-## Decisões restantes antes da implementação
+## Detalhamento técnico e validações pendentes
 
-1. Definir limites numéricos, orçamento de execução e mecanismos técnicos para
-   conversas longas, arquivos extensos e geração em etapas, conforme o
-   comportamento aprovado.
-2. Detalhar critérios de qualidade da extração, formatos de imagem e limites de
-   arquivos, concretizando a exclusão de trechos de leitura duvidosa.
-3. Detalhar acesso e exclusão do histórico retido após exclusão da Peça ou perda
-   de permissão, sem eliminar o chat automaticamente nem conceder acesso indevido.
-4. Localizar o frontend atual: a cópia local do repositório irmão não contém o
-   chat recente descrito na documentação.
+A comparação no editor tem uma implementação local no frontend em
+`../JuridicoAi-frontend`, acessível em desenvolvimento por `/dev/revisao-peca`.
+Inclui preview, aprovação/rejeição individual e em lote, preservação de formatação
+e undo/redo. Essa demonstração não usa IA nem grava documentos reais.
+Veja [o registro da E0 do editor](evidencias/e0-editor-2026-11-11.md).
 
-Essas definições não exigem retomar modos técnicos na experiência do usuário.
+A revisão também foi conectada ao editor real e ao backend, com propostas
+privadas persistidas, aprovação transacional, recibos e coordenação com autosave.
+É uma ponte sobre as sugestões do assistente atual, desabilitada por padrão.
+Veja [implementação, ativação e evidências](evidencias/e1-revisao-persistida-2026-11-11.md).
+
+Na etapa seguinte, perguntas e respostas passaram a ser persistidas e recuperadas
+no painel. O gerador usa o histórico elegível e a Peça atual como contexto, com
+estados de falha/cancelamento e proteção contra repetição de pedidos. Continua
+usando os modos atuais nesse recorte. Veja [evidências e limites do histórico](evidencias/e1-e3-historico-2026-11-11.md).
+
+Agora, uma flag adicional ativa a conversa livre: intenção na própria geração,
+minuta/edição diretamente na comparação e ajuste de proposta pendente por
+referência, preservando grupos já aprovados. Nenhuma alteração é aplicada antes
+da aprovação visual. Veja [ativação, testes e limites da conversa livre](evidencias/e3-conversa-livre-2026-11-11.md).
+Resumos/busca para conversas extensas, documentos e worker continuam pendentes.
+
+O frontend atual foi conferido em `../JuridicoAi-frontend`. O
+[desenho técnico](desenho-tecnico.md) agora referencia especificações de dados,
+autorização, API, editor, IA, documentos e limites, além de contratos JSON e
+exemplos. As escolhas numéricas são defaults de piloto a medir, não SLAs aprovados.
+
+Antes da liberação, completar a compatibilidade do editor, calibrar a leitura dos
+documentos, avaliar o modelo configurado e medir consumo. O restante da
+implementação e suas evidências estão pendentes; a matriz está no
+[plano de entrega e validação](especificacoes/05-entrega-e-validacao.md).
 
 ## Sequência sugerida de implementação
 
-1. Fechar decisões de produto e desenhar conversa, propostas e comparação.
+1. Validar contratos e escolhas de engenharia com provas de compatibilidade.
 2. Definir persistência e contratos, incluindo mensagens, anexos e versões.
 3. Integrar processamento documental e montagem de contexto conversacional.
 4. Implementar geração inicial e ciclo de propostas, aprovação e aplicação.

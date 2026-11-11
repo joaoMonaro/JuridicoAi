@@ -11,7 +11,8 @@ public sealed class AssistenteRequestSizeMiddleware(
     public Task InvokeAsync(HttpContext context)
     {
         if (HttpMethods.IsPost(context.Request.Method) &&
-            context.Request.Path.Value?.Contains("/assistente/solicitacoes", StringComparison.OrdinalIgnoreCase) == true)
+            (context.Request.Path.Value?.Contains("/assistente/solicitacoes", StringComparison.OrdinalIgnoreCase) == true ||
+             context.Request.Path.StartsWithSegments("/assistente/v2")))
         {
             var limit = options.CurrentValue.MaxRequestBodyBytes;
             var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();

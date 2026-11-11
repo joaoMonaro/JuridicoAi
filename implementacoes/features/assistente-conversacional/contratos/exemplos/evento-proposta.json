@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "assistente-v2",
+  "conversaId": "00000000-0000-4000-8000-000000000001",
+  "sequencia": 4,
+  "tipo": "proposta.disponivel",
+  "execucaoId": "00000000-0000-4000-8000-000000000007",
+  "data": "2026-11-11T12:59:00Z",
+  "payload": {
+    "propostaId": "00000000-0000-4000-8000-000000000003",
+    "revisao": 1
+  }
+}

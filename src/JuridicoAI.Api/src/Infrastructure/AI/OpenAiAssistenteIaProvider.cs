@@ -108,7 +108,7 @@ public sealed class OpenAiAssistenteIaProvider(
                         if (root.TryGetProperty("delta", out var delta))
                         {
                             output.Append(delta.GetString());
-                            if (output.Length > _settings.MaxOutputCharacters * 3)
+                            if (output.Length > (request.Conversacional ? 1024 * 1024 : _settings.MaxOutputCharacters * 3))
                                 throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false);
                         }
                         break;
@@ -137,6 +137,17 @@ public sealed class OpenAiAssistenteIaProvider(
             if (!completed || output.Length == 0)
                 throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: true);
 
+            if (request.Conversacional)
+            {
+                var automatic = JsonSerializer.Deserialize<OpenAiAutomaticOutput>(output.ToString(), JsonOptions)
+                    ?? throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false);
+                if (automatic.Grupos is null || automatic.Alertas is null || automatic.Titulo is null || automatic.Texto is null || automatic.Resumo is null)
+                    throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false);
+                return new(automatic.Titulo, automatic.Texto, automatic.Resumo,
+                    automatic.Intencao == AssistenteIntencao.Responder ? AssistenteOperacao.ResponderNoPainel : AssistenteOperacao.ProporAlteracoes,
+                    automatic.Alertas, [], inputTokens, cachedInputTokens, outputTokens, model,
+                    new(automatic.Intencao, automatic.Grupos, automatic.SubstituirPropostaReferenciada));
+            }
             var structured = JsonSerializer.Deserialize<OpenAiStructuredOutput>(output.ToString(), JsonOptions)
                 ?? throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false);
             return new AssistenteIaProviderResult(
@@ -193,9 +204,10 @@ public sealed class OpenAiAssistenteIaProvider(
             ["format"] = new Dictionary<string, object?>
             {
                 ["type"] = "json_schema",
-                ["name"] = "assistente_juridico_response",
+                ["name"] = request.Conversacional ? "assistente_conversacional_response" : "assistente_juridico_response",
                 ["strict"] = true,
-                ["schema"] = OutputSchema
+                ["schema"] = request.Conversacional ? AssistenteAutomaticOutputSchema.Criar(
+                    request.OperacoesPermitidas.Contains(AssistenteOperacao.ProporAlteracoes), request.PodeGerarMinuta) : OutputSchema
             }
         }
     };
@@ -276,4 +288,9 @@ public sealed class OpenAiAssistenteIaProvider(
         AssistenteOperacao OperacaoSugerida,
         IReadOnlyList<AssistenteAlertaDto> Alertas,
         IReadOnlyList<AssistenteAchadoDto> Achados);
+
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+    private sealed record OpenAiAutomaticOutput([property: JsonRequired] string Titulo, [property: JsonRequired] string Texto, [property: JsonRequired] string Resumo,
+        [property: JsonRequired] AssistenteIntencao Intencao, [property: JsonRequired] IReadOnlyList<AssistenteAlertaDto> Alertas,
+        [property: JsonRequired] IReadOnlyList<AssistenteGrupoRequest> Grupos, [property: JsonRequired] bool SubstituirPropostaReferenciada);
 }

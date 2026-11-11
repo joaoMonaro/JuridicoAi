@@ -1,0 +1,12 @@
+{
+  "requestId": "00000000-0000-4000-8000-000000000005",
+  "revisaoProposta": 1,
+  "versaoDecisoes": 1,
+  "versaoPecaEsperada": 7,
+  "grupos": [
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "previewSha256": "c117d6e0c436ef0e18139243a470db9c7d2b9c8782d4eb221bc6738b261f35c7"
+    }
+  ]
+}

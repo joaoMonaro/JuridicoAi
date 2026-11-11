@@ -23,6 +23,7 @@ public sealed class AssistenteTransparencyService(
         "pelo profissional responsável.";
 
     private AssistenteIaSettings Settings => options.CurrentValue;
+    private string CurrentVersion => Settings.TransparencyNoticeVersion + (Settings.ConversationV2Enabled ? "-conversation-v2" : Settings.ReviewV2Enabled ? "-review-v2" : string.Empty);
 
     public async Task<AssistenteTransparenciaDto> ObterAsync(CancellationToken cancellationToken)
     {
@@ -34,7 +35,7 @@ public sealed class AssistenteTransparencyService(
         ConfirmarAssistenteTransparenciaRequest request,
         CancellationToken cancellationToken)
     {
-        var currentVersion = Settings.TransparencyNoticeVersion;
+        var currentVersion = CurrentVersion;
         if (string.IsNullOrWhiteSpace(request.Versao) ||
             !string.Equals(request.Versao.Trim(), currentVersion, StringComparison.Ordinal))
             throw new AssistenteIaException(
@@ -74,15 +75,19 @@ public sealed class AssistenteTransparencyService(
         repository.ObterAsync(
             authContext.OrganizationId,
             authContext.UserId,
-            Settings.TransparencyNoticeVersion,
+            CurrentVersion,
             cancellationToken);
 
     private AssistenteTransparenciaDto CreateDto(AiTransparencyAcknowledgement? acknowledgement) => new(
-        Settings.TransparencyNoticeVersion,
+        CurrentVersion,
         acknowledgement is not null,
         acknowledgement?.AcknowledgedAt,
         Title,
-        Message,
+        Message + (Settings.ConversationV2Enabled
+            ? " Mensagens, respostas e propostas serão salvas em uma conversa individual vinculada à Peça. O histórico dessa conversa será utilizado como contexto em novos pedidos."
+            : Settings.ReviewV2Enabled
+            ? " Propostas de alteração e pedidos associados serão salvos em uma conversa individual vinculada à Peça."
+            : string.Empty),
         ReviewNotice,
         Settings.PrivacyPolicyUrl);
 }
