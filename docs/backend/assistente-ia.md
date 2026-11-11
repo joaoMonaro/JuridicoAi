@@ -6,8 +6,10 @@ decisões e pendências anteriores permanecem no
 O [assistente conversacional](../../implementacoes/features/assistente-conversacional/README.md)
 é a implementação ativa. A revisão persistida já possui integração atrás de
 flag. Histórico usado como contexto e conversa livre com intenção automática
-também estão integrados. Memória para conversas extensas, leitura documental,
-worker e avaliação com modelo real permanecem pendentes.
+também estão integrados. Memória para conversas extensas, calibração de OCR,
+worker de geração e avaliação com modelo real permanecem pendentes.
+Anexos privados, leitura nativa e worker documental estão integrados; OCR possui
+pipeline testado, ainda sem calibração suficiente para rollout.
 
 ## Comportamento atual
 
@@ -55,6 +57,13 @@ inicial/substituição integral também exigem `AI_DOCUMENT_GENERATION`.
 Veja [ativação, contratos, testes e limites](../../implementacoes/features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md).
 
 ## Interface legada e compatibilidade
+
+Com `AssistenteDocumentos:Enabled=true`, o frontend recebe a capacidade `documentos`
+e pode anexar arquivos, acompanhar processamento e sinalizar leitura parcial.
+O contexto inclui trechos confiáveis de anexos associados e documentos atuais
+autorizados do Caso. O aviso passa a exigir aceite `-documents-v1`.
+OCR permanece desligado por padrão; não se anuncia leitura de digitalizações.
+Veja [ativação, limites e evidências documentais](../../implementacoes/features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md).
 
 O comportamento abaixo corresponde às flags conversacionais desligadas. Com a
 conversa livre ativa, Peça e histórico são automáticos, modos ficam ocultos e

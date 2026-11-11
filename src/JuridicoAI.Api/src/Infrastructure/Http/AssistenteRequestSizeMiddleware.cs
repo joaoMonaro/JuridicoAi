@@ -6,7 +6,7 @@ namespace JuridicoAI.Api.Infrastructure.Http;
 
 public sealed class AssistenteRequestSizeMiddleware(
     RequestDelegate next,
-    IOptionsMonitor<AssistenteIaSettings> options)
+    IOptionsMonitor<AssistenteIaSettings> options, IOptions<AssistenteDocumentSettings>? documentOptions = null)
 {
     public Task InvokeAsync(HttpContext context)
     {
@@ -14,7 +14,8 @@ public sealed class AssistenteRequestSizeMiddleware(
             (context.Request.Path.Value?.Contains("/assistente/solicitacoes", StringComparison.OrdinalIgnoreCase) == true ||
              context.Request.Path.StartsWithSegments("/assistente/v2")))
         {
-            var limit = options.CurrentValue.MaxRequestBodyBytes;
+            var limit = context.Request.Path.Value?.EndsWith("/anexos", StringComparison.OrdinalIgnoreCase) == true
+                ? (documentOptions?.Value.MaxFileBytes ?? 20 * 1024 * 1024) + 1024 * 1024 : options.CurrentValue.MaxRequestBodyBytes;
             var feature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
             if (feature is { IsReadOnly: false }) feature.MaxRequestBodySize = limit;
             if (context.Request.ContentLength > limit)

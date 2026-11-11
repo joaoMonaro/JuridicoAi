@@ -3,6 +3,11 @@
 > Proposta técnica, 2026-11-11. Defaults de piloto, sem medição de desempenho ou
 > qualidade nesta sessão. Nenhuma biblioteca instalada ou chamada de IA executada.
 
+Atualização: [recorte documental implementado](../evidencias/e2-documentos-2026-11-11.md).
+Leitura nativa usa Poppler em vez do candidato PdfPig. Pipeline Tesseract testado;
+calibração inicial com cobertura insuficiente, OCR ainda desativado. Ferramentas,
+memória e workflow extensos abaixo continuam sendo alvos da entrega completa.
+
 ## Decisões de implementação
 
 - Manter OpenAI Responses pelo adaptador existente, ampliando a interface para

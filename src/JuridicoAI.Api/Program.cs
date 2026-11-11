@@ -13,6 +13,7 @@ using JuridicoAI.Api.Infrastructure.Settings;
 using JuridicoAI.Api.Infrastructure.Export;
 using JuridicoAI.Api.Infrastructure.Storage;
 using JuridicoAI.Api.Infrastructure.AI;
+using JuridicoAI.Api.Infrastructure.Documents;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -29,6 +30,15 @@ builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mong
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
+builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
+    .Validate(x => !x.Enabled || builder.Configuration.GetValue<bool>("AssistenteIa:AutomaticConversationEnabled"), "Documentos exigem conversa livre.")
+    .Validate(x => !x.OcrEnabled || !string.IsNullOrWhiteSpace(x.OcrCalibrationVersion), "OCR exige uma versão de calibração.")
+    .Validate(x => !x.OcrEnabled || Path.IsPathRooted(x.TessdataPath) && File.Exists(Path.Combine(x.TessdataPath, "por.traineddata")) &&
+        File.Exists(Path.Combine(x.TessdataPath, "eng.traineddata")), "OCR exige TessdataPath absoluto com modelos por e eng.")
+    .Validate(x => x.MaxFileBytes is > 0 and <= 20 * 1024 * 1024 && x.MaxAttachments > 0 && x.MaxConversationBytes > 0 &&
+        x.MaxPages > 0 && x.MaxPixels > 0 && x.MaxExtractedCharacters > 0 && x.ProcessTimeoutSeconds > 0 &&
+        x.LeaseSeconds > x.ProcessTimeoutSeconds * 3 && x.MaxAttempts > 0, "Limites documentais inválidos.")
+    .ValidateOnStart();
 builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.GetSection("AssistenteIa"))
     .Validate(x => !x.ConversationV2Enabled || x.ReviewV2Enabled,
         "AssistenteIa:ConversationV2Enabled exige ReviewV2Enabled.")
@@ -175,6 +185,11 @@ builder.Services.AddScoped<OrganizationApplicationService>();
 builder.Services.AddScoped<AssistenteIaApplicationService>();
 builder.Services.AddScoped<AssistenteWorkspaceService>();
 builder.Services.AddScoped<AssistenteChatService>();
+builder.Services.AddScoped<AssistenteDocumentService>();
+builder.Services.AddScoped<AssistenteDocumentProcessor>();
+builder.Services.AddSingleton<DocumentProcess>();
+builder.Services.AddSingleton<LocalDocumentExtractor>();
+builder.Services.AddHostedService<AssistenteDocumentWorker>();
 builder.Services.AddSingleton<AssistentePatchCompiler>();
 builder.Services.AddScoped<IAssistenteWorkspaceRepository, AssistenteWorkspaceRepository>();
 builder.Services.AddScoped<IAssistenteTransparencyService, AssistenteTransparencyService>();

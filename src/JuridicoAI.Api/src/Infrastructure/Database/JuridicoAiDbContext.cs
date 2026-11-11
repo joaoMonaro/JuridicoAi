@@ -13,6 +13,8 @@ public sealed class JuridicoAiDbContext(DbContextOptions<JuridicoAiDbContext> op
     public DbSet<DocumentoCaso> DocumentosCaso => Set<DocumentoCaso>();
     public DbSet<Peca> Pecas => Set<Peca>();
     public DbSet<AssistenteConversa> AssistenteConversas => Set<AssistenteConversa>();
+    public DbSet<AssistenteDocumento> AssistenteDocumentos => Set<AssistenteDocumento>();
+    public DbSet<AssistenteDocumentoTrecho> AssistenteDocumentoTrechos => Set<AssistenteDocumentoTrecho>();
     public DbSet<AssistenteMensagemPersistida> AssistenteMensagens => Set<AssistenteMensagemPersistida>();
     public DbSet<AssistentePropostaPersistida> AssistentePropostas => Set<AssistentePropostaPersistida>();
     public DbSet<AssistenteAplicacaoRecibo> AssistenteRecibos => Set<AssistenteAplicacaoRecibo>();

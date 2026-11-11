@@ -11,6 +11,18 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteTransparencyServiceTests
 {
     [Fact]
+    public async Task Documentos_ExigemNovoAceiteComFinalidadeExplicita()
+    {
+        var setup = Create();
+        await setup.Service.ConfirmarAsync(new("ai-transparency-v1"), default);
+        var service = new AssistenteTransparencyService(setup.Repository, new TestAuthContext(), setup.Options,
+            Microsoft.Extensions.Options.Options.Create(new AssistenteDocumentSettings { Enabled = true }));
+        var notice = await service.ObterAsync(default);
+        Assert.False(notice.Confirmado); Assert.EndsWith("-documents-v1", notice.Versao);
+        Assert.Contains("Anexos", notice.Mensagem); Assert.Contains("provedor", notice.Mensagem);
+        Assert.Equal("AI_TRANSPARENCY_ACK_REQUIRED", (await Assert.ThrowsAsync<AssistenteIaException>(() => service.ExigirConfirmacaoAsync(default))).Code);
+    }
+    [Fact]
     public async Task ConversaPersistida_NaoReutilizaAceiteLimitadoAPropostas()
     {
         var setup = Create();

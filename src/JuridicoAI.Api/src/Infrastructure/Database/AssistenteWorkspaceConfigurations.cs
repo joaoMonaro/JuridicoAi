@@ -44,6 +44,7 @@ internal sealed class AssistenteMensagemConfiguration : IEntityTypeConfiguration
         b.Property(x => x.CodigoErro).HasMaxLength(80);
         b.Property(x => x.Solicitacao).HasColumnType("jsonb");
         b.Property(x => x.Resultado).HasColumnType("jsonb");
+        b.Property(x => x.FontesDocumentais).HasColumnType("jsonb");
         b.HasIndex(x => new { x.ConversaId, x.ClientRequestId }).IsUnique();
         b.HasIndex(x => x.ConversaId).IsUnique().HasFilter("estado = 'Gerando'");
         b.HasIndex(x => new { x.ConversaId, x.RespostaAId }).IsUnique();

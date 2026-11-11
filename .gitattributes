@@ -1,0 +1,2 @@
+# PDF fixtures contain format-significant whitespace and must use binary diffs.
+tests/JuridicoAI.Api.Tests/Fixtures/Documents/*.pdf binary

@@ -11,13 +11,14 @@ namespace JuridicoAI.Api.Application.Services;
 
 public sealed record AssistenteChatInicio(Guid PecaId, AssistenteMensagemPersistida Pedido,
     AssistenteMensagemPersistida Resposta, string Contexto, bool Novo,
-    JsonElement? DocumentoBase = null, AssistentePropostaPersistida? PropostaReferenciada = null);
+    JsonElement? DocumentoBase = null, AssistentePropostaPersistida? PropostaReferenciada = null,
+    IReadOnlyList<AssistenteAlertaDto>? AlertasDocumentais = null);
 
 // Durable history around the existing request-bound generation. A disconnected
 // generation is cancelled, not silently restarted or billed a second time.
 public sealed class AssistenteChatService(IAssistenteWorkspaceRepository repository, IPecaRepository pecas,
     IAuthContext auth, IAssistenteFeatureAccess features, IAssistenteTransparencyService transparency,
-    IOptionsMonitor<AssistenteIaSettings> options)
+    IOptionsMonitor<AssistenteIaSettings> options, AssistenteDocumentService? documents = null)
 {
     public async Task<AssistenteChatInicio> IniciarAsync(Guid conversaId, CriarSolicitacaoAssistenteRequest request, CancellationToken ct)
     {
@@ -27,6 +28,9 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
             throw new AssistenteIaException(503, "AI_AUTOMATIC_CONVERSATION_DISABLED", "A conversa livre não está habilitada.");
         await features.ExigirModoAsync(auth.OrganizationId, request.Modo, ct);
         await transparency.ExigirConfirmacaoAsync(ct);
+        // Queue work before reserving a message. A "processing" response must
+        // not roll back the very jobs that the next attempt is waiting for.
+        if (documents?.Enabled == true) await documents.SynchronizeAsync(conversaId, ct);
         return await repository.EmTransacaoAsync(async token =>
         {
             var conversa = await ConversaAsync(conversaId, token);
@@ -55,14 +59,18 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
                 reference = await repository.ObterPropostaAsync(refId, auth.OrganizationId, auth.UserId, token);
                 if (reference is null || reference.ConversaId != conversaId) throw Missing();
             }
+            var documental = documents is null ? null : await documents.ContextAsync(conversa, peca, request.AnexoIds, token);
             var context = await ContextoAsync(conversa, peca, reference, token);
+            context += documental?.Texto;
+            if (context.Length > options.CurrentValue.MaxTotalContextCharacters) throw TooLarge();
             var now = DateTime.UtcNow;
             var user = new AssistenteMensagemPersistida
             {
                 Id = Guid.NewGuid(), ConversaId = conversaId, OrganizationId = auth.OrganizationId,
                 Sequencia = conversa.ProximaSequencia++, Autor = "Usuario", Texto = request.Instrucao!.Trim(),
                 ClientRequestId = request.ClientRequestId, RequestSha256 = hash,
-                Solicitacao = AssistentePatchCompiler.Json(request), CriadaEm = now
+                Solicitacao = AssistentePatchCompiler.Json(request), CriadaEm = now,
+                FontesDocumentais = documental is null ? null : JsonDocument.Parse(documental.Manifesto)
             };
             var response = new AssistenteMensagemPersistida
             {
@@ -72,12 +80,14 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
             };
             repository.Adicionar(user); repository.Adicionar(response);
             conversa.AtualizadaEm = now;
-            return new AssistenteChatInicio(peca.Id, user, response, context, true, peca.ConteudoJson.RootElement.Clone(), reference);
+            return new AssistenteChatInicio(peca.Id, user, response, context, true, peca.ConteudoJson.RootElement.Clone(), reference, documental?.Alertas);
         }, ct);
     }
 
     public async Task<AssistenteSolicitacaoConcluidaDto> ConcluirLivreAsync(AssistenteChatInicio inicio, AssistenteSolicitacaoConcluidaDto result, CancellationToken ct)
     {
+        if (inicio.AlertasDocumentais is { Count: > 0 } warnings)
+            result = result with { Sugestao = result.Sugestao with { Alertas = result.Sugestao.Alertas.Concat(warnings).ToArray() } };
         var draft = result.RascunhoAutomatico ?? throw new AssistenteIaException(502, "AI_PROVIDER_OUTPUT_INVALID", "A resposta conversacional é inválida.");
         if (draft.Intencao == AssistenteIntencao.Responder)
         {
@@ -95,6 +105,7 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
         return await repository.EmTransacaoAsync(async token =>
         {
             var conversation = await ConversaAsync(inicio.Pedido.ConversaId, token);
+            await ValidateDocumentSourcesAsync(inicio, token);
             var user = await repository.ObterMensagemAsync(conversation.Id, inicio.Pedido.Id, token) ?? throw Missing();
             var response = await repository.ObterRespostaAsync(conversation.Id, user.Id, token) ?? throw Missing();
             if (response.Estado != "Gerando" || response.ExpiraEm <= DateTime.UtcNow)
@@ -136,6 +147,7 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
         await repository.EmTransacaoAsync(async token =>
         {
             var conversa = await ConversaAsync(inicio.Pedido.ConversaId, token);
+            await ValidateDocumentSourcesAsync(inicio, token);
             var response = await repository.ObterRespostaAsync(conversa.Id, inicio.Pedido.Id, token) ?? throw Missing();
             if (response.Estado != "Gerando" || response.ExpiraEm <= DateTime.UtcNow)
                 throw new AssistenteIaException(409, "AI_REQUEST_INTERRUPTED", "O pedido foi interrompido. O resultado tardio não foi publicado.");
@@ -184,6 +196,13 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
 
     private async Task<string> ContextoAsync(AssistenteConversa conversa, Peca peca, AssistentePropostaPersistida? reference, CancellationToken ct)
     {
+        var referenceUnavailable = false;
+        if (reference is not null && documents is not null)
+        {
+            var referenceMessage = await repository.ObterPedidoMensagemAsync(conversa.Id, reference.ClientRequestId, ct);
+            if (!await documents.ManifestValidAsync(referenceMessage?.FontesDocumentais, conversa.Id, peca.CasoId, ct))
+            { referenceUnavailable = true; reference = null; }
+        }
         var messages = await repository.ListarContextoAsync(conversa.Id, ct);
         if (messages.Count > 1000) throw TooLarge();
         var byId = messages.ToDictionary(m => m.Id);
@@ -203,6 +222,8 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
             var source = message.RespostaAId is { } id && byId.TryGetValue(id, out var user) ? Read<CriarSolicitacaoAssistenteRequest>(user.Solicitacao) : null;
             var sourceDependent = source is null || source.VersaoPeca != peca.Versao ||
                 source.Contexto?.IncluirDadosCaso == true || source.Contexto?.ContextoCasoIds?.Count > 0;
+            if (documents is not null && message.RespostaAId is { } sourceId && byId.TryGetValue(sourceId, out var sourceMessage))
+                sourceDependent |= !await documents.ManifestValidAsync(sourceMessage.FontesDocumentais, conversa.Id, peca.CasoId, ct);
             var result = Read<AssistenteSolicitacaoConcluidaDto>(message.Resultado);
             IReadOnlyList<AssistenteGrupoPersistido>? decisions = null;
             string? proposalState = null;
@@ -229,6 +250,7 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
         {
             pecaAtual = new { versao = peca.Versao, titulo = peca.Titulo, documento = AssistentePatchCompiler.DocumentoDoEditor(peca.ConteudoJson.RootElement) },
             propostaReferenciada = reference is null ? null : AssistenteWorkspaceService.Dto(reference, peca.Versao),
+            propostaReferenciadaOmitidaPorFonteInelegivel = referenceUnavailable,
             historicoCronologico = history
         }, AssistentePatchCompiler.JsonOptions);
         if (payload.Length > options.CurrentValue.MaxTotalContextCharacters) throw TooLarge();
@@ -236,6 +258,13 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
     }
 
     public static T? Read<T>(JsonDocument? value) => value is null ? default : JsonSerializer.Deserialize<T>(value, AssistentePatchCompiler.JsonOptions);
+    private async Task ValidateDocumentSourcesAsync(AssistenteChatInicio start, CancellationToken ct)
+    {
+        if (documents is null || start.Pedido.FontesDocumentais is null) return;
+        var piece = await pecas.ObterPecaAsync(start.PecaId, auth.OrganizationId, ct) ?? throw Missing();
+        if (!await documents.ManifestValidAsync(start.Pedido.FontesDocumentais, start.Pedido.ConversaId, piece.CasoId, ct, lockSources: true))
+            throw new AssistenteIaException(409, "AI_DOCUMENT_SOURCE_CHANGED", "Uma fonte foi alterada, removida ou reprocessada. O resultado não foi publicado; faça um novo pedido com as fontes atuais.");
+    }
     public static AssistenteMensagemDto Dto(AssistenteMensagemPersistida m) => new(m.Id, m.Sequencia, m.Autor, m.Texto, m.PropostaId, m.CriadaEm,
         m.ClientRequestId, m.RespostaAId, m.Estado == "Gerando" && m.ExpiraEm <= DateTime.UtcNow ? "Interrompida" : m.Estado,
         m.CodigoErro, Read<CriarSolicitacaoAssistenteRequest>(m.Solicitacao), Read<AssistenteSolicitacaoConcluidaDto>(m.Resultado));

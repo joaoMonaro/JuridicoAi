@@ -24,7 +24,7 @@ public sealed class ReviewPostgresFactAttribute : FactAttribute
     }
 }
 
-public sealed class AssistenteWorkspacePostgresTests
+public sealed partial class AssistenteWorkspacePostgresTests
 {
     [ReviewPostgresFact]
     public async Task Livre_PublicaPropostaComRespostaSemAplicarOuDuplicarMensagens()

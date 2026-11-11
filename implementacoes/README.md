@@ -6,9 +6,12 @@ Este diretório separa a implementação ativa, as entregas já registradas e as
 pendências colocadas em espera. A referência do comportamento disponível
 continua em [`docs/`](../docs/README.md).
 
+A [lista de TODO](../TODO.md) registra as pendências atuais, com calibração do OCR
+como primeira prioridade.
+
 ## Implementação ativa — em andamento
 
-- [Assistente conversacional com edição da Peça e contexto persistente](features/assistente-conversacional/README.md): conversa livre, propostas automáticas, revisão persistida e histórico usado como contexto atrás de flags; documentos e memória extensa pendentes.
+- [Assistente conversacional com edição da Peça e contexto persistente](features/assistente-conversacional/README.md): conversa livre, revisão, histórico e documentos nativos atrás de flags; calibração de OCR e memória extensa pendentes.
 - [Plano anterior de geração de minutas](features/geracao-minutas-ia/README.md), incorporado ao escopo ampliado.
 - [Validação manual que originou a proposta](features/geracao-minutas-ia/evidencias/validacao-manual-experiencia-2026-10-23.md).
 - [Prompt fictício para reprodução](features/geracao-minutas-ia/evidencias/prompts/prompt-geracao-peca-ficticia.txt).
@@ -18,7 +21,10 @@ e aprovação transacional. Mensagens e respostas são recuperadas e usadas como
 contexto, dentro da janela atual. Veja [a etapa de histórico](features/assistente-conversacional/evidencias/e1-e3-historico-2026-11-11.md).
 A [conversa livre](features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md)
 prepara propostas diretamente e permite ajustar pendências pelo chat. Memória para
-conversas extensas, documentos e avaliação com modelo real continuam pendentes.
+conversas extensas e avaliação com modelo real continuam pendentes.
+O [recorte documental](features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md)
+integra anexos privados, leitura nativa e processamento durável. OCR continua
+desligado: o pipeline funciona, mas a calibração inicial não aprovou rollout.
 
 ## Ampliação de escopo e detalhamento técnico
 

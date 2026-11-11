@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using NpgsqlTypes;
 
 #nullable disable
 
@@ -405,6 +406,210 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("ai_conversations", (string)null);
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteDocumento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CasoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("caso_id");
+
+                    b.Property<Guid?>("ClientUploadId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_upload_id");
+
+                    b.Property<string>("CodigoErro")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("codigo_erro");
+
+                    b.Property<Guid?>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("CriadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criado_em");
+
+                    b.Property<Guid?>("DocumentoCasoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_caso_id");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<string>("ExtratorVersao")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("extrator_versao");
+
+                    b.Property<string>("Formato")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("formato");
+
+                    b.Property<DateTime?>("LeaseAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_ate");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("nome");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("PaginasConcluidas")
+                        .HasColumnType("integer")
+                        .HasColumnName("paginas_concluidas");
+
+                    b.Property<int?>("PaginasTotal")
+                        .HasColumnType("integer")
+                        .HasColumnName("paginas_total");
+
+                    b.Property<string>("QualidadeVersao")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("qualidade_versao");
+
+                    b.Property<string>("Sha256")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<string>("StorageId")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("storage_id");
+
+                    b.Property<long>("TamanhoBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("tamanho_bytes");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer")
+                        .HasColumnName("tentativas");
+
+                    b.Property<bool>("Vinculado")
+                        .HasColumnType("boolean")
+                        .HasColumnName("vinculado");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("CasoId", "OrganizationId");
+
+                    b.HasIndex("ConversaId", "ClientUploadId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("DocumentoCasoId", "StorageId")
+                        .IsUnique();
+
+                    b.HasIndex("Estado", "LeaseAte");
+
+                    b.ToTable("ai_documents", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_document_origin", "(conversa_id IS NOT NULL AND documento_caso_id IS NULL AND client_upload_id IS NOT NULL) OR (conversa_id IS NULL AND documento_caso_id IS NOT NULL AND client_upload_id IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteDocumentoTrecho", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<NpgsqlTsVector>("Busca")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("tsvector")
+                        .HasColumnName("busca")
+                        .HasComputedColumnSql("to_tsvector('portuguese', CASE WHEN qualidade = 'Confiavel' THEN texto ELSE '' END)", true);
+
+                    b.Property<Guid>("DocumentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_id");
+
+                    b.Property<string>("Localizador")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("localizador");
+
+                    b.Property<JsonDocument>("Metricas")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metricas");
+
+                    b.Property<string>("Motivo")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("motivo");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int?>("Pagina")
+                        .HasColumnType("integer")
+                        .HasColumnName("pagina");
+
+                    b.Property<string>("Qualidade")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("qualidade");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("sha256");
+
+                    b.Property<string>("Texto")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("texto");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("Busca");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Busca"), "GIN");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("DocumentoId", "Ordem")
+                        .IsUnique();
+
+                    b.HasIndex("DocumentoId", "OrganizationId");
+
+                    b.ToTable("ai_document_chunks", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", b =>
                 {
                     b.Property<Guid>("Id")
@@ -445,6 +650,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.Property<DateTime?>("ExpiraEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expira_em");
+
+                    b.Property<JsonDocument>("FontesDocumentais")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("fontes_documentais");
 
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
@@ -1466,6 +1675,44 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasOne("JuridicoAI.Api.Domain.Entities.Peca", null)
                         .WithMany()
                         .HasForeignKey("PecaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteDocumento", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Caso", null)
+                        .WithMany()
+                        .HasForeignKey("CasoId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteDocumentoTrecho", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteDocumento", null)
+                        .WithMany()
+                        .HasForeignKey("DocumentoId", "OrganizationId")
                         .HasPrincipalKey("Id", "OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

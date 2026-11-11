@@ -33,13 +33,13 @@ public sealed record EnviarMensagemChatRequest(Guid ClientRequestId, AssistenteM
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EnviarInteracaoLivreRequest(Guid ClientRequestId, string Texto, int VersaoPecaEsperada,
     AssistenteSelecaoRequest? Selecao = null, Guid? PropostaReferenciadaId = null,
-    string? ContextoAdicional = null, bool IncluirDadosCaso = false, IReadOnlyList<Guid>? ContextoCasoIds = null)
+    string? ContextoAdicional = null, bool IncluirDadosCaso = false, IReadOnlyList<Guid>? ContextoCasoIds = null, IReadOnlyList<Guid>? AnexoIds = null)
 {
     public CriarSolicitacaoAssistenteRequest Solicitar() => new(ClientRequestId, AssistenteModo.Perguntar, Texto,
         VersaoPecaEsperada, AssistenteOperacao.ResponderNoPainel,
         new(new(Selecao is null ? AssistenteEscopoDocumento.Nenhum : AssistenteEscopoDocumento.Selecao,
             Selecao?.TextoOriginal, Selecao: Selecao), ContextoAdicional, IncluirDadosCaso, ContextoCasoIds),
-        InteracaoAutomatica: true, PropostaReferenciadaId);
+        InteracaoAutomatica: true, PropostaReferenciadaId, AnexoIds);
 }
 public sealed record AssistenteOperacaoPersistida(string Tipo, int StartIndex, int DeleteCount,
     string ExpectedBlocksSha256, IReadOnlyList<JsonElement> NovosBlocos);

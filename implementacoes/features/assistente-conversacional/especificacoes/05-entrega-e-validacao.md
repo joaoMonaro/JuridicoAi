@@ -59,6 +59,12 @@ trazer a consequência concreta para decisão de produto.
 
 ### E2 — documentos e contexto
 
+- [x] Recorte de upload privado, qualidade por trecho, extração nativa PDF/DOCX/TXT,
+  fonte do Caso automática, progresso no frontend e worker documental com fence.
+- [x] Pipeline OCR real, métricas e corpus sintético inicial; calibração não aprovada,
+  portanto OCR desligado no rollout. Ver [evidências E2](../evidencias/e2-documentos-2026-11-11.md).
+- [x] Busca full-text/exata filtrada e manifesto documental; fonte revogada ou
+  reprocessada invalida publicação, aplicação e reutilização de histórico derivado.
 - [ ] Upload privado, extração/OCR por página e indicadores de qualidade.
 - [ ] Extração dos documentos já cadastrados no Caso, com versão e autorização.
 - [ ] Busca filtrada antes de ranking, memória com proveniência e invalidação.

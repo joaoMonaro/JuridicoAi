@@ -2,7 +2,8 @@
 
 > **Estado:** conversa livre, propostas automáticas, revisão persistida e histórico
 > usados no editor real, atrás de flags (recorte de E1/E3/E4). Conversas extensas
-> com resumo, documentos, worker e avaliação com modelo real ainda pendentes.
+> com resumo e avaliação com modelo real pendentes. Anexos e leitura nativa
+> integrados; OCR com pipeline testado, ainda sem calibração para rollout.
 >
 > **Data:** 2026-11-10
 >
@@ -343,7 +344,15 @@ Agora, uma flag adicional ativa a conversa livre: intenção na própria geraç�
 minuta/edição diretamente na comparação e ajuste de proposta pendente por
 referência, preservando grupos já aprovados. Nenhuma alteração é aplicada antes
 da aprovação visual. Veja [ativação, testes e limites da conversa livre](evidencias/e3-conversa-livre-2026-11-11.md).
-Resumos/busca para conversas extensas, documentos e worker continuam pendentes.
+Esse recorte foi seguido pela integração documental descrita abaixo;
+resumos/busca para conversas extensas e worker da geração continuam pendentes.
+
+O [recorte documental](evidencias/e2-documentos-2026-11-11.md) implementa upload
+privado, processamento durável, leitura nativa PDF/DOCX/TXT, qualidade por trecho,
+contexto de anexos/documentos do Caso e progresso no frontend. O pipeline local
+de OCR está testado, mas a calibração inicial teve cobertura insuficiente;
+digitalizações continuam sinalizadas como não lidas com OCR desligado por padrão.
+Recuperação extensa, worker da geração e exclusão continuam pendentes.
 
 O frontend atual foi conferido em `../JuridicoAi-frontend`. O
 [desenho técnico](desenho-tecnico.md) agora referencia especificações de dados,

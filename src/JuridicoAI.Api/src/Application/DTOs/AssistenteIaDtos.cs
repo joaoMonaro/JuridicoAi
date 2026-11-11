@@ -66,7 +66,8 @@ public sealed record CriarSolicitacaoAssistenteRequest(
     AssistenteOperacao? OperacaoPreferida,
     AssistenteContextoRequest? Contexto,
     bool InteracaoAutomatica = false,
-    Guid? PropostaReferenciadaId = null);
+    Guid? PropostaReferenciadaId = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<Guid>? AnexoIds = null);
 
 public sealed record AssistenteLimitesDto(
     int InstrucaoCaracteres,
@@ -81,7 +82,8 @@ public sealed record AssistenteCapacidadesDto(
     bool SuportaHistorico,
     IReadOnlyList<string>? Features = null,
     bool SuportaRevisaoPersistida = false,
-    bool SuportaConversaLivre = false);
+    bool SuportaConversaLivre = false,
+    AssistenteDocumentCapabilities? Documentos = null);
 
 public sealed record AssistenteTransparenciaDto(
     string Versao,

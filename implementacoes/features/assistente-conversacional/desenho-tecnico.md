@@ -1,8 +1,9 @@
 # Desenho técnico proposto — assistente conversacional
 
 > **Estado:** conversa livre, propostas automáticas, revisão persistida e contexto
-> de histórico integrados ao editor atrás de flags. Resumos, documentos, worker
-> e avaliação com modelo real pendentes.
+> de histórico integrados ao editor atrás de flags. Anexos/leitura nativa e worker
+> documental integrados; calibração de OCR, resumos, worker da geração e avaliação
+> com modelo real pendentes.
 >
 > **Atualizado em:** 2026-11-11
 >
@@ -35,6 +36,10 @@ O recorte de [conversa livre](evidencias/e3-conversa-livre-2026-11-11.md) reutil
 o provedor existente, com intenção e grupos em uma saída estruturada, sem chamada
 separada de classificação nem gravação pelo modelo. Ainda não implementa o loop
 de ferramentas, worker e arquitetura conversacional completa descritos abaixo.
+
+O [recorte documental](evidencias/e2-documentos-2026-11-11.md) acrescenta extração
+nativa com OpenXml/Poppler, fila documental com leases e contexto autorizado.
+O pipeline Tesseract está testado, mas sua calibração não aprovou rollout.
 
 ## 1. Direção arquitetural
 

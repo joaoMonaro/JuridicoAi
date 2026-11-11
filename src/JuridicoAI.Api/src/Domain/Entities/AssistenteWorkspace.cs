@@ -28,6 +28,7 @@ public sealed class AssistenteMensagemPersistida
     public Guid? RespostaAId { get; init; }
     public JsonDocument? Solicitacao { get; init; }
     public JsonDocument? Resultado { get; set; }
+    public JsonDocument? FontesDocumentais { get; set; }
     public string Estado { get; set; } = "Concluida";
     public string? CodigoErro { get; set; }
     public DateTime? ExpiraEm { get; init; }

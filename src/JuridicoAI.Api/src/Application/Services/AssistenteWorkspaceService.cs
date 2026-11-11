@@ -11,7 +11,7 @@ namespace JuridicoAI.Api.Application.Services;
 public sealed class AssistenteWorkspaceService(
     IAssistenteWorkspaceRepository repository, IPecaRepository pecas, IAuthContext auth,
     IAssistenteFeatureAccess features, IAssistenteTransparencyService transparency,
-    IOptionsMonitor<AssistenteIaSettings> settings, AssistentePatchCompiler compiler)
+    IOptionsMonitor<AssistenteIaSettings> settings, AssistentePatchCompiler compiler, AssistenteDocumentService? documents = null)
 {
     public async Task<AssistenteConversaDto> ObterOuCriarAsync(Guid pecaId, CancellationToken ct)
     {
@@ -34,7 +34,10 @@ public sealed class AssistenteWorkspaceService(
     {
         var conversa = await ConversaAsync(conversaId, false, ct);
         var peca = await pecas.ObterPecaAsync(conversa.PecaId, auth.OrganizationId, ct);
-        return (await repository.ListarPropostasAsync(conversaId, ct)).Select(p => Dto(p, peca?.Versao)).ToArray();
+        var result = new List<AssistentePropostaDto>();
+        foreach (var proposal in await repository.ListarPropostasAsync(conversaId, ct))
+            result.Add(await DtoComFontesAsync(proposal, peca, ct));
+        return result;
     }
 
     public async Task<AssistentePropostaDto> PropostaAsync(Guid id, CancellationToken ct)
@@ -42,7 +45,15 @@ public sealed class AssistenteWorkspaceService(
         var item = await PropostaPropriaAsync(id, ct);
         var conversa = await ConversaAsync(item.ConversaId, false, ct);
         var peca = await pecas.ObterPecaAsync(conversa.PecaId, auth.OrganizationId, ct);
-        return Dto(item, peca?.Versao);
+        return await DtoComFontesAsync(item, peca, ct);
+    }
+    private async Task<AssistentePropostaDto> DtoComFontesAsync(AssistentePropostaPersistida proposal, Peca? piece, CancellationToken ct)
+    {
+        var result = Dto(proposal, piece?.Versao);
+        if (documents is null || piece is null || result.Estado is not ("Pendente" or "ParcialmenteResolvida")) return result;
+        var message = await repository.ObterPedidoMensagemAsync(proposal.ConversaId, proposal.ClientRequestId, ct);
+        return await documents.ManifestValidAsync(message?.FontesDocumentais, proposal.ConversaId, piece.CasoId, ct)
+            ? result : result with { Estado = "Desatualizada" };
     }
 
     // Bridge for an editable suggestion already presented by the existing chat.
@@ -118,6 +129,12 @@ public sealed class AssistenteWorkspaceService(
                 return Recibo(existing, proposal, peca.Versao);
             }
             ExigirRevisao(proposal, request.RevisaoProposta, request.VersaoDecisoes);
+            if (documents is not null)
+            {
+                var sourceMessage = await repository.ObterPedidoMensagemAsync(conversa.Id, proposal.ClientRequestId, token);
+                if (!await documents.ManifestValidAsync(sourceMessage?.FontesDocumentais, conversa.Id, peca.CasoId, token, lockSources: true))
+                    throw new AssistenteIaException(409, "AI_DOCUMENT_SOURCE_CHANGED", "As fontes desta proposta mudaram. Peça uma nova revisão antes de aprovar.");
+            }
             if (peca.Versao != request.VersaoPecaEsperada || peca.Versao != proposal.VersaoPecaAplicavel ||
                 AssistentePatchCompiler.Hash(peca.ConteudoJson.RootElement) != AssistentePatchCompiler.Hash(proposal.DocumentoBase.RootElement))
                 throw AssistentePatchCompiler.Stale();

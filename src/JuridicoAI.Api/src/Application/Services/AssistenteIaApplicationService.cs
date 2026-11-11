@@ -40,7 +40,8 @@ public sealed class AssistenteIaApplicationService(
     IAssistenteUsageRecorder usageRecorder,
     ICorrelationContext correlationContext,
     IOptionsMonitor<AssistenteIaSettings> options,
-    ILogger<AssistenteIaApplicationService> logger)
+    ILogger<AssistenteIaApplicationService> logger,
+    IOptions<AssistenteDocumentSettings>? documentOptions = null)
 {
     private AssistenteIaSettings Settings => options.CurrentValue;
 
@@ -59,7 +60,9 @@ public sealed class AssistenteIaApplicationService(
             SuportaHistorico: settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
             snapshot.Features.Select(x => x.ToString()).ToArray(),
             SuportaRevisaoPersistida: settings.ReviewV2Enabled && snapshot.Modos.Contains(AssistenteModo.Redigir),
-            SuportaConversaLivre: settings.AutomaticConversationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado);
+            SuportaConversaLivre: settings.AutomaticConversationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
+            Documentos: documentOptions?.Value is { Enabled: true } doc && snapshot.Habilitado && settings.AutomaticConversationEnabled
+                ? new(doc.MaxFileBytes, doc.MaxPages, doc.MaxPixels / 1_000_000, doc.MaxAttachments, doc.MaxConversationBytes, doc.OcrEnabled) : null);
     }
 
     public async Task<AssistenteIaExecucao> PrepararAsync(

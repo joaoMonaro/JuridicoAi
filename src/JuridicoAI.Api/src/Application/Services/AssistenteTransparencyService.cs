@@ -10,7 +10,7 @@ namespace JuridicoAI.Api.Application.Services;
 public sealed class AssistenteTransparencyService(
     IAiTransparencyAcknowledgementRepository repository,
     IAuthContext authContext,
-    IOptionsMonitor<AssistenteIaSettings> options) : IAssistenteTransparencyService
+    IOptionsMonitor<AssistenteIaSettings> options, IOptions<AssistenteDocumentSettings>? documentOptions = null) : IAssistenteTransparencyService
 {
     private const string Title = "Uso de inteligência artificial";
     private const string Message =
@@ -23,7 +23,8 @@ public sealed class AssistenteTransparencyService(
         "pelo profissional responsável.";
 
     private AssistenteIaSettings Settings => options.CurrentValue;
-    private string CurrentVersion => Settings.TransparencyNoticeVersion + (Settings.ConversationV2Enabled ? "-conversation-v2" : Settings.ReviewV2Enabled ? "-review-v2" : string.Empty);
+    private string CurrentVersion => Settings.TransparencyNoticeVersion + (Settings.ConversationV2Enabled ? "-conversation-v2" : Settings.ReviewV2Enabled ? "-review-v2" : string.Empty)
+        + (documentOptions?.Value.Enabled == true ? "-documents-v1" : "");
 
     public async Task<AssistenteTransparenciaDto> ObterAsync(CancellationToken cancellationToken)
     {
@@ -87,7 +88,9 @@ public sealed class AssistenteTransparencyService(
             ? " Mensagens, respostas e propostas serão salvas em uma conversa individual vinculada à Peça. O histórico dessa conversa será utilizado como contexto em novos pedidos."
             : Settings.ReviewV2Enabled
             ? " Propostas de alteração e pedidos associados serão salvos em uma conversa individual vinculada à Peça."
-            : string.Empty),
+            : string.Empty) + (documentOptions?.Value.Enabled == true
+                ? " Anexos serão armazenados de forma privada nesta conversa. Trechos com leitura confiável desses anexos e de documentos autorizados do Caso poderão ser enviados ao provedor para responder e preparar minutas. Leituras parciais ou duvidosas serão sinalizadas."
+                : string.Empty),
         ReviewNotice,
         Settings.PrivacyPolicyUrl);
 }
