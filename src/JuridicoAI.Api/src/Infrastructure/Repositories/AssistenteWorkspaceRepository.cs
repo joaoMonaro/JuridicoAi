@@ -35,8 +35,8 @@ public sealed class AssistenteWorkspaceRepository(JuridicoAiDbContext context) :
             VALUES ({id}, {organizationId}, {userId}, {pecaId}, {titulo}, 1, {agora}, {agora})
             ON CONFLICT (organization_id, user_id, peca_id) DO NOTHING
             """, ct);
-        return await context.Set<AssistenteConversa>().AsNoTracking().SingleAsync(
-            x => x.OrganizationId == organizationId && x.UserId == userId && x.PecaId == pecaId, ct);
+        return await context.Set<AssistenteConversa>().AsNoTracking().SingleOrDefaultAsync(
+            x => x.OrganizationId == organizationId && x.UserId == userId && x.PecaId == pecaId, ct) ?? throw new JuridicoAI.Api.Application.Exceptions.AssistenteIaException(409, "AI_CONVERSATION_DELETING", "A conversa está em exclusão. Aguarde a conclusão antes de iniciar outra.");
     }
 
     public async Task<AssistenteConversa?> ObterConversaAsync(Guid id, Guid organizationId, Guid userId, bool bloquear, CancellationToken ct)
@@ -80,7 +80,7 @@ public sealed class AssistenteWorkspaceRepository(JuridicoAiDbContext context) :
     public Task<AssistenteMensagemPersistida?> ObterRespostaAsync(Guid conversaId, Guid mensagemId, CancellationToken ct) =>
         context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && x.RespostaAId == mensagemId, ct);
     public Task<AssistenteMensagemPersistida?> ObterMensagemAtivaAsync(Guid conversaId, CancellationToken ct) =>
-        context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && (x.Estado == "Gerando" || x.Estado == "AguardandoAnalise"), ct);
+        context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && (x.Estado == "Gerando" || x.Estado == "AguardandoAnalise" || x.Estado == "AguardandoGeracao"), ct);
     public async Task<IReadOnlyList<AssistenteMensagemPersistida>> ListarContextoAsync(Guid conversaId, CancellationToken ct) =>
         await context.AssistenteMensagens.AsNoTracking().Where(x => x.ConversaId == conversaId).OrderBy(x => x.Sequencia).Take(1001).ToArrayAsync(ct);
 

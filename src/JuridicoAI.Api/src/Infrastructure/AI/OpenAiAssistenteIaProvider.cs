@@ -234,6 +234,7 @@ public sealed class OpenAiAssistenteIaProvider(
             if (counted > tools.MaxInputTokens || (long)spent + counted + request.MaxOutputTokens > tools.MaxTotalTokens)
                 return await LimitedAsync();
             if (tools.BeforeCall is not null) await tools.BeforeCall(ct);
+            if (tools.BeforeGeneration is not null) await tools.BeforeGeneration(counted, request.MaxOutputTokens, ct);
             var started = TimeProvider.System.GetTimestamp(); ProviderTurn turn;
             try { turn = await GerarTurnoAsync(request, payload, ct); }
             catch (Exception ex)

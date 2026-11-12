@@ -53,6 +53,10 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
         "AssistenteIa:ConversationV2Enabled exige ReviewV2Enabled.")
     .Validate(x => !x.AutomaticConversationEnabled || x.ConversationV2Enabled,
         "AssistenteIa:AutomaticConversationEnabled exige ConversationV2Enabled.")
+    .Validate(x => !x.DurableGenerationEnabled || x.AutomaticConversationEnabled && x.GenerationMaxSections is >= 1 and <= 8 &&
+        x.GenerationMaxCalls is >= 3 and <= 30 && x.GenerationMaxTotalTokens > 0 && x.GenerationMaxDocumentCharacters is >= 20000 and <= 120000 &&
+        x.GenerationSectionCharacters is >= 2000 and <= 24000 && x.GenerationLeaseSeconds > x.TimeoutSeconds + 30 &&
+        x.GenerationDeadlineSeconds >= x.GenerationLeaseSeconds, "Limites de geração durável inválidos.")
     .Validate(x => !x.HistoryMemoryEnabled || x.AutomaticConversationEnabled, "Memória exige conversa livre.")
     .Validate(x => x.HistoryCompactionMessages >= x.HistoryRecentMessages && x.HistoryCompactionMessages <= 200 && x.HistoryRecentMessages is >= 2 and <= 100 && x.HistoryRecentCharacters is >= 4000 and <= 24000 &&
         x.HistoryBatchCharacters is >= 4000 and <= 32000 && x.HistoryMemoryCharacters is >= 4000 and <= 16000 &&
@@ -119,7 +123,7 @@ builder.Services.AddCors(options =>
             .SetIsOriginAllowed(origin =>
             {
                 if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
-                return uri.Host is "localhost" or "127.0.0.1";
+                return uri.Host is "localhost" or "127.0.0.1" || (builder.Configuration.GetSection("Auth:PersonalHistoryAllowedOrigins").Get<string[]>() ?? []).Contains(origin, StringComparer.Ordinal);
             })
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -167,6 +171,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         }
     };
 });
+builder.Services.AddAuthentication().AddJwtBearer(PersonalHistoryAuthentication.Scheme, options => PersonalHistoryAuthentication.Configure(options, jwtSettings));
+builder.Services.AddScoped<IPersonalHistoryContext, PersonalHistoryContext>();
+builder.Services.AddScoped<PersonalHistoryAuthService>();
+builder.Services.AddScoped<PersonalHistoryService>();
+builder.Services.AddScoped<AssistenteDeletionProcessor>();
+builder.Services.AddHostedService<AssistenteDeletionWorker>();
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(options =>
 {
@@ -202,6 +212,9 @@ builder.Services.AddScoped<AssistenteHistoryService>();
 builder.Services.AddScoped<AssistenteDocumentService>();
 builder.Services.AddScoped<AssistenteDocumentProcessor>();
 builder.Services.AddScoped<AssistenteDocumentAnalysisService>();
+builder.Services.AddScoped<AssistenteGenerationService>();
+builder.Services.AddScoped<AssistenteGenerationProcessor>();
+builder.Services.AddHostedService<AssistenteGenerationWorker>();
 builder.Services.AddScoped<AssistenteDocumentAnalysisProcessor>();
 builder.Services.AddHostedService<AssistenteDocumentAnalysisWorker>();
 builder.Services.AddSingleton<DocumentProcess>();

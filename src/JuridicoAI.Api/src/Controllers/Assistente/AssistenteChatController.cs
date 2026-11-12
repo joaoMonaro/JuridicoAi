@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JuridicoAI.Api.Controllers.Assistente;
 
 [ApiController, Authorize, Route("assistente/v2")]
-public sealed class AssistenteChatController(AssistenteChatService chat, AssistenteIaApplicationService generator, AssistenteWorkspaceService workspace, AssistenteDocumentAnalysisService analyses,
+public sealed class AssistenteChatController(AssistenteChatService chat, AssistenteIaApplicationService generator, AssistenteWorkspaceService workspace, AssistenteDocumentAnalysisService analyses, AssistenteGenerationService generations,
     ILogger<AssistenteChatController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -29,6 +29,14 @@ public sealed class AssistenteChatController(AssistenteChatService chat, Assiste
     {
         generator.ValidarEntrada(conversaId, request);
         var start = await chat.IniciarAsync(conversaId, request, ct);
+        if (start.Resposta.GeracaoId is { } generationId && start.Resposta.Estado != "Concluida")
+        {
+            var state = await generations.GetAsync(conversaId, generationId, ct);
+            Response.ContentType = "text/event-stream; charset=utf-8"; Response.Headers.CacheControl = "no-store";
+            await Response.WriteAsync($"id: {start.Resposta.Id:D}:1\nevent: solicitacao.iniciada\ndata: {JsonSerializer.Serialize(new { solicitacaoId = start.Resposta.Id, clientRequestId = request.ClientRequestId }, JsonOptions)}\n\n", ct);
+            await Response.WriteAsync($"id: {start.Resposta.Id:D}:2\nevent: solicitacao.enfileirada\ndata: {JsonSerializer.Serialize(state, JsonOptions)}\n\n", ct);
+            await Response.Body.FlushAsync(ct); return;
+        }
         if (!start.Novo && start.Resposta.Estado is not ("Concluida" or "AguardandoAnalise"))
             throw new AssistenteIaException(409, start.Resposta.Estado == "Gerando" ? "AI_CONVERSATION_BUSY" : "AI_REQUEST_TERMINAL",
                 start.Resposta.Estado == "Gerando" ? "Este pedido ainda está em andamento. Consulte o histórico." : "Este pedido foi interrompido ou falhou. O histórico foi preservado; um novo envio cria outro pedido.");

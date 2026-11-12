@@ -37,7 +37,7 @@ public sealed class AssistenteDocumentAnalysisWorker(IServiceScopeFactory scopes
 public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, AssistenteDocumentAnalysisService analyses,
     AssistenteDocumentService documents, AssistenteChatService chat, AssistenteIaApplicationService generator,
     IAssistenteIaProvider provider, IAssistenteTokenCounter counter, IAssistenteUsageLimiter limiter, IAssistenteUsageRecorder usage,
-    IOptions<AssistenteDocumentSettings> options, IOptionsMonitor<AssistenteIaSettings> ai)
+    IOptions<AssistenteDocumentSettings> options, IOptionsMonitor<AssistenteIaSettings> ai, AssistenteGenerationService? generations = null)
 {
     private static readonly JsonSerializerOptions Json = new(AssistentePatchCompiler.JsonOptions) { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
     private AssistenteDocumentSettings Settings => options.Value;
@@ -227,7 +227,13 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
         var inputTokens = await counter.ContarTokensEntradaAsync(requestProvider, timeout.Token);
         var budget = await analyses.UsedBudgetAsync(job, timeout.Token);
         var reserved = checked(inputTokens + maximum);
-        if (inputTokens > settings.MaxInputTokens || budget.Calls >= Settings.MaxAnalysisCalls - 1 || budget.Tokens + reserved + settings.MaxOutputTokens > Settings.MaxAnalysisTotalTokens) throw Changed("AI_ANALYSIS_LIMIT");
+        var parentId = await db.AssistenteMensagens.Where(m => m.Id == job.RespostaId).Select(m => m.GeracaoId).SingleAsync(timeout.Token);
+        var delegated = parentId.HasValue;
+        if (parentId.HasValue && generations is not null)
+            budget = await generations.BudgetAsync(await db.Set<AssistenteGeracao>().AsNoTracking().SingleAsync(g => g.Id == parentId, timeout.Token), timeout.Token);
+        var maxCalls = delegated ? Math.Min(Settings.MaxAnalysisCalls, settings.GenerationMaxCalls) : Settings.MaxAnalysisCalls;
+        var maxTokens = delegated ? Math.Min(Settings.MaxAnalysisTotalTokens, settings.GenerationMaxTotalTokens) : Settings.MaxAnalysisTotalTokens;
+        if (inputTokens > settings.MaxInputTokens || budget.Calls >= maxCalls - 1 || budget.Tokens + reserved + settings.MaxOutputTokens > maxTokens) throw Changed("AI_ANALYSIS_LIMIT");
         tools.InitialInputTokens = inputTokens; tools.MaxInputTokens = settings.MaxInputTokens;
         await FencedAsync(job, fence, async token =>
         {
@@ -259,6 +265,8 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
     }
     private async Task FinishAsync(AssistenteAnaliseDocumental job, Guid fence, CancellationToken ct)
     {
+        if (generations is not null && await db.AssistenteMensagens.AnyAsync(m => m.Id == job.RespostaId && m.GeracaoId != null, ct))
+        { await generations.ResumeAnalysisAsync(job, ct); return; }
         var budget = await analyses.UsedBudgetAsync(job, ct);
         var remaining = Settings.MaxAnalysisTotalTokens - budget.Tokens;
         var calls = Settings.MaxAnalysisCalls - budget.Calls;
@@ -314,6 +322,12 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
                     .SetProperty(m => m.CodigoErro, code).SetProperty(m => m.Texto, state == "Incompleta"
                         ? "A análise atingiu o limite desta execução. Os lotes concluídos foram preservados; há etapas ainda pendentes."
                         : "A análise documental foi interrompida. Os lotes concluídos e os documentos permanecem salvos; nenhuma alteração foi aplicada."), ct);
+        if (changed == 1)
+        {
+            var parent = await db.AssistenteMensagens.Where(m => m.Id == job.RespostaId).Select(m => m.GeracaoId).SingleOrDefaultAsync(ct);
+            if (parent.HasValue) await db.Set<AssistenteGeracao>().Where(g => g.Id == parent && g.Estado == "AguardandoAnalise").ExecuteUpdateAsync(s => s.SetProperty(g => g.Estado, state)
+                .SetProperty(g => g.CodigoErro, code).SetProperty(g => g.LeaseAte, (DateTime?)null), ct);
+        }
         await tx.CommitAsync(ct);
     }
     private sealed record OriginRequest([property: JsonRequired] Guid TrechoId, [property: JsonRequired] string Citacao);

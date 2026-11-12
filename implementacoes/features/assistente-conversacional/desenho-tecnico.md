@@ -405,4 +405,11 @@ implementadas atrás de flag, preservando originais e revalidando proveniência.
 
 A [análise documental extensa durável](evidencias/e2-analise-documental-duravel-2026-11-12.md)
 preserva lotes/sínteses, consolida e prepara o resultado do pedido em segundo plano.
-A durabilidade geral da geração e minutas por seções continuam abertas.
+A [geração durável e minutas por seções](evidencias/e2-e3-geracao-duravel-2026-11-12.md)
+amplia a execução em segundo plano a todos os pedidos do chat v2, com checkpoints,
+retomada e uma proposta integral após revisão. Mantida atrás de flag desativada.
+
+O [histórico pessoal e a exclusão autorizada](evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
+permitem consultar o material persistido após perda de vínculo, com sessão separada
+e sem acesso ao Caso atual. A remoção ativa é rastreável; a validação operacional
+de backups/restauração está no [procedimento complementar](especificacoes/06-operacao-exclusao-restauracao.md).

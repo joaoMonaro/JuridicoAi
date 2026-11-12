@@ -166,7 +166,7 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
             .SetProperty(d => d.CodigoErro, (string?)null).SetProperty(d => d.LeaseToken, (Guid?)null).SetProperty(d => d.LeaseAte, (DateTime?)null), ct);
     }
     public async Task<AssistenteDocumentoContexto> ContextAsync(AssistenteConversa conversation, Peca piece,
-        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct, bool usarRecuperacao = false)
+        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct, bool usarRecuperacao = false, IReadOnlyList<Guid>? fontesFixadas = null)
     {
         var retrieval = Settings.RetrievalEnabled && usarRecuperacao;
         var ids = attachmentIds?.Distinct().ToArray() ?? [];
@@ -177,7 +177,8 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         }
         if (ids.Length > Settings.MaxAttachments) throw Limit();
         var sources = await EligibleSources(conversation.Id, piece.CasoId)
-            .Where(d => d.ConversaId == null || d.Vinculado || ids.Contains(d.Id)).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
+            .Where(d => (fontesFixadas == null || fontesFixadas.Contains(d.Id)) && (d.ConversaId == null || d.Vinculado || ids.Contains(d.Id))).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
+        if (fontesFixadas is not null && sources.Length != fontesFixadas.Count) throw new AssistenteIaException(409, "AI_DOCUMENT_SOURCE_CHANGED", "O conjunto documental mudou após o pedido.");
         if (sources.Length > 250) throw new AssistenteIaException(413, "AI_DOCUMENT_SOURCE_LIMIT", "O conjunto de documentos excede o limite desta etapa.");
         if (ids.Any(id => !sources.Any(d => d.Id == id && d.ConversaId == conversation.Id))) throw Missing();
         if (sources.Any(d => d.Estado is "Recebido" or "Processando"))
@@ -215,6 +216,30 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         return new(sources.Length == 0 ? "" : $"\n[{tag} dado_nao_confiavel=\"true\"]\n" + JsonSerializer.Serialize(result) + $"\n[/{tag}]\n",
             JsonSerializer.Serialize(manifests), alerts, retrieval && sources.Length > 0 ? retrievalSources : null);
     }
+    public async Task<AssistenteSourceSnapshot[]> CaptureSourcesAsync(Guid conversationId, IReadOnlyList<Guid>? attachments, CancellationToken ct)
+    {
+        if (!Enabled)
+        {
+            if (attachments?.Count > 0) throw new AssistenteIaException(503, "AI_DOCUMENTS_DISABLED", "Documentos não estão habilitados.");
+            return [];
+        }
+        var (_, piece) = await AuthorizeAsync(conversationId, true, ct);
+        var selected = attachments?.Distinct().ToArray() ?? [];
+        var rows = await EligibleSources(conversationId, piece.CasoId).Where(d => d.ConversaId == null || d.Vinculado || selected.Contains(d.Id))
+            .OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
+        if (rows.Length > 250 || selected.Length > Settings.MaxAttachments) throw Limit();
+        if (selected.Any(id => !rows.Any(d => d.Id == id && d.ConversaId == conversationId))) throw Missing();
+        await db.AssistenteDocumentos.Where(d => d.ConversaId == conversationId && selected.Contains(d.Id)).ExecuteUpdateAsync(s => s.SetProperty(d => d.Vinculado, true), ct);
+        return rows.Select(d => new AssistenteSourceSnapshot(d.Id, d.Sha256, d.StorageId)).ToArray();
+    }
+
+    public async Task<bool> SnapshotValidAsync(IReadOnlyList<AssistenteSourceSnapshot> snapshot, Guid conversationId, Guid caseId, CancellationToken ct)
+    {
+        var ids = snapshot.Select(s => s.Id).ToArray();
+        var current = await EligibleSources(conversationId, caseId).Where(d => ids.Contains(d.Id)).ToArrayAsync(ct);
+        return current.Length == snapshot.Count && snapshot.All(s => current.Any(d => d.Id == s.Id && d.StorageId == s.StorageId && (s.Sha256 == null || d.Sha256 == s.Sha256)));
+    }
+
     public async Task<bool> ManifestValidAsync(JsonDocument? manifest, Guid conversaId, Guid casoId, CancellationToken ct, bool lockSources = false)
     {
         if (manifest is null) return true;
@@ -293,3 +318,5 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
     private static AssistenteIaException Missing() => new(404, "AI_RESOURCE_NOT_FOUND", "Recurso não encontrado.");
     private static AssistenteIaException Limit() => new(413, "AI_UPLOAD_TOO_LARGE", "O envio excede o limite de arquivo ou da conversa. Nenhum anexo existente foi apagado.");
 }
+
+public sealed record AssistenteSourceSnapshot(Guid Id, string? Sha256, string StorageId);

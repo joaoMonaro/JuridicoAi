@@ -62,7 +62,8 @@ public sealed class AssistenteIaApplicationService(
             SuportaRevisaoPersistida: settings.ReviewV2Enabled && snapshot.Modos.Contains(AssistenteModo.Redigir),
             SuportaConversaLivre: settings.AutomaticConversationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
             Documentos: documentOptions?.Value is { Enabled: true } doc && snapshot.Habilitado && settings.AutomaticConversationEnabled
-                ? new(doc.MaxFileBytes, doc.MaxPages, doc.MaxPixels / 1_000_000, doc.MaxAttachments, doc.MaxConversationBytes, doc.OcrEnabled) : null);
+                ? new(doc.MaxFileBytes, doc.MaxPages, doc.MaxPixels / 1_000_000, doc.MaxAttachments, doc.MaxConversationBytes, doc.OcrEnabled) : null,
+            SuportaGeracaoDuravel: settings.DurableGenerationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado);
     }
 
     public async Task<AssistenteIaExecucao> PrepararAsync(
@@ -160,7 +161,7 @@ public sealed class AssistenteIaApplicationService(
             input,
             request.Modo,
             operacoesPermitidas,
-            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta, FerramentasDocumentais: ferramentasDocumentais);
+            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta && ferramentasDocumentais?.OnlyPlanFullDraft != true, FerramentasDocumentais: ferramentasDocumentais);
         var solicitationId = Guid.NewGuid();
         var startedAt = TimeProvider.System.GetTimestamp();
         var execution = new AssistenteIaExecucao(

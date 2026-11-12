@@ -601,6 +601,18 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criada_em");
 
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Ativa")
+                        .HasColumnName("estado");
+
+                    b.Property<int>("ExclusaoEpoch")
+                        .HasColumnType("integer")
+                        .HasColumnName("exclusao_epoch");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
@@ -625,12 +637,12 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
                     b.HasIndex("PecaId", "OrganizationId");
 
                     b.HasIndex("OrganizationId", "UserId", "PecaId")
                         .IsUnique();
+
+                    b.HasIndex("UserId", "AtualizadaEm", "Id");
 
                     b.ToTable("ai_conversations", (string)null);
                 });
@@ -839,6 +851,260 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("ai_document_chunks", (string)null);
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteExclusao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<JsonDocument>("Arquivos")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("arquivos");
+
+                    b.Property<DateTime>("AutorizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("autorizada_em");
+
+                    b.Property<string>("CodigoErro")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("codigo_erro");
+
+                    b.Property<DateTime?>("ConcluidaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("concluida_em");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("DisponivelEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("disponivel_em");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime?>("LeaseAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_ate");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<int>("Tentativas")
+                        .HasColumnType("integer")
+                        .HasColumnName("tentativas");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConversaId")
+                        .IsUnique();
+
+                    b.HasIndex("Estado", "DisponivelEm");
+
+                    b.HasIndex("UserId", "AutorizadaEm", "Id");
+
+                    b.ToTable("ai_deletion_requests", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteGeracao", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AnaliseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analise_id");
+
+                    b.Property<DateTime>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<string>("CasoSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("caso_sha256");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<string>("CodigoErro")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("codigo_erro");
+
+                    b.Property<JsonDocument>("Contexto")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("contexto");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<JsonDocument>("FontesIds")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("fontes_ids");
+
+                    b.Property<DateTime?>("LeaseAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_ate");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("modelo");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PecaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peca_id");
+
+                    b.Property<Guid>("PedidoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pedido_id");
+
+                    b.Property<JsonDocument>("Plano")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("plano");
+
+                    b.Property<string>("PoliticaVersao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("politica_versao");
+
+                    b.Property<DateTime>("PrazoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prazo_em");
+
+                    b.Property<Guid>("RespostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resposta_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RespostaId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("Estado", "LeaseAte");
+
+                    b.HasIndex("PedidoId", "ConversaId", "OrganizationId");
+
+                    b.HasIndex("RespostaId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_generations", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteGeracaoEtapa", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Chamada")
+                        .HasColumnType("integer")
+                        .HasColumnName("chamada");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<Guid>("GeracaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geracao_id");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<JsonDocument>("Resultado")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("resultado");
+
+                    b.Property<Guid>("SolicitacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitacao_id");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("tipo");
+
+                    b.Property<int>("TokensLiquidados")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_liquidados");
+
+                    b.Property<int>("TokensReservados")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_reservados");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("GeracaoId", "OrganizationId");
+
+                    b.HasIndex("GeracaoId", "SolicitacaoId", "Chamada")
+                        .IsUnique();
+
+                    b.ToTable("ai_generation_steps", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMemoria", b =>
                 {
                     b.Property<Guid>("Id")
@@ -956,6 +1222,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("fontes_documentais");
 
+                    b.Property<Guid?>("GeracaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("geracao_id");
+
                     b.Property<Guid>("OrganizationId")
                         .HasColumnType("uuid")
                         .HasColumnName("organization_id");
@@ -996,7 +1266,7 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.HasIndex("ConversaId")
                         .IsUnique()
-                        .HasFilter("estado IN ('Gerando', 'AguardandoAnalise')");
+                        .HasFilter("estado IN ('Gerando', 'AguardandoAnalise', 'AguardandoGeracao')");
 
                     b.HasIndex("OrganizationId");
 
@@ -1012,6 +1282,8 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .IsUnique();
 
                     b.HasIndex("AnaliseDocumentalId", "ConversaId", "OrganizationId");
+
+                    b.HasIndex("GeracaoId", "ConversaId", "OrganizationId");
 
                     b.HasIndex("PropostaId", "ConversaId", "OrganizationId");
 
@@ -1707,6 +1979,57 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.PersonalHistorySession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<DateTime>("ExpiraEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expira_em");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("refresh_token_hash");
+
+                    b.Property<string>("RevocationTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("revocation_token_hash");
+
+                    b.Property<DateTime?>("RevogadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revogada_em");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RefreshTokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("RevocationTokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("personal_history_sessions", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Session", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2073,6 +2396,67 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteExclusao", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteGeracao", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("PedidoId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("RespostaId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteGeracaoEtapa", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteGeracao", null)
+                        .WithMany()
+                        .HasForeignKey("GeracaoId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMemoria", b =>
                 {
                     b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
@@ -2114,6 +2498,12 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseDocumental", null)
                         .WithMany()
                         .HasForeignKey("AnaliseDocumentalId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteGeracao", null)
+                        .WithMany()
+                        .HasForeignKey("GeracaoId", "ConversaId", "OrganizationId")
                         .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -2272,6 +2662,15 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.PersonalHistorySession", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

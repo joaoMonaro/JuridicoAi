@@ -43,7 +43,7 @@ public sealed class AssistenteHistoryService(JuridicoAiDbContext db, IAssistente
     private IQueryable<AssistenteMemoria> Memories(Guid conversation) => db.Set<AssistenteMemoria>().AsNoTracking()
         .Where(m => m.ConversaId == conversation && m.OrganizationId == auth.OrganizationId);
 
-    public async Task<AssistenteHistoryContext> PrepareAsync(AssistenteConversa conversation, Peca piece, int availableCharacters, CancellationToken ct, bool compact = true)
+    public async Task<AssistenteHistoryContext> PrepareAsync(AssistenteConversa conversation, Peca piece, int availableCharacters, CancellationToken ct, bool compact = true, long? beforeSequence = null)
     {
         var settings = options.CurrentValue;
         var latest = await Memories(conversation.Id).OrderByDescending(m => m.Versao).FirstOrDefaultAsync(ct);
@@ -57,14 +57,14 @@ public sealed class AssistenteHistoryService(JuridicoAiDbContext db, IAssistente
         var evidenceIds = valid.SelectMany(m => m.Origens).Select(o => o.MensagemId).ToHashSet();
         var snapshot = evidence.Where(e => evidenceIds.Contains(e.Id)).ToDictionary(e => e.Id);
         var memorySize = JsonSerializer.Serialize(valid, Json).Length;
-        var recentRows = await Messages(conversation.Id).Where(m => m.Sequencia > through).OrderByDescending(m => m.Sequencia)
+        var recentRows = await Messages(conversation.Id).Where(m => m.Sequencia > through && (!beforeSequence.HasValue || m.Sequencia < beforeSequence.Value)).OrderByDescending(m => m.Sequencia)
             .Take(settings.HistoryCompactionMessages + 1).ToArrayAsync(ct);
         if (recentRows.Length > settings.HistoryCompactionMessages) recentRows = recentRows.Take(settings.HistoryRecentMessages).ToArray();
         var recent = (await ProjectAsync(conversation, piece, recentRows.OrderBy(m => m.Sequencia).ToArray(), ct)).ToList();
         // Retain complete messages. If one message cannot fit, fail explicitly.
         var recentBudget = Math.Min(settings.HistoryRecentCharacters, Math.Max(0, (availableCharacters - memorySize - 3000) / 2));
         while (recent.Count > 2 && JsonSerializer.Serialize(recent.Select(e => e.Dados), Json).Length > recentBudget) recent.RemoveAt(0);
-        var oldEnd = recent.Count > 0 ? recent[0].Sequencia - 1 : conversation.ProximaSequencia - 1;
+        var oldEnd = recent.Count > 0 ? recent[0].Sequencia - 1 : (beforeSequence ?? conversation.ProximaSequencia) - 1;
         var batchBudget = Math.Min(settings.HistoryBatchCharacters, availableCharacters - memorySize -
             JsonSerializer.Serialize(recent.Select(e => e.Dados), Json).Length - 3000);
         var batch = new List<AssistenteHistoryEntry>(); var batchSize = 0; var batchThrough = through;
@@ -88,11 +88,11 @@ public sealed class AssistenteHistoryService(JuridicoAiDbContext db, IAssistente
                 aviso = "Resumo seletivo e não exaustivo. Consulte os originais para detalhes ausentes, citações, valores ou conflitos. Afirmações do usuário não são comprovação documental." },
             historicoCronologico = recent.Select(e => e.Dados),
             compactacaoPendente = batch.Count == 0 ? null : new { ateSequencia = batchThrough, mensagens = batch.Select(e => e.Dados) },
-            historicoOriginalDisponivel = new { ateSequencia = conversation.ProximaSequencia - 1, faixaAindaNaoResumida = batchThrough < oldEnd ? new { aposSequencia = batchThrough, ateSequencia = oldEnd } : null },
+            historicoOriginalDisponivel = new { ateSequencia = (beforeSequence ?? conversation.ProximaSequencia) - 1, faixaAindaNaoResumida = batchThrough < oldEnd ? new { aposSequencia = batchThrough, ateSequencia = oldEnd } : null },
             aviso = "Correções recentes e o pedido atual prevalecem sobre a memória; nunca adivinhe o conteúdo de mensagens não consultadas. O documento atual determina o que foi efetivamente aplicado."
         }, Json);
         if (payload.GetRawText().Length > availableCharacters) throw TooLarge();
-        return new() { ConversaId = conversation.Id, UltimaSequencia = conversation.ProximaSequencia - 1, VersaoAnterior = latest?.Versao ?? 0,
+        return new() { ConversaId = conversation.Id, UltimaSequencia = (beforeSequence ?? conversation.ProximaSequencia) - 1, VersaoAnterior = latest?.Versao ?? 0,
             AteSequenciaLote = batchThrough, Lote = batch, Memoria = valid, Fontes = snapshot, Dados = payload, Estado = state };
     }
 

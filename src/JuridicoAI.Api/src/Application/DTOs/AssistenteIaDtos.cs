@@ -83,7 +83,8 @@ public sealed record AssistenteCapacidadesDto(
     IReadOnlyList<string>? Features = null,
     bool SuportaRevisaoPersistida = false,
     bool SuportaConversaLivre = false,
-    AssistenteDocumentCapabilities? Documentos = null);
+    AssistenteDocumentCapabilities? Documentos = null,
+    bool SuportaGeracaoDuravel = false);
 
 public sealed record AssistenteTransparenciaDto(
     string Versao,

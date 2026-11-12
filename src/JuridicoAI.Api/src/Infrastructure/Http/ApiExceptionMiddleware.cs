@@ -54,7 +54,8 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
     }
 
     private static bool IsAiRequest(HttpContext context) =>
-        context.Request.Path.Value?.Contains("/assistente/", StringComparison.OrdinalIgnoreCase) == true;
+        context.Request.Path.Value?.Contains("/assistente/", StringComparison.OrdinalIgnoreCase) == true ||
+        context.Request.Path.StartsWithSegments("/auth/pessoal", StringComparison.OrdinalIgnoreCase);
 
     private static Task WriteProblemAsync(
         HttpContext context,

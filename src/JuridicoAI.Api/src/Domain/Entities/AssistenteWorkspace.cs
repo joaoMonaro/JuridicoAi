@@ -9,6 +9,8 @@ public sealed class AssistenteConversa
     public Guid UserId { get; init; }
     public Guid PecaId { get; init; }
     public string Titulo { get; init; } = string.Empty;
+    public string Estado { get; set; } = "Ativa";
+    public int ExclusaoEpoch { get; set; }
     public long ProximaSequencia { get; set; } = 1;
     public DateTime CriadaEm { get; init; }
     public DateTime AtualizadaEm { get; set; }
@@ -30,6 +32,7 @@ public sealed class AssistenteMensagemPersistida
     public JsonDocument? Resultado { get; set; }
     public JsonDocument? FontesDocumentais { get; set; }
     public JsonDocument? CoberturaDocumental { get; set; }
+    public Guid? GeracaoId { get; set; }
     public Guid? AnaliseDocumentalId { get; set; }
     public JsonDocument? ContextoHistorico { get; set; }
     public string Estado { get; set; } = "Concluida";

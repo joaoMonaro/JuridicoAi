@@ -23,7 +23,7 @@ public sealed record AssistenteMensagemDto(Guid Id, long Sequencia, string Autor
     Guid? ClientRequestId = null, Guid? RespostaAId = null, string Estado = "Concluida", string? CodigoErro = null,
     CriarSolicitacaoAssistenteRequest? Solicitacao = null, AssistenteSolicitacaoConcluidaDto? Resultado = null,
     AssistenteCoberturaDocumentalDto? CoberturaDocumental = null,
-    AssistenteContextoHistoricoDto? ContextoHistorico = null, Guid? AnaliseDocumentalId = null);
+    AssistenteContextoHistoricoDto? ContextoHistorico = null, Guid? AnaliseDocumentalId = null, Guid? GeracaoId = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EnviarMensagemChatRequest(Guid ClientRequestId, AssistenteModo Modo, string? Instrucao,
@@ -58,3 +58,6 @@ public sealed record AssistenteReciboDto(string SchemaVersion, Guid RequestId, G
 
 public sealed record AssistenteContextoHistoricoDto(int? VersaoMemoria, long AteSequencia, int MensagensRecentes,
     int RegistrosInvalidados, bool HistoricoAdicionalDisponivel);
+
+public sealed record AssistenteGeracaoDto(Guid Id, string Estado, int SecoesConcluidas, int SecoesTotal,
+    IReadOnlyList<string> Secoes, string? CodigoErro, Guid? AnaliseId);

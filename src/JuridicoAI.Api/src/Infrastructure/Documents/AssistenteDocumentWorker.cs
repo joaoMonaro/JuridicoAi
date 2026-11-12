@@ -59,9 +59,7 @@ public sealed class AssistenteDocumentProcessor(JuridicoAiDbContext db, IFileSto
             await db.AssistenteDocumentoTrechos.Where(c => c.DocumentoId == source.Id).ExecuteDeleteAsync(ct);
             await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         }
-        var dir = Path.Combine(Path.GetTempPath(), "juridicoai-extract", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(dir);
-        if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(dir, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var dir = AssistenteDocumentScratch.Create(source.ConversaId);
         var path = Path.Combine(dir, "source." + (source.Formato is "pdf" or "docx" or "txt" or "png" or "jpg" or "jpeg" ? source.Formato : "bin"));
         var ordinal = 0; var lastPage = 0; var rejected = false; var trusted = false;
         try

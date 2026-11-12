@@ -6,6 +6,14 @@ public sealed class AssistenteIaSettings
     public bool ReviewV2Enabled { get; set; }
     public bool ConversationV2Enabled { get; set; }
     public bool AutomaticConversationEnabled { get; set; }
+    public bool DurableGenerationEnabled { get; set; }
+    public int GenerationMaxSections { get; set; } = 8;
+    public int GenerationMaxCalls { get; set; } = 12;
+    public int GenerationMaxTotalTokens { get; set; } = 180_000;
+    public int GenerationMaxDocumentCharacters { get; set; } = 120_000;
+    public int GenerationSectionCharacters { get; set; } = 20_000;
+    public int GenerationLeaseSeconds { get; set; } = 180;
+    public int GenerationDeadlineSeconds { get; set; } = 1800;
     public bool HistoryMemoryEnabled { get; set; }
     public int HistoryCompactionMessages { get; set; } = 64;
     public int HistoryRecentMessages { get; set; } = 16;

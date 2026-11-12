@@ -10,7 +10,10 @@ public sealed class AssistenteDocumentTools(JsonElement definitions,
     Func<AssistenteCoberturaDocumentalDto> coverage,
     int maxRounds, int maxTotalTokens, int maxContextCharacters)
 {
-    public Func<AssistenteIaProviderResult?>? CompleteAfterTool { get; init; }
+    public bool OnlyPlanFullDraft { get; init; }
+    public Func<int, int, CancellationToken, Task>? BeforeGeneration { get; set; }
+    public Func<AssistenteProviderCall, Task>? AfterCall { get; set; }
+    public Func<AssistenteIaProviderResult?>? CompleteAfterTool { get; set; }
     public bool RequireDurableUsage { get; init; }
     public bool HasDocumentTools { get; init; } = true;
     public string AdditionalInstructions { get; init; } = string.Empty;
@@ -30,7 +33,7 @@ public sealed class AssistenteDocumentTools(JsonElement definitions,
     public AssistenteCoberturaDocumentalDto Coverage => coverage();
     public Task<string> ExecuteAsync(string name, string arguments, CancellationToken ct) => execute(name, arguments, ct);
     public async Task RecordAsync(AssistenteProviderCall call)
-    { if (RecordCall is not null) await RecordCall(call); RecordedCalls++; }
+    { if (RecordCall is not null) await RecordCall(call); RecordedCalls++; if (AfterCall is not null) await AfterCall(call); }
 }
 
 public sealed record AssistenteProviderCall(int Ordinal, string Model, int? InputTokens, int? CachedInputTokens,

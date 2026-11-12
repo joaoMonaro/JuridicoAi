@@ -13,7 +13,11 @@ continuidade e Peça atual no input. A [conversa livre](../evidencias/e3-convers
 adiciona intenção automática e ajuste de propostas. A [memória versionada](../evidencias/e2-memoria-conversa-2026-11-12.md)
 acrescenta resumo, recuperação lexical/cronológica e invalidação. A [análise documental durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md)
 acrescenta leitura em lotes, consolidação e resposta final após a conexão do chat.
-A geração sem esse fluxo continua ligada à requisição; minutas por seções estão pendentes.
+A [geração durável e minutas por seções](../evidencias/e2-e3-geracao-duravel-2026-11-12.md)
+amplia o worker aos pedidos do chat v2, com proposta única após revisão e retomada
+explícita. O [histórico pessoal e a exclusão autorizada](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
+acrescentam sessão pessoal, leitura após perda de vínculo e expurgo com protocolo;
+retenção de backups e ensaio de restauração continuam pendentes.
 
 ## Decisões técnicas consolidadas
 
@@ -62,8 +66,10 @@ trazer a consequência concreta para decisão de produto.
 
 - [x] Migrations aditivas e repositórios do recorte de revisão, índices e FKs compostas.
 - [x] Conversa por usuário/Peça, mensagens gerais paginadas e idempotência no banco.
-- [ ] Sessão pessoal de histórico, UI correspondente e matriz de autorização.
-- [ ] Worker de leases/checkpoints/eventos, exclusão autorizada e proteção de resultados tardios.
+- [x] Sessão pessoal de histórico, UI correspondente e matriz de autorização.
+- [x] Worker do chat v2 com leases/checkpoints, progresso e proteção de resultados tardios.
+- [x] Exclusão manual autorizada das conversas e anexos privados no ambiente ativo.
+- [ ] Registro externo e reaplicação de exclusões antes de reabrir uma restauração.
 
 ### E2 — documentos e contexto
 
