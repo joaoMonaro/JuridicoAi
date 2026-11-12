@@ -5,6 +5,9 @@ A API usa banco e schema compartilhados, com isolamento lógico por
 espaço de trabalho, `User` representa a identidade autenticável e `Membership`
 vincula os dois com role `Owner` ou `Member`.
 
+A descrição organizacional abaixo não se aplica à sessão pessoal de histórico,
+que tem esquema e audiência separados, descritos ao final.
+
 ## Modelo
 
 O PostgreSQL contém:
@@ -189,3 +192,28 @@ legado inativo com credencial deliberadamente inutilizável. Casos, Peças e
 Templates existentes são associados a esses registros antes da criação das
 FKs obrigatórias; nenhum dado é apagado. Novos clientes devem ser criados pelo
 comando de provisionamento.
+
+
+## Sessão pessoal para histórico do assistente
+
+Implementada separadamente da sessão organizacional. Não remover a exigência de
+Membership dos endpoints do workspace para permitir leitura histórica.
+
+- `POST /auth/pessoal/login`: e-mail/senha, conta ativa; não exige organização.
+- `POST /auth/pessoal/refresh`: rotação do refresh da sessão pessoal.
+- `POST /auth/pessoal/logout`: revogação, inclusive proteção contra refresh concorrente.
+- JWT de 15 minutos com audiência `JuridicoAI.History`, `sub` e `sessionId`, sem
+  organização/role; validade da sessão e conta conferida no banco.
+- Refresh de 7 dias, hashes no banco e cookie `juridicoai_history_refresh`,
+  Secure/HttpOnly/Strict, caminho `/auth/pessoal`. Endpoints verificam Origin e
+  usam o rate limit de autenticação. Origens adicionais em
+  `Auth:PersonalHistoryAllowedOrigins`; frontend/API precisam manter o mesmo site.
+
+O token pessoal é aceito somente nas rotas `/assistente/v2/pessoal`, que leem ou
+excluem o histórico privado do próprio titular. Não acessa Peça/Caso atuais,
+fontes compartilhadas, geração ou aplicação. Token organizacional não substitui
+a sessão pessoal. O usuário pode perder Membership e continuar lendo o histórico,
+mas conta desabilitada ou sessão revogada continuam sem acesso.
+
+Ver [contratos efetivos](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
+e [evidência de autorização e exclusão](../../implementacoes/features/assistente-conversacional/evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).

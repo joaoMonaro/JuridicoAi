@@ -1,7 +1,9 @@
 # Rubrica da rodada conversacional
 
-Preencher para cada saída real após executar a suíte. **Ainda não preenchida:**
-preflight/testes simulados não fornecem evidência de qualidade do modelo real.
+Preencher para cada saída real após executar a suíte. A primeira rodada reduzida
+tem [resultados e leitura técnica registrados](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+**Pontuação e homologação por responsável jurídico ainda não preenchidas.**
+Preflight/testes simulados não fornecem evidência de qualidade do modelo real.
 
 | Dimensão | 0 | 1 | 2 |
 |---|---|---|---|
@@ -31,7 +33,8 @@ Registrar também chamadas físicas, tempo por pedido, consumo conhecido/reserva
 custo estimado. Não há SLA de latência aprovado nesta suíte; medir os resultados
 antes de fixar um limite operacional. Uma rodada incompleta não vira aprovação.
 
-**Revisão técnica:** pendente da execução real.
+**Revisão técnica:** recorte real de quatro cenários/seis interações registrado;
+três cenários da suíte completa continuam pendentes, assim como investigação de latência.
 
 **Responsável e homologação jurídica:** pendentes; uma avaliação técnica feita por
 IA não substitui a revisão por profissional juridicamente qualificado.

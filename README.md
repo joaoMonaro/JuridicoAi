@@ -51,10 +51,12 @@ As migrations do Entity Framework Core são aplicadas na inicialização quando
 - [Configuração e execução](docs/configuracao-e-execucao.md)
 - [API HTTP](docs/backend/api.md)
 - [Assistente de IA](docs/backend/assistente-ia.md)
+- [Estado atual do assistente conversacional](implementacoes/features/assistente-conversacional/estado-atual.md)
+- [TODO da feature](implementacoes/features/assistente-conversacional/TODO.md)
 - [Autenticação e multitenancy](docs/backend/autenticacao-e-multitenancy.md)
 - [Peças e templates](docs/backend/pecas.md)
 - [Implementações em andamento](implementacoes/README.md)
-- [Geração de minutas por pedido livre — ainda a implementar](implementacoes/features/geracao-minutas-ia/README.md)
+- [Geração de minutas — plano anterior incorporado](implementacoes/features/geracao-minutas-ia/README.md)
 
 A documentação de `docs/` descreve o comportamento atual. Especificações,
 decisões e pendências ficam em `implementacoes/`, separadas entre a feature

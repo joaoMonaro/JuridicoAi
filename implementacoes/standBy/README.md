@@ -9,7 +9,7 @@
 A implementação ativa é o [assistente conversacional](../features/assistente-conversacional/README.md).
 A [calibração do OCR](calibracao-ocr/README.md) foi colocada em espera em
 2026-11-11 para concluir o fluxo atual com documentos nativos. As prioridades
-vigentes estão no [TODO](../../TODO.md).
+vigentes estão no [TODO do assistente conversacional](../features/assistente-conversacional/TODO.md).
 
 ## Dossiê anterior
 

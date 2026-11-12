@@ -28,4 +28,4 @@ isoladamente, não conclui a calibração.
 - [Implementação documental](../../features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md).
 - [Medição inicial](../../features/assistente-conversacional/evidencias/documentos/calibracao-ocr-inicial-2026-11-11.json).
 - [Script de calibração](../../../tools/documents/calibrate_ocr.py).
-- [Prioridades atuais](../../../TODO.md).
+- [Prioridades atuais do assistente](../../features/assistente-conversacional/TODO.md).

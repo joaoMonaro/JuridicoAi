@@ -1,18 +1,36 @@
 # API e execução durável — assistente-v2
 
-> Proposta de implementação, 2026-11-11. Payloads de exemplo em
-> [contratos](../contratos/README.md). Rotas novas prefixadas com `/assistente/v2`.
+> Desenho original de 2026-11-11, preservado como referência arquitetural.
+> **Não usar as tabelas abaixo como inventário das rotas atuais.** Contratos,
+> códigos HTTP, estados e regras de retomada foram concretizados com diferenças.
+> A referência de integração é [contratos implementados](07-contratos-implementados.md).
 
-Estado de implementação: [revisão persistida](../evidencias/e1-revisao-persistida-2026-11-11.md)
-e [histórico com contexto básico](../evidencias/e1-e3-historico-2026-11-11.md) estão
-disponíveis atrás de flags. A [conversa livre](../evidencias/e3-conversa-livre-2026-11-11.md)
-usa `POST /conversas/{id}/interacoes`, DTO natural sem modo técnico e SSE 200.
-O POST de mensagens anterior permanece como adaptador dos modos legados.
-Ainda não há HTTP 202, worker ou eventos duráveis; não confundir o DTO efetivo
-`EnviarInteracaoLivreRequest` com o contrato futuro `EnviarMensagem` abaixo.
-Abertura retorna 200, leitura de mensagens retorna array com cursor exclusivo e
-rejeição de grupos ainda não aceita requestId. As demais rotas e envelopes abaixo
-continuam como alvo para a entrega conversacional completa.
+## Situação atual e diferenças do desenho
+
+A conversa livre usa `POST /conversas/{id}/interacoes` com
+`EnviarInteracaoLivreRequest` e SSE 200. Com geração durável, o pedido/job é
+persistido e o SSE emite `solicitacao.enfileirada`; o acompanhamento usa
+`GET /conversas/{id}/geracoes/{geracaoId}` e o histórico persistido.
+
+Não foram implementadas as rotas genéricas `/execucoes`, o journal SSE
+`/conversas/{id}/eventos` ou a resposta `MensagemAceita` HTTP 202 de envio prevista
+abaixo. Abertura retorna 200, mensagens são um array com cursor exclusivo e
+rejeição de grupos não recebe requestId. Exclusão está nas rotas pessoais.
+Essas diferenças não tornam ausentes o worker ou a durabilidade já entregues.
+
+O worker geral tem lease default de **180 s** e prazo de **1.800 s**. Chamada
+paga de resultado indeterminado **não é repetida automaticamente**; exige retomada
+explícita e orçamento disponível. Os números de lease/tentativas do desenho
+original abaixo não substituem essa política implementada.
+
+Ver [geração durável](../evidencias/e2-e3-geracao-duravel-2026-11-12.md),
+[histórico pessoal/exclusão](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
+e [estado atual](../estado-atual.md).
+
+## Desenho original — referência histórica
+
+As regras e envelopes a seguir registram a proposta inicial; itens divergentes
+não são funcionalidades anunciadas nem pendências implícitas adicionais ao TODO.
 
 ## Regras comuns
 
@@ -113,7 +131,9 @@ consistente de conteúdo. Base: [PostgreSQL 17 SELECT](https://www.postgresql.or
 Lease inicial 60s, heartbeat 15s, polling ocioso 1s com jitter, no máximo 3 tentativas
 por etapa transitória, delays 2s e 8s respeitando Retry-After. UPDATE de publicação
 exige leaseToken e deletionEpoch atuais. Reinício retoma checkpoint; falhas
-indeterminadas podem repetir chamada externa, mas não publicação ou aplicação.
+indeterminadas foram inicialmente consideradas para retry externo. Essa hipótese
+foi substituída na implementação pela interrupção sem repetição paga automática,
+conforme a política atual descrita acima.
 
 Erro de schema, fonte não autorizada ou qualidade insuficiente não é resolvido
 por repetir indefinidamente. Uma correção guiada do resultado consome orçamento

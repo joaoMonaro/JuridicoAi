@@ -1,165 +1,171 @@
 # Plano de implementação e evidências necessárias
 
-> Planejamento técnico, 2026-11-11. Somente itens marcados têm evidência de execução.
+> Reconciliação em **2026-11-12**, após geração durável, histórico pessoal e
+> avaliação real reduzida. Referência consolidada: [estado atual](../estado-atual.md).
 
-Atualização de implementação: [recorte de E1/E4 integrado ao editor](../evidencias/e1-revisao-persistida-2026-11-11.md).
-Inclui persistência de conversas/propostas, mensagens associadas a propostas,
-commit transacional e reconciliação com autosave. As etapas abaixo permanecem
-abertas onde exigem chat completo, fila, documentos ou validação integral.
-
-Etapa seguinte: [histórico completo e contexto básico](../evidencias/e1-e3-historico-2026-11-11.md).
-Persistência e recuperação abrangem perguntas/respostas, com política de
-continuidade e Peça atual no input. A [conversa livre](../evidencias/e3-conversa-livre-2026-11-11.md)
-adiciona intenção automática e ajuste de propostas. A [memória versionada](../evidencias/e2-memoria-conversa-2026-11-12.md)
-acrescenta resumo, recuperação lexical/cronológica e invalidação. A [análise documental durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md)
-acrescenta leitura em lotes, consolidação e resposta final após a conexão do chat.
-A [geração durável e minutas por seções](../evidencias/e2-e3-geracao-duravel-2026-11-12.md)
-amplia o worker aos pedidos do chat v2, com proposta única após revisão e retomada
-explícita. O [histórico pessoal e a exclusão autorizada](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
-acrescentam sessão pessoal, leitura após perda de vínculo e expurgo com protocolo;
-retenção de backups e ensaio de restauração continuam pendentes.
+Este plano substitui as marcações desatualizadas do detalhamento inicial de
+2026-11-11. `[x]` indica implementação ou verificação técnica com evidência;
+`[ ]` indica trabalho ainda aberto. Entrega técnica não equivale a homologação
+jurídica ou liberação do piloto. Os IDs P01–P09 remetem aos
+[pontos restantes](../estado-atual.md#pontos-restantes), com natureza e critérios
+de conclusão. Evidências históricas mantêm os limites de cada rodada.
 
 ## Decisões técnicas consolidadas
 
-| Tema | Direção para implementar |
+| Tema | Implementação atual |
 |---|---|
 | Aplicação | Monólito modular ASP.NET Core existente |
-| Persistência | PostgreSQL 17 e JSONB; fila durável no mesmo banco |
-| Processamento | BackgroundService com leases, fence e checkpoints |
-| Arquivos | IFileStorage com namespace privado por conversa e volume persistente |
-| Autorização histórica | Esquema pessoal separado, sem Membership como requisito de leitura própria |
-| IA | Responses com memória da aplicação, ferramentas fechadas e nenhuma gravação pelo modelo |
-| Documentos | OpenXml existente, PdfPig candidato, Poppler e Tesseract locais |
-| Recuperação | PostgreSQL full-text + pesquisa exata + cobertura integral quando solicitada |
-| Editor | TipTap 3 atual, previews via plugin/decorations; aplicação por splices versionados |
-| Ancoragem | Aliases de snapshot na v1, sem migração de IDs persistentes |
+| Persistência | PostgreSQL 17 e JSONB; trabalhos duráveis no mesmo banco |
+| Processamento | BackgroundService, leases, fence e checkpoints |
+| Arquivos | IFileStorage com namespace privado por conversa |
+| Autorização histórica | Sessão pessoal separada; leitura própria sem Membership, com conta ativa |
+| IA | Responses, memória da aplicação, ferramentas autorizadas; modelo não grava a Peça |
+| Documentos | OpenXml/Poppler para leitura nativa; pipeline Tesseract desativado |
+| Recuperação | Busca full-text/exata filtrada, ferramentas paginadas e cobertura persistida |
+| Editor | TipTap 3, plugin/decorations de revisão e splices versionados |
+| Ancoragem | Aliases de snapshot, sem migração de IDs persistentes |
 | Commit | Uma transação para Peça, decisões e recibo; reconciliação idempotente |
 
-As escolhas são propostas de engenharia. Compatibilidade e qualidade dependem
-das verificações abaixo; não há aprovação automática de fornecedores ou custos.
-Não criar um segundo backend, outro banco vetorial ou serviço cloud nesta etapa.
+Não foi criado segundo backend, banco vetorial ou serviço cloud nesta etapa.
+Provisionamento de produção, condições de redistribuição e preços ainda exigem
+os fechamentos indicados abaixo. Valores de piloto não são SLAs aprovados.
 
-## Etapas com dependências
+## E0 — contratos e compatibilidade
 
-Priorização atualizada em 2026-11-11: calibração do OCR em
-[stand by](../../../standBy/calibracao-ocr/README.md), por orientação do responsável
-pelo produto. Prosseguir com documentos nativos, recuperação de contexto e demais
-pendências do assistente. A pausa não conclui os itens de OCR nem libera leitura
-de digitalizações. Próximo recorte ativo registrado no [TODO](../../../../TODO.md).
+- [x] Prova local de splice, diff e undo/redo no TipTap instalado, com conteúdo
+  fictício; depois integrada ao editor real na E4.
+- [ ] Consolidar fixtures completas do schema, incluindo marks, listas, links,
+  headings, emoji e blocos desconhecidos existentes — P07.
+- [x] Executar ferramentas e saída estruturada com GPT-6.1 Terra no recorte
+  reduzido, com orçamento explícito e resultado técnico registrado.
+- [ ] Ampliar a avaliação para os cenários adiados — P01.
+- [ ] Registrar versões exatas e condições de redistribuição das dependências — P07.
+- [ ] Calibrar qualidade/cobertura do OCR com corpus fictício — P09, **em espera**.
 
-### E0 — contratos e provas de compatibilidade
+Evidências: [editor](../evidencias/e0-editor-2026-11-11.md),
+[preflight](../../../../avaliacoes/assistente-conversacional/preflight-2026-11-12.md),
+[avaliação real reduzida](../evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
 
-- [ ] Congelar fixtures de schema do editor com texto, marks, listas, links,
-  headings, emoji e blocos desconhecidos existentes.
-- [x] Validar splice + diff + undo/redo local no TipTap instalado, com exemplo
-  fictício em `/dev/revisao-peca`; integração transacional permanece na E4.
-- [ ] Medir leitura/OCR com corpus fictício e calibrar rejeição/aceitação.
-- [ ] Validar modelo configurado com ferramentas e saída estruturada, com execução
-  real autorizada e orçamento explícito; não usar dados jurídicos reais em logs.
-- [ ] Registrar versões exatas e condições de redistribuição das dependências.
+## E1 — persistência, acesso e fila
 
-E0 valida as decisões de engenharia, sem exigir que o usuário escolha APIs ou
-algoritmos. Se mudar experiência, custo contratado ou tratamento dos dados,
-trazer a consequência concreta para decisão de produto.
+- [x] Migrations aditivas, repositórios, índices e FKs compostas.
+- [x] Conversa privada por usuário/Peça, mensagens paginadas e idempotência.
+- [x] Sessão pessoal de histórico, UI e provas de autorização sem Membership.
+- [x] Worker do chat v2 com leases/checkpoints, progresso e bloqueio de resultados tardios.
+- [x] Exclusão manual autorizada no banco e armazenamento ativos, com protocolo.
+- [ ] Registro externo de exclusões e reaplicação automatizada antes de reabrir
+  uma restauração, incluindo ensaio de banco e arquivos — P05.
 
-### E1 — persistência, acesso e fila
+Evidências: [revisão persistida](../evidencias/e1-revisao-persistida-2026-11-11.md),
+[histórico](../evidencias/e1-e3-historico-2026-11-11.md),
+[histórico pessoal/exclusão](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).
 
-- [x] Migrations aditivas e repositórios do recorte de revisão, índices e FKs compostas.
-- [x] Conversa por usuário/Peça, mensagens gerais paginadas e idempotência no banco.
-- [x] Sessão pessoal de histórico, UI correspondente e matriz de autorização.
-- [x] Worker do chat v2 com leases/checkpoints, progresso e proteção de resultados tardios.
-- [x] Exclusão manual autorizada das conversas e anexos privados no ambiente ativo.
-- [ ] Registro externo e reaplicação de exclusões antes de reabrir uma restauração.
+## E2 — documentos e contexto
 
-### E2 — documentos e contexto
+- [x] Upload privado, extração nativa PDF/DOCX/TXT, qualidade por trecho e progresso.
+- [x] Extração de documentos do Caso com versão e autorização.
+- [x] Limites técnicos de arquivo/páginas e processamento durável com recuperação de falhas.
+- [x] Pipeline OCR e métricas iniciais; não houve aprovação da calibração nem ativação.
+- [x] Busca full-text/exata e ferramentas de listagem, busca e leitura com cobertura.
+- [x] Invalidação de derivados quando fontes são revogadas ou reprocessadas.
+- [x] Memória versionada, proveniência e recuperação textual/cronológica do histórico.
+- [x] Análise extensa por lotes, citações/sínteses, consolidação e checkpoints.
+- [x] Verificar leitura parcial e instrução maliciosa no recorte real reduzido.
+- [ ] Ampliar avaliação de fontes, memória extensa e correções com memória — P01/P02.
+- [ ] Completar orçamento financeiro de produção — P03. Limites técnicos já existem.
+- [ ] Calibrar/ativar leitura de digitalizações — P09, **em espera**.
 
-- [x] Análise extensa durável com sínteses/citações por lote, consolidação,
-  cobertura distinguida de consulta direta e preparação final do pedido; ver
-  [evidências](../evidencias/e2-analise-documental-duravel-2026-11-12.md).
+Evidências: [documentos](../evidencias/e2-documentos-2026-11-11.md),
+[recuperação](../evidencias/e2-recuperacao-documental-2026-11-11.md),
+[memória](../evidencias/e2-memoria-conversa-2026-11-12.md),
+[análise durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md).
 
-- [x] Recuperação documental integrada à conversa por ferramentas de listagem,
-  busca e leitura, com cobertura persistida e bloqueio de propostas integrais
-  incompletas; ver [evidências](../evidencias/e2-recuperacao-documental-2026-11-11.md).
-- [x] Recorte de upload privado, qualidade por trecho, extração nativa PDF/DOCX/TXT,
-  fonte do Caso automática, progresso no frontend e worker documental com fence.
-- [x] Pipeline OCR real, métricas e corpus sintético inicial; calibração não aprovada,
-  portanto OCR desligado no rollout. Ver [evidências E2](../evidencias/e2-documentos-2026-11-11.md).
-- [x] Busca full-text/exata filtrada e manifesto documental; fonte revogada ou
-  reprocessada invalida publicação, aplicação e reutilização de histórico derivado.
-- [ ] Upload privado, extração/OCR por página e indicadores de qualidade.
-- [ ] Extração dos documentos já cadastrados no Caso, com versão e autorização.
-- [x] Busca documental filtrada e memória de conversa com proveniência/invalidação; recuperação do histórico por texto/intervalo.
-- [ ] Limites de arquivo, páginas, custo e recuperação após falha.
+## E3 — conversa com IA e geração
 
-### E3 — conversa com IA e geração
+- [x] Histórico elegível e Peça atual no contexto; mensagens originais preservadas.
+- [x] Adaptador, ferramentas autorizadas, prompts/contratos versionados e limites técnicos.
+- [x] Intenção automática e propostas na mesma saída estruturada, sem modos obrigatórios.
+- [x] Ajuste de proposta referenciada substitui pendências e preserva grupos aprovados.
+- [x] Chat v2 durável e minutas por seções com checkpoints/revisão; rascunho incompleto
+  não é publicado como proposta integral aprovável.
+- [x] Ledger por chamada física e somatório por execução, sem conteúdo jurídico.
+- [x] Suíte conversacional e runner com controle de custo preparados e testados offline.
+- [x] Minuta/correção/aprovação/consulta, leitura parcial e segurança com modelo
+  real no recorte de quatro cenários/seis interações; zero falhas nos checks.
+- [ ] Completar análise integral documental e memória extensa com modelo real;
+  investigar consulta simples de 63,941 s — P01.
+- [ ] Homologação humana de qualidade jurídica/fidelidade — P02.
+- [ ] Tetos financeiros agregados de produção — P03.
 
-- [x] Persistência/recuperação de perguntas e respostas e contexto cronológico
-  básico, com fonte atual da Peça e rejeições, dentro da janela disponível.
-- [ ] Adaptador ampliado, ferramentas, orçamento e prompts versionados.
-- [x] Conversa sem modos técnicos, intenção e grupos na mesma saída estruturada,
-  propostas validadas e abertura direta da comparação atrás de flag.
-- [x] Ajuste de proposta referenciada substitui pendências atomicamente,
-  preservando grupos aprovados; verificado com provedor simulado.
-- [ ] Continuidade real, correções de fatos, ajustes em proposta referenciada.
-- [ ] Geração extensa com checkpoints e distinção de resultado incompleto.
-- [ ] Ledger por chamada e somatório por execução, sem conteúdo jurídico.
+Evidências: [conversa livre](../evidencias/e3-conversa-livre-2026-11-11.md),
+[geração durável](../evidencias/e2-e3-geracao-duravel-2026-11-12.md),
+[avaliação real reduzida](../evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+O endpoint v1 independente mantém execução ligada à requisição; não se declara
+migração de todos os contratos legados para o worker v2.
 
-### E4 — edição visual e aplicação
+## E4 — edição visual e aplicação
 
-- [ ] Compilador de propostas, hashes, grupos e diff determinístico.
-- [ ] ReviewExtension/toolbar, acessibilidade e paginação de revisão.
-- [ ] ensurePersisted e coordenação de commit externo sem PATCH duplicado.
-- [ ] Serviço transacional, recibos, reconciliação e aplicação parcial.
-- [ ] Undo/redo, preservação de marks e exportação sem previews.
+- [x] Compilador de propostas, hashes, grupos e comparação determinística.
+- [x] Extensão/toolbar de revisão e navegação entre mudanças no editor real.
+- [x] ensurePersisted e coordenação de commit externo sem PATCH duplicado.
+- [x] Serviço transacional, recibos, reconciliação e aplicação parcial.
+- [x] Undo/redo e preservação de formatação verificados no recorte local/focado.
+- [ ] Fechar matriz completa de schema/formatação, documentos longos, acessibilidade,
+  paginação, persistência e exportação sem previews — P07. Isso amplia a validação
+  da implementação existente; não significa que compilador ou transação faltem.
 
-### E5 — integração e ativação
+Evidências: [prova local](../evidencias/e0-editor-2026-11-11.md),
+[integração persistida](../evidencias/e1-revisao-persistida-2026-11-11.md).
 
-- [ ] Jornada completa com conteúdo fictício e múltiplos usuários.
-- [ ] Capacidades/flag de rollout v2 por organização. Gate separado das flags de operação.
-- [ ] UI ativa v1 ou v2 por sessão, sem aplicar simultaneamente proposta legada
-  sem registro e proposta nova no mesmo editor.
-- [ ] Atualizar aviso quando necessário para refletir conversa persistida e
-  anexos privados; não reutilizar consentimento de conteúdo diferente por conveniência.
-- [ ] Plano de rollback preserva dados v2; desliga novas gerações/aplicações,
-  não apaga chats, não faz downgrade destrutivo de banco nem reabre acesso.
+## E5 — integração e ativação
 
-## Matriz mínima de validação
+- [x] Testes com conteúdo fictício de isolamento, múltiplos titulares, perda de vínculo,
+  geração durável e exclusão, incluindo API/PostgreSQL e E2E focados.
+- [x] Flags operacionais e capacidades existentes selecionam a experiência disponível.
+- [x] Aviso com persistência/anexos privados e versão de aceite correspondente.
+- [x] Migrations aditivas e proteções de downgrade de estruturas com dados.
+- [ ] Completar gate específico de rollout v2 por organização, separado das flags
+  operacionais; validar seleção v1/v2 sem aplicação concorrente dos fluxos — P06.
+- [ ] Homologar a jornada integrada com o modelo real e revisar resultados — P01/P02/P06.
+- [ ] Rever texto/versão final do aviso e regressões da jornada — P07.
+- [ ] Monitoramento e alertas de custo, falhas, jobs e exclusões — P04.
+- [ ] Preparar armazenamento, HTTPS/origens, migrations, drenagem de workers e
+  temporários legados; ensaiar deploy/rollback sem perda ou reexposição — P08.
+- [ ] Comprovar proteção das exclusões em backups/restauração — P05.
 
-| Cenário | Evidência exigida |
-|---|---|
-| Dois usuários, mesma Peça | Sem acesso ao chat/anexo/índice/recibo alheio; Peça aprovada é compartilhada |
-| Sem Membership | Login pessoal lê/exclui histórico próprio; token não acessa Peça, Caso, geração ou aplicação |
-| OCR ruim/parcial/misto | Trechos reprovados ausentes do contexto; falha e cobertura visíveis |
-| Correção de fatos | Novo pedido usa correção, mantendo origem; informação antiga não ressurge do resumo |
-| Conversa longa | Histórico íntegro, resumo versionado e recuperação relevante |
-| Todos os documentos | Registro de cobertura ou declaração explícita de processamento incompleto |
-| Aprovação | Resultado idêntico ao preview e nenhuma segunda confirmação |
-| Duas aplicações simultâneas | Um commit ou mesmo recibo; sem duplicação nem gravação parcial |
-| Rede cai após commit | Recibo resolve resultado; não sobrescreve versão mais recente |
-| Autosave em andamento | Drena revisões; bloqueia alterações no commit; não dispara PATCH duplicado |
-| Aprovação parcial | Restante preserva preview ou é desatualizado explicitamente |
-| Desfazer/refazer | Um lote por evento de undo; persistência e exportação corretas |
-| Exclusão durante execução | Cancelamento e fence impedem recriação de derivados |
-| Restauração de backup | Exclusões autorizadas reaplicadas antes de abrir a aplicação |
-| Budget/timeout/restart | Uso agregado, checkpoint consistente e nenhum rascunho truncado aplicável |
+Evidências: [geração](../evidencias/e2-e3-geracao-duravel-2026-11-12.md),
+[histórico pessoal](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).
+O [procedimento operacional](06-operacao-exclusao-restauracao.md) está escrito;
+sua existência não comprova provisionamento nem execução do ensaio.
 
-Backend: testes unitários para compilação e política; integração com PostgreSQL
-real para locks, transações, constraints e falhas. InMemory não comprova esses
-comportamentos. Frontend: Vitest/RTL para hooks/estado e Playwright para diff,
-foco, paginação, rede, undo e autosave. Avaliações jurídicas e prompt injection
-ganham casos de ferramentas, memória e anexos; baseline antiga não é transferida.
+## Matriz de validação e situação atual
 
-## Situação ao concluir o detalhamento, antes da implementação
+| Cenário | Situação registrada | Fechamento restante |
+|---|---|---|
+| Dois usuários na mesma Peça; outra organização | Testes técnicos e recorte real de anexo privado de outro titular aprovados | Jornada ampliada e piloto: P01/P06 |
+| Histórico sem Membership | API/PostgreSQL e UI focada aprovados; sem acesso a fontes atuais | Ambiente de implantação: P08 |
+| Leitura nativa parcial/duvidosa | Gate, sinalização e resposta com fonte parcial verificados no recorte real | Avaliação ampliada/revisão: P01/P02 |
+| OCR ruim/parcial/misto | Pipeline inicial; calibração insuficiente, desativado | P09 em espera |
+| Correções e conversa longa | Correção/consulta após aprovação verificadas com modelo real; memória extensa com simulação | Memória extensa real: P01/P02 |
+| Todos os documentos | Cobertura/checkpoints e bloqueio de conclusão incompleta testados | Qualidade real: P01/P02 |
+| Aprovação, aplicação simultânea e perda de resposta | Transação, recibo, idempotência e reconciliação testados | Jornada integrada: P06/P07 |
+| Autosave e aprovação parcial | Coordenação e remapeamento verificados em testes focados | Matriz ampliada: P07 |
+| Undo/redo, marks e exportação | Recorte local/focado validado; exportação integral não homologada | P07 |
+| Exclusão durante execução | Cancelamento, fence e expurgo ativo testados | Monitoramento/deploy: P04/P08 |
+| Restauração de backup | Procedimento documentado; infraestrutura/ensaio pendentes | P05 |
+| Limites, restart e timeout | Ledger/checkpoints/retomada testados; resultado incerto sem retry pago automático | Custo real e controle financeiro: P01/P03 |
 
-Conferidos código backend/frontend e fontes oficiais; artefatos de contrato e
-exemplos validados estruturalmente. Não foram executados testes de aplicação,
-OCR, benchmarks, chamadas ao modelo, migrations ou alterações no frontend.
-Datas, quantidades e limites são propostas de piloto, não resultados medidos.
-Não há prazo fechado para a ampliação nem custos externos aprovados.
+Backend usa testes unitários e integração PostgreSQL para locks, transações e
+constraints. Frontend tem testes unitários e Playwright focado. Os números da
+última rodada, as ressalvas sobre E2E completo e as condições de ativação estão
+no [estado atual](../estado-atual.md#verificações-já-registradas).
 
-## Atualização da implementação
+## Ordem de continuidade
 
-A prova local da E0 do editor foi implementada e verificada. Resultados e falhas
-anteriores de regressão estão no
-[registro E0 do editor](../evidencias/e0-editor-2026-11-11.md). A validação de OCR,
-modelo e a integração transacional permanecem pendentes.
+1. Revisar a rodada real reduzida (P02) e investigar a latência observada.
+2. Completar os cenários adiados de P01 com orçamento adicional definido.
+3. Fechar P03–P08 e registrar evidências antes da liberação controlada.
+4. Manter P09 em espera até repriorização explícita.
+
+Não há prazo de entrega, SLA de exclusão de backups ou custo do piloto aprovado
+por este plano. As flags permanecem desligadas por padrão.

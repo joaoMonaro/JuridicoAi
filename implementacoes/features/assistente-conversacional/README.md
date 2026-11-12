@@ -1,25 +1,24 @@
 # Assistente conversacional com edição da Peça e contexto persistente
 
-> **Estado:** conversa livre, propostas automáticas, revisão persistida e histórico
-> usados no editor real, atrás de flags (recorte de E1/E3/E4). Conversas extensas
-> com resumo/recuperação e análise documental por etapas implementadas; avaliação com modelo real pendente. Anexos e leitura nativa
-> integrados; OCR com pipeline testado, ainda sem calibração para rollout.
+> **Estado em 2026-11-12:** fluxo principal implementado atrás de flags, incluindo
+> conversa livre, contexto/memória, documentos nativos, revisão no editor, geração
+> durável por seções, histórico pessoal e exclusão autorizada do ambiente ativo.
+> Avaliação real reduzida aprovada nos checks técnicos; avaliação ampla,
+> homologação e preparação do piloto pendentes. OCR em espera.
 >
-> **Data:** 2026-11-10
+> **Referência de andamento:** [estado atual, entregas e pontos restantes](estado-atual.md).
+> **Acompanhamento:** [TODO da feature e melhorias evidenciadas](TODO.md).
+> **Integração:** [contratos, persistência e configuração implementados](especificacoes/07-contratos-implementados.md).
 >
-> **Detalhamento técnico atualizado em:** 2026-11-12
->
-> **Origem:** conversa com o responsável pelo produto.
->
-> **Relação:** amplia a proposta de geração de minutas, incluindo continuidade
-> conversacional, documentos e edição com aprovação visual. Não declara entrega
-> nem transfere aprovações técnicas das avaliações anteriores.
+> **Escopo original:** 2026-11-10, definido com o responsável pelo produto.
+> Este documento preserva as decisões; implementação técnica não equivale à
+> aprovação de qualidade jurídica nem à liberação em produção.
 
 ## Problema e objetivo
 
-O fluxo atual exige modos predefinidos, separa pedidos sem memória conversacional
-e torna a aplicação das sugestões inconveniente. O usuário precisa conseguir
-relatar o caso, fornecer documentos, gerar a minuta e continuar trabalhando nela
+O fluxo anterior exigia modos predefinidos, separava pedidos sem memória
+conversacional e tornava a aplicação das sugestões inconveniente. O usuário
+precisa conseguir relatar o caso, fornecer documentos, gerar a minuta e continuar trabalhando nela
 com o assistente, inclusive após fechar e reabrir a aplicação.
 
 O objetivo é um chat livre capaz de preparar e executar alterações na Peça
@@ -56,8 +55,9 @@ segunda pergunta de confirmação no chat.
 - O titular autenticado pode ler o histórico privado do chat após perder acesso
   à Peça e continua podendo autorizar sua exclusão. Essa consulta não libera
   acesso à Peça atual, ao Caso ou a novas consultas às suas fontes compartilhadas.
-- Leitura de PDF com texto, DOCX, TXT, PDF digitalizado e imagens, incluindo OCR
-  na primeira entrega.
+- Leitura de PDF com texto, DOCX e TXT no escopo ativo. A decisão original de
+  incluir PDF digitalizado/imagens por OCR na primeira entrega foi posteriormente
+  adiada: calibração em [espera](../../standBy/calibracao-ocr/README.md), OCR desativado.
 - Somente trechos com leitura confiável podem ser usados. Conteúdo ilegível,
   incompleto ou duvidoso é sinalizado e excluído do contexto utilizado. Trechos
   confiáveis de um documento parcialmente legível podem ser aproveitados sem
@@ -80,8 +80,9 @@ segunda pergunta de confirmação no chat.
   “continue”. Limites impeditivos são informados e o trabalho é preservado,
   sem apresentar conteúdo truncado como minuta completa.
 
-O detalhamento técnico concretiza os comportamentos acima. Permanecem pendentes
-as provas de compatibilidade, calibração e medições listadas ao final.
+O detalhamento técnico concretiza os comportamentos acima. Implementação,
+validações e preparação operacional têm estados distintos, discriminados no
+[registro atual](estado-atual.md).
 
 ## Jornada proposta para a primeira entrega
 
@@ -252,9 +253,11 @@ e uso do conteúdo nas respostas e minutas. Arquivos não suportados, ilegíveis
 parcialmente processados devem ter indicação clara; o assistente não pode alegar
 ter lido conteúdo indisponível.
 
-Estão incluídos PDF com texto, DOCX, TXT, PDF digitalizado e imagens, com OCR na
-primeira entrega. Documentos já cadastrados no mesmo Caso ficam automaticamente
-disponíveis para consulta conforme as permissões do usuário.
+O escopo ativo inclui leitura nativa de PDF com texto, DOCX e TXT. PDF digitalizado
+e imagens dependem do OCR, cuja calibração foi colocada em espera após a definição
+inicial da entrega. Documentos já cadastrados no mesmo Caso ficam automaticamente
+disponíveis para consulta conforme as permissões do usuário; sua leitura também
+respeita as limitações de formato e qualidade.
 
 Anexos enviados pelo chat pertencem exclusivamente àquela conversa. Não são
 promovidos automaticamente a documentos do Caso nem disponibilizados a outros
@@ -269,9 +272,9 @@ confiáveis podem ser aproveitadas sem tratar o documento inteiro como lido.
 O filtro avalia a qualidade da extração; contradições entre conteúdos legíveis
 continuam precisando ser identificadas.
 
-Critérios de qualidade, formatos específicos de imagem e limites de tamanho
-serão detalhados no desenho técnico. O suporte atual de armazenamento não
-comprova suporte de leitura pela IA.
+Critérios e limites estão no desenho e nas especificações técnicas. A leitura
+nativa foi implementada; imagens/digitalizações dependem da calibração pausada.
+Suporte de armazenamento não comprova suporte de leitura pela IA.
 
 ## Reaproveitamento e limites
 
@@ -288,106 +291,83 @@ Casos ou Peças, coedição simultânea e múltiplas conversas ramificadas para 
 usuário na mesma Peça.
 Esses itens exigem escopo próprio se forem desejados.
 
-## Critérios de aceite propostos
+## Critérios de aceite — situação técnica
 
-- [ ] Relatar fatos e fornecer documentos no chat permite gerar uma minuta sem selecionar modo técnico.
-- [ ] A interface informa quais anexos foram lidos, falharam ou não são suportados.
-- [ ] Trechos de leitura incompleta ou duvidosa são sinalizados e excluídos do contexto utilizado.
-- [ ] Dados e documentos autorizados do mesmo Caso podem ser consultados sem seleção manual repetitiva.
+As marcações indicam implementação e testes do recorte técnico, inclusive com
+provedor simulado. Não aprovam o comportamento semântico do modelo real nem a
+jornada integral. Pendências de qualidade permanecem abertas abaixo; a matriz
+ampliada do editor, a homologação e as condições operacionais estão em
+[P01–P08](estado-atual.md#pontos-restantes). OCR continua fora do escopo ativo.
+
+- [x] Relatar fatos e fornecer documentos no chat permite gerar uma minuta sem selecionar modo técnico.
+- [x] A interface informa quais anexos foram lidos, falharam ou não são suportados.
+- [x] Trechos de leitura incompleta ou duvidosa são sinalizados e excluídos do contexto utilizado.
+- [x] Dados e documentos autorizados do mesmo Caso podem ser consultados sem seleção manual repetitiva.
 - [ ] A minuta usa o material disponível sem inventar fatos ou fontes para preencher lacunas.
-- [ ] Perguntas informativas não alteram o documento nem exigem aprovação de edição.
-- [ ] Uma alteração exibe original, resultado e destino antes da aprovação.
-- [ ] A revisão ocorre no próprio documento, com navegação e aprovação ou rejeição individual e em conjunto.
-- [ ] Aprovar na comparação aplica a mudança sem nova confirmação no chat.
-- [ ] Rejeitar, cancelar ou ajustar uma proposta pendente preserva a Peça.
-- [ ] Pedidos como “encurte essa parte” podem referir-se à proposta anterior na conversa.
-- [ ] Novas edições consideram a Peça atual, incluindo mudanças manuais.
+- [x] Perguntas informativas não alteram o documento nem exigem aprovação de edição.
+- [x] Uma alteração exibe original, resultado e destino antes da aprovação.
+- [x] A revisão ocorre no próprio documento, com navegação e aprovação ou rejeição individual e em conjunto.
+- [x] Aprovar na comparação aplica a mudança sem nova confirmação no chat.
+- [x] Rejeitar, cancelar ou ajustar uma proposta pendente preserva a Peça.
+- [x] Pedidos como “encurte essa parte” podem referir-se à proposta anterior na conversa.
+- [x] Novas edições consideram a Peça atual, incluindo mudanças manuais.
 - [ ] Uma correção factual no chat é considerada nos pedidos posteriores.
-- [ ] Reabrir a página recupera mensagens, anexos disponíveis e estados das propostas.
-- [ ] Conversas não são excluídas automaticamente por prazo, inatividade ou exclusão da Peça, sem autorização explícita.
-- [ ] O usuário pode excluir sua conversa; mensagens, anexos privados e derivados deixam de integrar o contexto, preservando o texto aprovado na Peça.
-- [ ] Após perder acesso à Peça, o titular autenticado pode ler e excluir seu histórico privado sem acessar a Peça atual, atualizar fontes do Caso ou aplicar propostas.
-- [ ] Uma nova conversa não recupera conteúdo privado excluído e utiliza somente o contexto automático autorizado.
-- [ ] Outro usuário autorizado da mesma Peça recebe seu próprio chat, sem acesso a mensagens, propostas ou anexos privados do primeiro.
-- [ ] Anexos privados, OCR, extrações e resumos não vazam por buscas, referências ou contexto automático de outros chats.
-- [ ] Alterações aprovadas ficam visíveis na Peça conforme suas permissões, preservando a privacidade da conversa de origem.
-- [ ] Propostas não são aplicadas duas vezes nem sobre conteúdo incompatível sem nova revisão.
-- [ ] Aplicação, salvamento, desfazer e persistência após recarregar funcionam em conjunto.
-- [ ] Alertas e explicações não são inseridos acidentalmente como texto jurídico.
-- [ ] O contexto e os arquivos de outra organização não ficam acessíveis ao assistente.
-- [ ] Geração incompleta, contexto excessivo e falhas de leitura ou salvamento têm tratamento visível.
-- [ ] Resumir o contexto de conversas longas preserva o histórico integral e permite consultar mensagens anteriores.
-- [ ] Arquivos extensos apresentam progresso e distinguem leitura parcial de processamento concluído.
-- [ ] Minutas geradas em etapas formam uma proposta completa antes da aprovação, sem pedidos repetidos de “continue”.
-- [ ] Limites impeditivos preservam o trabalho e não expõem texto truncado como minuta pronta para aplicação.
+- [x] Reabrir a página recupera mensagens, anexos disponíveis e estados das propostas.
+- [x] Conversas não são excluídas automaticamente por prazo, inatividade ou exclusão da Peça, sem autorização explícita.
+- [x] O usuário pode excluir sua conversa; mensagens, anexos privados e derivados deixam de integrar o contexto, preservando o texto aprovado na Peça.
+- [x] Após perder acesso à Peça, o titular autenticado pode ler e excluir seu histórico privado sem acessar a Peça atual, atualizar fontes do Caso ou aplicar propostas.
+- [x] Uma nova conversa não recupera conteúdo privado excluído e utiliza somente o contexto automático autorizado.
+- [x] Outro usuário autorizado da mesma Peça recebe seu próprio chat, sem acesso a mensagens, propostas ou anexos privados do primeiro.
+- [x] Anexos privados, OCR, extrações e resumos não vazam por buscas, referências ou contexto automático de outros chats.
+- [x] Alterações aprovadas ficam visíveis na Peça conforme suas permissões, preservando a privacidade da conversa de origem.
+- [x] Propostas não são aplicadas duas vezes nem sobre conteúdo incompatível sem nova revisão.
+- [x] Aplicação, salvamento, desfazer e persistência após recarregar funcionam em conjunto.
+- [x] Alertas e explicações não são inseridos acidentalmente como texto jurídico.
+- [x] O contexto e os arquivos de outra organização não ficam acessíveis ao assistente.
+- [x] Geração incompleta, contexto excessivo e falhas de leitura ou salvamento têm tratamento visível.
+- [x] Resumir o contexto de conversas longas preserva o histórico integral e permite consultar mensagens anteriores.
+- [x] Arquivos extensos apresentam progresso e distinguem leitura parcial de processamento concluído.
+- [x] Minutas geradas em etapas formam uma proposta completa antes da aprovação, sem pedidos repetidos de “continue”.
+- [x] Limites impeditivos preservam o trabalho e não expõem texto truncado como minuta pronta para aplicação.
 - [ ] Testes pertinentes, avaliações atualizadas e validação manual cobrem a jornada completa.
 
-## Detalhamento técnico e validações pendentes
+## Implementação e evidências
 
-A comparação no editor tem uma implementação local no frontend em
-`../JuridicoAi-frontend`, acessível em desenvolvimento por `/dev/revisao-peca`.
-Inclui preview, aprovação/rejeição individual e em lote, preservação de formatação
-e undo/redo. Essa demonstração não usa IA nem grava documentos reais.
-Veja [o registro da E0 do editor](evidencias/e0-editor-2026-11-11.md).
+O [estado atual](estado-atual.md) reúne entregas, commits de referência, resultados
+registrados e pendências P01–P09. O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
+foi atualizado para não apresentar funcionalidades entregues como ausentes.
 
-A revisão também foi conectada ao editor real e ao backend, com propostas
-privadas persistidas, aprovação transacional, recibos e coordenação com autosave.
-É uma ponte sobre as sugestões do assistente atual, desabilitada por padrão.
-Veja [implementação, ativação e evidências](evidencias/e1-revisao-persistida-2026-11-11.md).
+A implementação inclui a comparação no editor real e aplicação transacional,
+conversa livre com histórico, extração nativa e ferramentas documentais, memória
+versionada, análise e geração duráveis, minutas por seções, histórico pessoal e
+exclusão autorizada. Não se limita mais à demonstração `/dev/revisao-peca`.
+O frontend está em `../JuridicoAi-frontend`.
 
-Na etapa seguinte, perguntas e respostas passaram a ser persistidas e recuperadas
-no painel. O gerador usa o histórico elegível e a Peça atual como contexto, com
-estados de falha/cancelamento e proteção contra repetição de pedidos. Continua
-usando os modos atuais nesse recorte. Veja [evidências e limites do histórico](evidencias/e1-e3-historico-2026-11-11.md).
+Os [registros de evidência](evidencias/) documentam a evolução por etapa. Afirmações
+como “worker pendente” nesses registros descrevem a situação daquela data/etapa;
+para o andamento corrente, usar o estado consolidado. A configuração versionada
+mantém as novas flags desligadas por padrão.
 
-Agora, uma flag adicional ativa a conversa livre: intenção na própria geração,
-minuta/edição diretamente na comparação e ajuste de proposta pendente por
-referência, preservando grupos já aprovados. Nenhuma alteração é aplicada antes
-da aprovação visual. Veja [ativação, testes e limites da conversa livre](evidencias/e3-conversa-livre-2026-11-11.md).
-Esse recorte foi seguido pela integração documental descrita abaixo;
-a memória para conversas extensas foi integrada na etapa seguinte. Worker da geração continua pendente.
+## Sequência restante
 
-O [recorte documental](evidencias/e2-documentos-2026-11-11.md) implementa upload
-privado, processamento durável, leitura nativa PDF/DOCX/TXT, qualidade por trecho,
-contexto de anexos/documentos do Caso e progresso no frontend. O pipeline local
-de OCR está testado, mas a calibração inicial teve cobertura insuficiente;
-digitalizações continuam sinalizadas como não lidas com OCR desligado por padrão.
-Recuperação extensa, worker da geração e exclusão continuam pendentes.
+1. Revisar os resultados da avaliação real reduzida e investigar a consulta
+   simples de 63,941 s; fechar revisão humana — P02.
+2. Completar os três cenários adiados de P01 com orçamento adicional definido.
+3. Completar controle financeiro, monitoramento, proteção de restaurações,
+   rollout, compatibilidade e implantação antes do piloto — P03–P08.
+4. Retomar OCR somente quando repriorizado — P09, em espera.
 
-A [recuperação documental por ferramentas](evidencias/e2-recuperacao-documental-2026-11-11.md)
-já está integrada ao chat: busca seletiva, leitura paginada, cobertura por arquivo
-e consumo por chamada. A [memória versionada de conversas extensas](evidencias/e2-memoria-conversa-2026-11-12.md)
-combina resumo, mensagens recentes e recuperação dos originais, com proveniência,
-invalidação e indicação no frontend. A [análise documental durável](evidencias/e2-analise-documental-duravel-2026-11-12.md)
-acrescenta sínteses por lote, consolidação e preparação final do mesmo pedido.
-Geração extensa por seções e durabilidade geral da geração continuam pendentes.
-
-O frontend atual foi conferido em `../JuridicoAi-frontend`. O
-[desenho técnico](desenho-tecnico.md) agora referencia especificações de dados,
-autorização, API, editor, IA, documentos e limites, além de contratos JSON e
-exemplos. As escolhas numéricas são defaults de piloto a medir, não SLAs aprovados.
-
-Antes da liberação, completar a compatibilidade do editor, calibrar a leitura dos
-documentos, avaliar o modelo configurado e medir consumo. O restante da
-implementação e suas evidências estão pendentes; a matriz está no
-[plano de entrega e validação](especificacoes/05-entrega-e-validacao.md).
-
-## Sequência sugerida de implementação
-
-1. Validar contratos e escolhas de engenharia com provas de compatibilidade.
-2. Definir persistência e contratos, incluindo mensagens, anexos e versões.
-3. Integrar processamento documental e montagem de contexto conversacional.
-4. Implementar geração inicial e ciclo de propostas, aprovação e aplicação.
-5. Validar continuidade, preservação do documento, isolamento e qualidade.
-
-As etapas são partes da mesma entrega; persistir mensagens sem usá-las no
-acompanhamento, ou permitir upload sem leitura, não conclui o escopo. Não há
-estimativa de prazo aprovada para esta ampliação.
+A [primeira rodada reduzida](../../../avaliacoes/assistente-conversacional/rodada-1usd.md)
+foi executada com GPT-6.1 Terra: seis interações passaram nos checks técnicos,
+com custo calculado de US$ 0,04549805, abaixo do teto de US$ 1,00. Os demais
+cenários e a revisão jurídica formal continuam pendentes. Ver
+[evidência completa](evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+Não há prazo aprovado para a conclusão nem liberação de produção por este documento.
 
 ## Referências
 
 - [Desenho técnico proposto](desenho-tecnico.md).
-- [Comportamento atual do assistente](../../../docs/backend/assistente-ia.md).
+- [Referência do assistente e contratos legados](../../../docs/backend/assistente-ia.md).
 - [Proposta anterior de geração de minutas](../geracao-minutas-ia/README.md).
 - [DTOs atuais](../../../src/JuridicoAI.Api/src/Application/DTOs/AssistenteIaDtos.cs).
 - [Orquestração atual](../../../src/JuridicoAI.Api/src/Application/Services/AssistenteIaApplicationService.cs).

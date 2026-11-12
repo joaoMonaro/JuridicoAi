@@ -1,12 +1,18 @@
 # Editor, propostas e aplicação transacional
 
-> Especificação de implementação, 2026-11-11. A prova local do editor está
-> implementada; [evidência e limites](../evidencias/e0-editor-2026-11-11.md).
-> O restante descreve a integração prevista, ainda não entregue.
+> Desenho do editor iniciado em 2026-11-11 e conferido em 2026-11-12.
+> A revisão já está integrada ao editor real, com propostas persistidas,
+> compilador, aprovação transacional, recibos e coordenação com autosave.
+> Ver [evidência da integração](../evidencias/e1-revisao-persistida-2026-11-11.md),
+> [contratos efetivos](07-contratos-implementados.md) e [pendências P07](../TODO.md).
+> A homologação integral de schema/exportação/acessibilidade continua aberta.
 
-## Evidência do frontend atual
+## Inspeção inicial do frontend — baseline anterior à integração
 
-| Arquivo em `../JuridicoAi-frontend/src/` | Comportamento conferido |
+A tabela registra o ponto de partida, não limita a integração atual. O painel
+posteriormente ganhou histórico, conversa livre, anexos, memória e jobs duráveis.
+
+| Arquivo em `../JuridicoAi-frontend/src/` | Comportamento na inspeção inicial |
 |---|---|
 | `features/pecas/editor/legal-document-editor.tsx` | TipTap 3, StarterKit + TextAlign para heading/paragraph; onUpdate agenda autosave e incrementa revisão local |
 | `features/pecas/hooks/use-peca-autosave.ts` | Debounce 3s, PATCH versionado; flush chama save uma vez; prepareExport drena pendências e detecta falhas |

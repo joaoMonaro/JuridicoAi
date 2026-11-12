@@ -6,42 +6,37 @@ Este diretório separa a implementação ativa, as entregas já registradas e as
 pendências colocadas em espera. A referência do comportamento disponível
 continua em [`docs/`](../docs/README.md).
 
-A [lista de TODO](../TODO.md) prioriza a conclusão do assistente conversacional.
+A [lista de TODO da feature](features/assistente-conversacional/TODO.md) prioriza
+a conclusão do assistente conversacional e registra as melhorias observadas.
 A [calibração do OCR](standBy/calibracao-ocr/README.md) está em espera por
 orientação do responsável pelo produto; leitura nativa segue no escopo ativo.
 
-## Implementação ativa — em andamento
+## Implementação ativa — assistente conversacional
 
-- [Assistente conversacional com edição da Peça e contexto persistente](features/assistente-conversacional/README.md): conversa livre, revisão, histórico e documentos nativos atrás de flags; memória e análise documental extensa integradas; calibração de OCR e geração extensa por seções pendentes.
-- [Plano anterior de geração de minutas](features/geracao-minutas-ia/README.md), incorporado ao escopo ampliado.
-- [Validação manual que originou a proposta](features/geracao-minutas-ia/evidencias/validacao-manual-experiencia-2026-10-23.md).
-- [Prompt fictício para reprodução](features/geracao-minutas-ia/evidencias/prompts/prompt-geracao-peca-ficticia.txt).
+- [Estado atual, entregas e pontos restantes](features/assistente-conversacional/estado-atual.md): referência de andamento consolidada em 2026-11-12.
+- [Escopo e decisões de produto](features/assistente-conversacional/README.md).
+- [Plano E0–E5 e matriz de validação reconciliados](features/assistente-conversacional/especificacoes/05-entrega-e-validacao.md).
+- [Desenho técnico](features/assistente-conversacional/desenho-tecnico.md).
 
-A feature ativa é o assistente conversacional. A revisão possui persistência
-e aprovação transacional. Mensagens e respostas são recuperadas e usadas como
-contexto, dentro da janela atual. Veja [a etapa de histórico](features/assistente-conversacional/evidencias/e1-e3-historico-2026-11-11.md).
-A [conversa livre](features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md)
-prepara propostas diretamente e permite ajustar pendências pelo chat. Avaliação com modelo real continua pendente.
-O [recorte documental](features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md)
-integra anexos privados, leitura nativa e processamento durável. OCR continua
-desligado: o pipeline funciona, mas a calibração inicial não aprovou rollout.
-O [recorte de recuperação documental](features/assistente-conversacional/evidencias/e2-recuperacao-documental-2026-11-11.md)
-conecta busca e leitura por ferramentas ao chat, com cobertura persistida por arquivo.
-A [memória de conversas extensas](features/assistente-conversacional/evidencias/e2-memoria-conversa-2026-11-12.md)
-combina resumo versionado e recuperação de originais. A [análise documental durável](features/assistente-conversacional/evidencias/e2-analise-documental-duravel-2026-11-12.md)
-acrescenta lotes, consolidação e preparação final após o chat fechar. Geração
-extensa por seções e durabilidade dos demais fluxos continuam pendentes.
+O fluxo principal está implementado atrás de flags: conversa livre, histórico e
+memória, anexos privados/leitura nativa, recuperação documental, análise extensa,
+geração durável por seções, revisão com aprovação transacional, histórico pessoal
+e exclusão autorizada do ambiente ativo.
 
-## Ampliação de escopo e detalhamento técnico
+A avaliação real reduzida passou nos checks técnicos: quatro cenários/seis
+interações, custo calculado de US$ 0,04549805. Ver
+[resultados e limites](features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+Restam avaliação ampliada, homologação, controles financeiros de produção,
+monitoramento, proteção das
+exclusões após restauração, rollout por organização, validação ampliada do editor
+e preparação operacional. OCR permanece desativado e em espera. Implementação
+com testes técnicos não declara aprovação jurídica ou liberação do piloto.
 
-- [Assistente conversacional com edição da Peça e contexto persistente](features/assistente-conversacional/README.md).
-
-A proposta amplia a geração de minutas para uma jornada com documentos,
-continuidade da conversa e edição mediante aprovação visual. O comportamento de
-produto foi definido e possui especificações técnicas, contratos e plano de
-validação. A implementação avançou da E0 local do editor para a revisão
-persistida, com ativação controlada. As limitações
-e estimativas do plano anterior não representam esta ampliação.
+O [plano anterior de geração de minutas](features/geracao-minutas-ia/README.md)
+foi incorporado à ampliação. Sua
+[validação manual](features/geracao-minutas-ia/evidencias/validacao-manual-experiencia-2026-10-23.md)
+e o [prompt fictício](features/geracao-minutas-ia/evidencias/prompts/prompt-geracao-peca-ficticia.txt)
+permanecem como evidências históricas, sem transferir aprovações ao novo fluxo.
 
 ## Entregas registradas e pendências em espera
 
@@ -61,6 +56,8 @@ implementacoes/
 ├── features/
 │   ├── assistente-conversacional/
 │   │   ├── README.md
+│   │   ├── TODO.md
+│   │   ├── estado-atual.md
 │   │   ├── desenho-tecnico.md
 │   │   ├── especificacoes/
 │   │   └── contratos/

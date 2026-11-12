@@ -1,20 +1,28 @@
 # IA, documentos, memória e limites
 
-> Proposta técnica, 2026-11-11. Defaults de piloto, sem medição de desempenho ou
-> qualidade nesta sessão. Nenhuma biblioteca instalada ou chamada de IA executada.
+> Desenho original de 2026-11-11, com situação reconciliada em 2026-11-12.
+> As interfaces/ferramentas e a tabela de defaults abaixo preservam a proposta
+> inicial e não equivalem aos nomes/valores atuais do código. Consultar
+> [contratos e limites implementados](07-contratos-implementados.md).
 
-Atualização: [recorte documental implementado](../evidencias/e2-documentos-2026-11-11.md).
-Leitura nativa usa Poppler em vez do candidato PdfPig. Pipeline Tesseract testado;
-calibração inicial com cobertura insuficiente, OCR ainda desativado. As atualizações
-abaixo registram ferramentas e memória; workflows extensos continuam pendentes.
+Leitura nativa OpenXml/Poppler, recuperação por ferramentas, memória versionada,
+análise documental durável e geração geral/minutas por seções estão implementadas.
+Pipeline Tesseract existe, mas OCR está **desativado e em espera**. Orçamento
+financeiro distribuído de produção continua pendente.
 
-Atualização seguinte: [recuperação documental integrada](../evidencias/e2-recuperacao-documental-2026-11-11.md)
-implementa listar/buscar/ler fontes, cobertura, limites e contabilização por chamada.
-[Memória resumida e recuperação do histórico](../evidencias/e2-memoria-conversa-2026-11-12.md)
-implementadas em 2026-11-12. A [análise documental extensa durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md)
-implementa resumos de lotes, consolidação e preparação final do pedido. O resumo
-de conversa não conta como cobertura documental. Geração extensa por seções e
-orçamento financeiro distribuído continuam pendentes.
+A [avaliação real reduzida](../evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md)
+com GPT-6.1 Terra executou quatro cenários/seis interações e passou nos checks
+com custo calculado de US$ 0,04549805. Memória extensa, análise integral documental
+e homologação jurídica seguem abertas. O modelo do produto continua configurável
+sem valor default; a avaliação não configurou automaticamente o ambiente.
+
+A geração usa ferramentas como `planejar_minuta`, `registrar_secao` e
+`revisar_minuta`, além das ferramentas documentais e de histórico, conforme as
+[evidências da geração](../evidencias/e2-e3-geracao-duravel-2026-11-12.md).
+`consultar_peca` e `preparar_alteracoes` na tabela do desenho original não são
+nomes de ferramentas atualmente anunciadas ao modelo.
+
+## Desenho original e decisões de referência
 
 ## Decisões de implementação
 
@@ -180,9 +188,11 @@ Validar schema, operações permitidas, hashes, extensão e referências. A vali
 determinística não comprova mérito jurídico. Avaliação semântica e revisão humana
 continuam necessárias para fidelidade ao pedido e às fontes.
 
-## Defaults técnicos de piloto
+## Defaults inicialmente propostos — não usar como configuração efetiva
 
-Valores propostos para implementação/configuração; não estimativa de tarifa ou SLA.
+Valores da proposta inicial. Defaults efetivos, inclusive mensagem de 4.000
+caracteres, HTTP de 512 KiB, saída de 6.000 tokens e prazo de geração de 1.800 s,
+estão na especificação 07 e nas classes Settings. Não são tarifas ou SLAs aprovados.
 
 | Configuração | Inicial |
 |---|---|

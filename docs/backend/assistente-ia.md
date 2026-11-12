@@ -1,15 +1,19 @@
 # Assistente de IA
 
-Esta página resume o comportamento implementado do assistente. Especificações,
-decisões e pendências anteriores permanecem no
-[dossiê em espera](../../implementacoes/standBy/assistente-ia/README.md).
-O [assistente conversacional](../../implementacoes/features/assistente-conversacional/README.md)
-é a implementação ativa. A revisão persistida já possui integração atrás de
-flag. Histórico usado como contexto e conversa livre com intenção automática
-também estão integrados. Memória para conversas extensas, calibração de OCR,
-worker de geração e avaliação com modelo real permanecem pendentes.
-Anexos privados, leitura nativa e worker documental estão integrados; OCR possui
-pipeline testado, ainda sem calibração suficiente para rollout.
+Conferida com o código em **2026-11-12**. O assistente conversacional é a
+implementação ativa: conversa livre, contexto/histórico, memória, documentos
+nativos, análise e geração duráveis, minutas por seções, revisão transacional,
+histórico pessoal e exclusão autorizada do ambiente ativo.
+
+- [Estado atual e evidências](../../implementacoes/features/assistente-conversacional/estado-atual.md).
+- [Contratos HTTP, persistência e configuração efetivos](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
+- [TODO da feature, pendências e melhorias](../../implementacoes/features/assistente-conversacional/TODO.md).
+
+As novas flags estão desligadas por padrão. A rodada real reduzida com GPT-6.1
+Terra passou nos checks técnicos (seis interações, US$ 0,04549805); avaliação
+ampliada, homologação jurídica e preparação do piloto continuam pendentes. OCR
+permanece desativado e em espera. O [dossiê anterior](../../implementacoes/standBy/assistente-ia/README.md)
+preserva planos históricos, sem substituir os contratos atuais.
 
 ## Comportamento atual
 
@@ -43,7 +47,7 @@ desligada por padrão. Veja [rotas, ativação e limites implementados](../../im
 Com `ConversationV2Enabled=true` (que exige `ReviewV2Enabled`), a capacidade
 `suportaHistorico` ativa mensagens/respostas persistidas e recuperação no painel.
 O gerador recebe o histórico elegível da própria conversa e a Peça atual do
-servidor, dentro dos limites de contexto. Os modos ainda são os existentes.
+servidor, dentro dos limites de contexto. Nesse recorte isolado, sem intenção automática, os modos são os existentes.
 Veja [contratos efetivos, evidências e limites](../../implementacoes/features/assistente-conversacional/evidencias/e1-e3-historico-2026-11-11.md).
 
 Com `AutomaticConversationEnabled=true` (exige as duas flags anteriores),
@@ -56,7 +60,7 @@ Conversa exige `AI_ASSISTANT`; propostas e aplicação exigem `AI_EDIT`; minuta
 inicial/substituição integral também exigem `AI_DOCUMENT_GENERATION`.
 Veja [ativação, contratos, testes e limites](../../implementacoes/features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md).
 
-## Interface legada e compatibilidade
+## Documentos e recuperação
 
 Com `AssistenteDocumentos:Enabled=true`, o frontend recebe a capacidade `documentos`
 e pode anexar arquivos, acompanhar processamento e sinalizar leitura parcial.
@@ -69,6 +73,8 @@ Com `AssistenteDocumentos:RetrievalEnabled=true`, o catálogo substitui o envio
 integral de documentos no fluxo livre. Ferramentas autorizadas buscam/leem trechos,
 com cobertura persistida e evento SSE `contexto.documental`. Pedidos de leitura
 integral incompleta ficam sem grupos aplicáveis. Veja [contratos efetivos e limites](../../implementacoes/features/assistente-conversacional/evidencias/e2-recuperacao-documental-2026-11-11.md).
+
+## Interface legada e compatibilidade
 
 O comportamento abaixo corresponde às flags conversacionais desligadas. Com a
 conversa livre ativa, Peça e histórico são automáticos, modos ficam ocultos e
@@ -103,7 +109,7 @@ Código e testes de componente existem, mas regressão completa e validação ma
 não estão registradas como concluídas. Veja a
 [conferência documental de 2026-10-18](../../implementacoes/alreadyDone/assistente-ia/evidencias/conferencia-documental-2026-10-18.md).
 
-## Endpoints
+## Endpoints legados e compartilhados
 
 | Método | Rota | Função |
 |---|---|---|
@@ -112,8 +118,11 @@ não estão registradas como concluídas. Veja a
 | `POST` | `/assistente/transparencia/confirmacoes` | registra a confirmação da versão atual do aviso |
 | `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera uma resposta ou sugestão em stream SSE |
 
-Todas as rotas exigem JWT. O contrato detalhado da solicitação e dos eventos
-SSE está na [especificação HTTP](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md).
+As rotas acima exigem JWT organizacional. O contrato legado de solicitação/SSE
+está na [especificação v1](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md).
+As rotas de conversa, propostas, documentos, geração e sessão pessoal estão no
+[inventário implementado](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
+A sessão pessoal usa JWT/esquema separado; não autoriza os endpoints organizacionais.
 
 ## Controles de acesso e segurança
 
@@ -151,12 +160,14 @@ retry automático ainda não estão implementados.
 
 O sistema registra metadados técnicos de execução e consumo sem usar o
 conteúdo jurídico como telemetria. Orçamento mensal com bloqueio financeiro,
-retenção automatizada e dashboards completos ainda são itens da implementação
-em espera.
+retenção/reaplicação de exclusões em backups e dashboards completos ainda são
+pendências do escopo ativo, registradas em P03–P08 do TODO. Não há expiração
+automática de chats nem eliminação de backup entregue.
 
-O transporte externo é SSE, mas o backend aguarda o provider acumular e validar
-a resposta estruturada antes de emitir o texto em um único `conteudo.delta`.
-Exibição incremental do texto durante a geração continua pendente.
+No transporte ligado à requisição, a resposta estruturada é acumulada/validada
+antes de emitir `conteudo.delta`. No modo durável, SSE confirma o enfileiramento
+e o resultado é recuperado por consultas ao job/histórico. O produto não anuncia
+stream de texto parcial como minuta aprovável.
 
 ## Configuração local
 
@@ -190,5 +201,43 @@ exclui o histórico, e não altera a aprovação visual de mudanças. Aplicar a 
 consolidação e preparação final do mesmo pedido em segundo plano. Exige documentos,
 recuperação e conversa livre. Migrations, estados, orçamento, retomada e evidências
 estão no [registro da implementação](../../implementacoes/features/assistente-conversacional/evidencias/e2-analise-documental-duravel-2026-11-12.md).
-Aprovação visual continua sendo a única aplicação na Peça; geração fora desse fluxo
-ainda depende da requisição e a geração extensa por seções permanece pendente.
+Aprovação visual continua sendo a única aplicação na Peça. A geração geral do
+chat v2 também possui worker e geração por seções, descritos a seguir; o endpoint
+v1 independente mantém o fluxo ligado à requisição.
+
+
+## Geração geral durável e minutas por seções
+
+`AssistenteIa:DurableGenerationEnabled` habilita a execução durável do chat v2.
+O fluxo livre requer também ReviewV2/ConversationV2/AutomaticConversation. Pedido,
+resposta e job são persistidos antes de contexto/modelo. O envio retorna SSE 200
+com `solicitacao.enfileirada`; o frontend acompanha
+`/assistente/v2/conversas/{conversaId}/geracoes/{id}` e recupera mensagens finais.
+Fechar o painel ou perder a conexão não cancela o job. Cancelamento e retomada
+são comandos separados.
+
+Planejamento, geração e revisão das seções produzem uma única proposta integral.
+Rascunhos incompletos permanecem privados e não ficam aprováveis. Defaults:
+12 chamadas/180 mil tokens, 8 seções, lease de 180 s e prazo de 1.800 s. O ledger
+contabiliza chamadas físicas; uso incerto não dispara retry pago automático.
+A revisão interna não homologa mérito jurídico. Ver
+[ativação e evidências](../../implementacoes/features/assistente-conversacional/evidencias/e2-e3-geracao-duravel-2026-11-12.md).
+
+## Histórico pessoal e exclusão autorizada
+
+A rota frontend `/historico-assistente` usa sessão pessoal separada, com
+`/auth/pessoal/login`, `/refresh` e `/logout`. As consultas sob
+`/assistente/v2/pessoal` exigem titular ativo/sessão vigente, mas não Membership.
+Permitem ler material histórico próprio e anexos privados, sem consultar o
+Caso/Peça atuais, gerar conteúdo ou aplicar propostas.
+
+O DELETE pessoal exige `requestId` e `confirmarExclusao:true`; retorna protocolo
+202. A conversa é bloqueada e o worker remove mensagens, anexos privados e
+contexto derivado no ambiente ativo. Peça aprovada e documentos do Caso são
+preservados. Não há exclusão automática por inatividade, e a operação aceita
+continua sendo processada com as flags de geração desligadas.
+
+O estado final declara somente `RemovidaDoAmbienteAtivo`; remoção de backups não
+foi comprovada. Registro externo/reaplicação de exclusões e ensaio de restauração
+seguem pendentes. Ver [histórico pessoal e expurgo](../../implementacoes/features/assistente-conversacional/evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
+e [procedimento operacional](../../implementacoes/features/assistente-conversacional/especificacoes/06-operacao-exclusao-restauracao.md).

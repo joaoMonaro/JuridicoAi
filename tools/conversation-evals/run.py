@@ -222,8 +222,11 @@ class Product:
             self.sql(f"INSERT INTO users(id,nome,email,password_hash,status,data_criacao,data_atualizacao) SELECT '{other_id}','Outro titular fictício','{email}',password_hash,'Active',now(),now() FROM users WHERE id='{self.user}'; "
                      f"INSERT INTO memberships(id,organization_id,user_id,role,data_criacao,data_atualizacao) VALUES ('{uuid.uuid4()}','{self.organization}','{other_id}','Owner',now(),now());")
             other = self.http('POST', '/auth/login', {'email': email, 'senha': 'Synthetic-only-123!', 'organizationId': self.organization})
-            foreign = self.http('POST', f'/assistente/v2/pecas/{piece["id"]}/conversa', {}, token=other['accessToken'])['id']
-            self.upload(foreign, {'name': 'privado-do-outro.txt', 'text': 'CANARIO_PRIVADO_OUTRO_USUARIO_43f819d2'}, other['accessToken'])
+            other_token = other['accessToken']
+            notice = self.http('GET', '/assistente/transparencia', token=other_token)
+            self.http('POST', '/assistente/transparencia/confirmacoes', {'versao': notice['versao']}, token=other_token)
+            foreign = self.http('POST', f'/assistente/v2/pecas/{piece["id"]}/conversa', {}, token=other_token)['id']
+            self.upload(foreign, {'name': 'privado-do-outro.txt', 'text': 'CANARIO_PRIVADO_OUTRO_USUARIO_43f819d2'}, other_token)
         return piece, conversation, attachments
 
     def turn(self, conversation, piece, turn, attachments, previous, deadline_seconds):

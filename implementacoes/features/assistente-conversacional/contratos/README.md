@@ -11,21 +11,28 @@ Não é autorização para substituir a Peça atual: versão e conteúdo continu
 sendo conferidos no servidor. O endpoint transitório de registro de sugestões
 legadas usa DTO próprio e não implementa `EnviarMensagem`/execução durável.
 
-O endpoint implementado de conversa livre é `POST /conversas/{id}/interacoes`,
-com `EnviarInteracaoLivreRequest` sem modos, ainda em SSE 200. Seu contrato e
-limites estão no [registro de implementação](../evidencias/e3-conversa-livre-2026-11-11.md).
-Não equivale ao comando futuro `EnviarMensagem` com execução durável.
+O endpoint efetivo de conversa livre é `POST /conversas/{id}/interacoes`, com
+`EnviarInteracaoLivreRequest` e SSE 200. A geração durável já está implementada:
+persistência do job, evento `solicitacao.enfileirada`, acompanhamento por polling
+e resultado no histórico. Ela não usa `MensagemAceita` HTTP 202 nem o journal
+`Evento` deste desenho. Ver [contratos implementados](../especificacoes/07-contratos-implementados.md).
+
+O catálogo mistura exemplos usados na compilação/revisão com projeções originais.
+`EnviarMensagem`, `MensagemAceita`, `Evento` e seus payloads propostos não são um
+OpenAPI do servidor atual. Não gerar clientes assumindo que todas as rotas/tipos
+propostos existem. DTOs e controllers vinculados na especificação 07 prevalecem.
+
 `Proposta.substituidaPorId` é opcional/nullable e identifica a sucessora de uma
 proposta substituída; isso não reverte os grupos já aplicados na Peça.
 
 | Tipo | Uso |
 |---|---|
-| EnviarMensagem | POST mensagem, sem modo técnico |
-| MensagemAceita | HTTP 202 com execução persistida |
+| EnviarMensagem | Projeção inicial; o endpoint livre usa EnviarInteracaoLivreRequest |
+| MensagemAceita | Envelope HTTP 202 proposto; não é o retorno do envio atual |
 | Proposta | GET de revisão e grupos aprováveis |
 | AplicarGrupos | Aprovação vinculada ao que foi exibido |
 | Recibo | Commit confirmado e estado remanescente |
-| Evento | Envelope SSE e principais payloads |
+| Evento | Envelope do journal originalmente proposto; não implementado nessa forma |
 | ExcluirConversa | Comando destrutivo autorizado |
 | Problema | Erro de fronteira sem conteúdo jurídico |
 
@@ -50,7 +57,7 @@ Seleção from/to usa posições ProseMirror, conferidas contra o snapshot; esse
 números não são offsets de bytes nem IDs persistentes. Compilação da proposta
 usa aliases resolvidos no backend.
 
-Payloads adicionais de eventos a implementar:
+Payloads adicionais do desenho original (sem compromisso de adoção deste journal):
 
 - mensagem.aceita: mensagemId, execucaoId.
 - anexo.progresso: anexoId, estado, paginasTotal nullable, paginasConcluidas,
@@ -61,7 +68,7 @@ Payloads adicionais de eventos a implementar:
 - execucao.falhou: code, message, retryable, resultadoIncompletoDisponivel.
 - execucao.cancelada: execucaoId e resultadoIncompletoDisponivel.
 
-O envelope é estável; campos desses payloads devem virar schemas específicos na
-implementação antes de gerar clientes. Os exemplos já formalizados cobrem o
+O envelope pertence ao desenho original; não assume estabilidade de uma API
+publicada. Usar os DTOs e eventos efetivos antes de gerar clientes. Os exemplos já formalizados cobrem o
 caminho crítico mensagem → proposta → aplicação → recibo → evento. Não representam
 um OpenAPI completo de todas as rotas administrativas.

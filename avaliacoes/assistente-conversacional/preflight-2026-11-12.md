@@ -37,3 +37,22 @@ solicitação de avaliação não foi tratada como autorização de gasto ilimit
 
 OCR segue em stand by. Backup, rollout e homologação jurídica permanecem nos seus
 recortes próprios; não foram avaliados por este preflight.
+
+## Atualização após a escolha de modelo e orçamento
+
+O responsável definiu `gpt-6.1-terra` e **US$ 1,00 no total**, com primeira rodada
+reduzida. O [plano e comando exatos](rodada-1usd.md) selecionam quatro cenários e
+seis interações. Novo preflight com esses parâmetros e preços oficiais conferidos
+apontou somente a chave de API local ausente. Os achados originais acima são
+históricos; modelo e teto não são mais decisões em aberto. Nenhuma chamada paga
+foi executada nesta atualização.
+
+## Encerramento da rodada reduzida
+
+Depois deste preflight, o responsável forneceu uma chave temporária e autorizou a
+execução. A rodada reduzida terminou com seis interações tecnicamente aprovadas,
+18 chamadas e custo calculado de US$ 0,04549805, somando execução inicial e
+complemento de isolamento. A chave não foi persistida na configuração e seu uso
+foi encerrado. Ver [evidência consolidada](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+A ausência de credenciais registrada acima descreve a preparação, não um bloqueio
+atual da rodada já concluída. Avaliação ampla e revisão jurídica seguem pendentes.

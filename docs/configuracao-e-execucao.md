@@ -85,6 +85,15 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
 | `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
 | `AssistenteIa:Enabled` | `false` | trava de configuração superior do assistente |
+| `AssistenteIa:ReviewV2Enabled` | `false` | revisão persistida e aprovação transacional |
+| `AssistenteIa:ConversationV2Enabled` | `false` | histórico persistido no contexto |
+| `AssistenteIa:AutomaticConversationEnabled` | `false` | intenção automática/conversa livre |
+| `AssistenteIa:DurableGenerationEnabled` | `false` | geração do chat v2 em worker com checkpoints |
+| `AssistenteIa:HistoryMemoryEnabled` | `false` | memória versionada e recuperação do histórico |
+| `AssistenteDocumentos:Enabled` | `false` | extração nativa e contexto documental |
+| `AssistenteDocumentos:RetrievalEnabled` | `false` | ferramentas documentais com cobertura |
+| `AssistenteDocumentos:AnalysisEnabled` | `false` | análise extensa em segundo plano |
+| `AssistenteDocumentos:OcrEnabled` | `false` | calibração em espera; manter desativado |
 | `AssistenteIa:Provider` | `OpenAI` | provider selecionado |
 | `AssistenteIa:Model` | vazio | modelo enviado ao provider |
 | `AssistenteIa:ApiKey` | vazio | chave sensível do provider |
@@ -94,6 +103,7 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `AssistenteIa:ConcurrentRequestsPerUser` | `2` | concorrência por usuário |
 | `AssistenteIa:RequestsPerOrganizationPerMinute` | `30` | limite agregado por Organization |
 | `AssistenteIa:ConcurrentRequestsPerOrganization` | `6` | concorrência por Organization |
+| `Auth:PersonalHistoryAllowedOrigins` | lista opcional | origens adicionais para autenticação pessoal; exige HTTPS e mesmo site para refresh Strict |
 | `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
 | `Mongo:RawCollectionName` | `jurisprudencias_raw` | dados coletados |
 | `Mongo:JurisprudenciasCollectionName` | `jurisprudencias` | dados processados |
@@ -205,3 +215,19 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 Para usar a IA, configure separadamente o provider e libere apenas a
 Organization desejada conforme [User Secrets](user-secrets.md). A configuração
 local não substitui o aviso de transparência apresentado no primeiro uso.
+
+
+## Ativação do assistente conversacional
+
+Configurar chave/modelo e a flag geral não ativa todos os recortes v2. Capacidades
+combinam flags técnicas, kill switch e permissões da organização. Dependências,
+limites atuais e rotas estão em
+[contratos implementados](../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
+Histórico pessoal e exclusões aceitas continuam disponíveis sem geração habilitada;
+exigem as migrations correspondentes e conta/sessão pessoal válidas.
+
+GPT-6.1 Terra foi usado na avaliação reduzida, sem configurar um modelo default no
+produto. A chave de avaliação foi temporária e não foi persistida. OCR continua em
+espera. Não confundir ativação local com a liberação do piloto, cujas pendências
+financeiras, de acesso, backup e operação estão no
+[TODO da feature](../implementacoes/features/assistente-conversacional/TODO.md).

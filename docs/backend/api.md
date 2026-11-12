@@ -66,8 +66,12 @@ desenvolvimento, a interface Swagger está disponível em
 
 Os contratos, exemplos, regras de cópia de template e controle de concorrência
 estão documentados em [Peças e templates](pecas.md).
-O contrato do assistente e seus eventos estão documentados em
-[Assistente de IA](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md).
+A tabela acima lista as rotas legadas/compartilhadas do assistente. A API também
+implementa conversa/propostas/documentos, jobs duráveis e histórico pessoal. O
+[inventário atual](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
+lista essas rotas e diferencia JWT organizacional de sessão pessoal. A
+[especificação v1](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md)
+continua como referência do endpoint legado.
 Para uma visão operacional do comportamento implementado, consulte também
 [Assistente de IA](assistente-ia.md).
 

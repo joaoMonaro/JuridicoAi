@@ -1,14 +1,19 @@
 # Persistência e autorização — v1 do detalhamento
 
-> Proposta de implementação, 2026-11-11. Nenhuma migration executada.
-> Contrato externo identificado como `assistente-v2` para coexistir com o atual.
+> Desenho original de 2026-11-11, preservado como referência de decisões.
+> **Situação conferida em 2026-11-12:** conversas, mensagens, documentos, memória,
+> jobs, histórico pessoal e exclusão ativa já estão persistidos. O inventário de
+> tabelas/campos abaixo é a projeção original, **não o schema EF implementado**.
+> Consultar [persistência e contratos efetivos](07-contratos-implementados.md)
+> e [estado atual](../estado-atual.md) antes de implementar integrações/migrations.
 
-## Base conferida
+## Base conferida no início do desenho
 
 Backend no commit `1abfdae`, frontend `../JuridicoAi-frontend` no commit
 `7700c511ff7f8ccd7e91893074e90a77a5a95769`, sem modificações locais no frontend.
 Os arquivos atuais de editor, chat e autosave foram lidos. PostgreSQL 17 é o
-serviço definido em `docker-compose.yml`. Mensagens não têm persistência atual.
+serviço definido em `docker-compose.yml`. Naquela baseline, mensagens ainda não
+tinham persistência; essa limitação foi superada pela implementação posterior.
 
 O acesso atual a Casos/Peças é por organização; há papéis Owner e Member, sem ACL
 individual por Peça. Esta entrega centraliza `CanReadPeca` e `CanEditPeca` num
@@ -35,7 +40,8 @@ perda de vínculo precisam impedir operações atuais independentemente do hist�
 
 ## Tabelas e campos
 
-Todos os nomes abaixo são novos; os existentes permanecem.
+Projeção inicial de nomes e campos, com diferenças em relação às migrations
+entregues. Usar o inventário efetivo da especificação 07 para o estado atual.
 
 | Tabela | Campos específicos além de id e organization_id |
 |---|---|

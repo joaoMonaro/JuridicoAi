@@ -18,8 +18,14 @@ aprovação do produto novo.
 6. Instrução maliciosa em documento tratada como dado não confiável.
 7. Isolamento de um anexo de outro usuário na mesma Peça.
 
-A execução real está **pendente de chave, modelo e teto de gasto informados pelo
-responsável**. O preflight e os testes locais não são uma avaliação do modelo.
+Para a primeira rodada, o responsável definiu **GPT-6.1 Terra e teto total de
+US$ 1,00**, com [seleção reduzida de quatro cenários/seis interações](rodada-1usd.md).
+A rodada reduzida foi **executada**: seis interações passaram nos checks técnicos,
+com 18 chamadas e custo calculado de **US$ 0,04549805**. Ver
+[resultados e limitações](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+A avaliação ampla e a homologação jurídica continuam pendentes. A chave foi usada
+apenas temporariamente e o responsável foi avisado de que pode revogá-la. A suíte
+completa permanece disponível para uma avaliação posterior com orçamento próprio.
 OCR permanece desligado; nenhum caso depende da calibração em espera.
 
 ## Validação local, sem API

@@ -1,9 +1,11 @@
 # Geração de minutas por pedido livre na Peça
 
-> **Estado:** ainda a implementar
+> **Estado:** planejamento histórico, incorporado ao assistente conversacional
 >
 > **Plano atual:** incorporado ao [assistente conversacional](../assistente-conversacional/README.md),
-> cuja E0 do editor foi iniciada. Este documento preserva o planejamento anterior.
+> cujo fluxo principal já está implementado atrás de flags. Este documento
+> preserva a análise e os checklists de 2026-10-23, sem representar pendências atuais.
+> Consultar [estado e limites vigentes](../assistente-conversacional/estado-atual.md).
 >
 > **Data:** 2026-10-23
 >

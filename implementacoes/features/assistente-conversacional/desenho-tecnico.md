@@ -1,45 +1,42 @@
 # Desenho técnico proposto — assistente conversacional
 
-> **Estado:** conversa livre, propostas automáticas, revisão persistida e contexto
-> de histórico integrados ao editor atrás de flags. Anexos/leitura nativa e worker
-> documental, memória versionada e análise documental durável integrados; calibração de OCR, geração extensa e avaliação
-> com modelo real pendentes.
+> **Estado em 2026-11-12:** arquitetura com implementação do fluxo principal,
+> incluindo geração durável, minutas por seções, histórico pessoal e exclusão
+> autorizada. Homologação e preparação operacional pendentes; OCR em espera.
 >
-> **Atualizado em:** 2026-11-12
->
-> **Base:** [escopo e decisões de produto](README.md).
+> **Andamento e limites vigentes:** [estado atual](estado-atual.md).
+> **Base de produto:** [escopo e decisões](README.md).
 
-## Detalhamento técnico
+## Como ler este desenho
 
-As especificações abaixo concretizam esta visão de arquitetura. Quando houver
-diferença de detalhe, prevalecem os contratos versionados das especificações:
+Este documento preserva a direção arquitetural definida no início da ampliação.
+Trechos prescritivos descrevem o desenho, não comprovam sua entrega. Consultar o
+[estado atual](estado-atual.md) para distinguir implementação, validação pendente
+e preparação operacional. As evidências originais preservam a situação de cada etapa.
+
+As especificações detalham contratos e decisões; o plano de entrega foi
+reconciliado com a baseline backend `4547485` e frontend `50aa439`:
 
 1. [Dados, índices e autorização](especificacoes/01-dados-e-autorizacao.md).
 2. [API, estados, eventos e execução durável](especificacoes/02-api-e-execucao.md).
 3. [Editor, ancoragem, comparação e aplicação](especificacoes/03-editor-e-aplicacao.md).
 4. [IA, documentos, OCR, memória e limites](especificacoes/04-ia-documentos-e-limites.md).
-5. [Etapas e matriz de validação](especificacoes/05-entrega-e-validacao.md).
+5. [Etapas e matriz de validação atualizadas](especificacoes/05-entrega-e-validacao.md).
 6. [JSON Schema e exemplos de contrato](contratos/README.md).
 7. [Diagramas de componentes, aprovação e dados](diagramas.md).
-8. [Conferência deste detalhamento](evidencias/detalhamento-tecnico-2026-11-11.md).
+8. [Conferência inicial do detalhamento](evidencias/detalhamento-tecnico-2026-11-11.md).
+9. [Procedimento de exclusão e restauração](especificacoes/06-operacao-exclusao-restauracao.md).
+10. [Contratos, persistência e configuração implementados](especificacoes/07-contratos-implementados.md).
 
-Frontend atual conferido em `../JuridicoAi-frontend`, commit `7700c51`. A
-indisponibilidade da cópia antiga não é mais uma pendência. A integração
-transacional possui testes PostgreSQL; calibração de OCR e medições de custo
-ainda não foram executadas.
+As especificações 01–04 preservam decisões do desenho original, com limites e
+nomes propostos que diferem do código. Para implementar clientes, usar a
+especificação 07 e os DTOs/controllers vinculados nela. O plano 05 acompanha a
+entrega atual; o procedimento 06 ainda exige provisionamento e ensaio operacional.
 
-Atualização: além da [prova local do editor](evidencias/e0-editor-2026-11-11.md),
-há [revisão persistida e aplicação no editor real](evidencias/e1-revisao-persistida-2026-11-11.md).
-Também há [histórico persistente usado no contexto](evidencias/e1-e3-historico-2026-11-11.md),
-com geração ainda ligada à requisição e limite explícito de janela.
-O recorte de [conversa livre](evidencias/e3-conversa-livre-2026-11-11.md) reutiliza
-o provedor existente, com intenção e grupos em uma saída estruturada, sem chamada
-separada de classificação nem gravação pelo modelo. Ainda não implementa o loop
-de ferramentas, worker e arquitetura conversacional completa descritos abaixo.
-
-O [recorte documental](evidencias/e2-documentos-2026-11-11.md) acrescenta extração
-nativa com OpenXml/Poppler, fila documental com leases e contexto autorizado.
-O pipeline Tesseract está testado, mas sua calibração não aprovou rollout.
+Backend e frontend já integram conversa, contexto, documentos e revisão. A
+execução durável foi ampliada ao chat v2; o endpoint v1 independente mantém o
+fluxo anterior. Não se deve interpretar as limitações dos recortes iniciais como
+ausência atual de ferramentas, worker, memória ou aplicação transacional.
 
 ## 1. Direção arquitetural
 
@@ -337,9 +334,9 @@ de ferramentas/etapas, tentativas, duração e consumo por execução/organizaç
 Agregação de consumo deve somar todas as chamadas, incluindo resumo e geração
 em etapas. Interrupção por orçamento informa o trabalho restante.
 
-Coordenação de execução e idempotência devem sair do registro apenas em memória
-para o PostgreSQL. Limites de uso entre instâncias também precisam de coordenação
-antes de operar múltiplas réplicas. Um lease de trabalho pode expirar para permitir
+Coordenação durável de execução e idempotência já usam PostgreSQL no chat v2.
+O controle financeiro agregado entre instâncias ainda precisa ser completado
+antes da operação correspondente em produção. Um lease de trabalho pode expirar para permitir
 retomada; isso não significa expirar ou excluir o histórico da conversa.
 
 ## 12. Exclusão autorizada e retenção
@@ -372,8 +369,10 @@ arquivamento/exclusão da Peça.
 6. Validar a jornada completa com dados fictícios e ativar por organização.
 7. Descontinuar o contrato antigo somente após migrar os clientes e validar regressões.
 
-Não existe histórico persistido atual a migrar no backend. Mensagens que existem
-somente em memória de uma interface antiga não podem ser consideradas recuperáveis.
+Na origem desta ampliação, o fluxo antigo não tinha histórico persistido a
+migrar. Agora existem conversas persistidas no backend, que devem ser preservadas
+em deploys/rollback. Mensagens que ficaram apenas na memória da interface antiga
+não podem ser consideradas recuperáveis.
 
 Testes prioritários: isolamento entre chats na mesma Peça; documentos privados
 ausentes da busca alheia; qualidade documental; retomada de execução; correção de
@@ -385,31 +384,18 @@ preservação do texto existente, ferramentas permitidas e mudanças sem aprova�
 Testes determinísticos não substituem avaliação semântica nem validação manual
 da comparação no editor.
 
-## 14. Validações pendentes de implementação
+## 14. Implementação e fechamentos restantes
 
-- Calibrar os critérios propostos com corpus fictício e fixar versões de OCR/extratores.
-- Provar diff, preservação de formatação e undo com os splices no TipTap atual.
-- Executar os contratos de ferramentas e avaliações com o modelo configurado.
-- Medir limites, completar preços e configurar orçamento financeiro do piloto.
-- Validar busca e cobertura antes de adicionar busca semântica.
-- Provisionar armazenamento persistente e validar rotina de backup/exclusão.
+O fluxo principal deste desenho está implementado. A relação de entregas e suas
+provas está no [estado atual](estado-atual.md#o-que-já-foi-feito); os resultados dos
+testes são técnicos, com provedores simulados nos cenários de geração.
 
-As decisões de engenharia e contratos estão nas especificações. Essas validações
-não são perguntas de produto pendentes nem funcionalidades já entregues.
+Restam avaliação real/homologação (P01/P02), controle financeiro de produção
+(P03), monitoramento (P04), registro externo de exclusões e restauração (P05),
+rollout por organização (P06), matriz ampliada do editor/experiência (P07) e
+preparação/ensaio de implantação (P08). OCR continua em espera (P09).
 
-Este documento propõe a arquitetura; não instala bibliotecas, escolhe serviços
-externos, cria migrations ou inicia a implementação.
-
-Atualização: [memória versionada e recuperação do histórico](evidencias/e2-memoria-conversa-2026-11-12.md)
-implementadas atrás de flag, preservando originais e revalidando proveniência.
-
-A [análise documental extensa durável](evidencias/e2-analise-documental-duravel-2026-11-12.md)
-preserva lotes/sínteses, consolida e prepara o resultado do pedido em segundo plano.
-A [geração durável e minutas por seções](evidencias/e2-e3-geracao-duravel-2026-11-12.md)
-amplia a execução em segundo plano a todos os pedidos do chat v2, com checkpoints,
-retomada e uma proposta integral após revisão. Mantida atrás de flag desativada.
-
-O [histórico pessoal e a exclusão autorizada](evidencias/e1-historico-pessoal-exclusao-2026-11-12.md)
-permitem consultar o material persistido após perda de vínculo, com sessão separada
-e sem acesso ao Caso atual. A remoção ativa é rastreável; a validação operacional
-de backups/restauração está no [procedimento complementar](especificacoes/06-operacao-exclusao-restauracao.md).
+Os detalhes de natureza, critérios e dependências estão nos
+[pontos restantes](estado-atual.md#pontos-restantes) e no
+[plano de entrega](especificacoes/05-entrega-e-validacao.md). Não há comprovação de
+expurgo de backups, homologação jurídica ou ativação em produção por este desenho.

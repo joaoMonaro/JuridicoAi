@@ -1,7 +1,10 @@
 # Diagramas do detalhamento técnico
 
-> Proposta, 2026-11-11. Representações em Mermaid, mantidas no repositório.
-> Complementam as especificações; não representam serviços já implementados.
+> Diagramas do desenho original, 2026-11-11. Representações em Mermaid no repositório.
+> O fluxo principal já foi implementado, com diferenças de tabelas e transporte.
+> Estes diagramas não são inventário exato de rotas/serviços. Ver
+> [contratos efetivos](especificacoes/07-contratos-implementados.md) e
+> [estado atual](estado-atual.md). OCR permanece em espera.
 
 ## Componentes e fronteira de escrita
 

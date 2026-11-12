@@ -44,7 +44,9 @@ e da apresentação do MVP do assistente de IA.
 ## Implementações: ativa, entregas e espera
 
 - [Índice de implementações](../implementacoes/README.md)
-- [Geração de minutas por pedido livre — ainda a implementar](../implementacoes/features/geracao-minutas-ia/README.md)
+- [Assistente conversacional — estado atual](../implementacoes/features/assistente-conversacional/estado-atual.md)
+- [TODO do assistente e melhorias evidenciadas](../implementacoes/features/assistente-conversacional/TODO.md)
+- [Geração de minutas — planejamento anterior incorporado](../implementacoes/features/geracao-minutas-ia/README.md)
 - [Entregas registradas — alreadyDone](../implementacoes/alreadyDone/README.md)
 - [Pendências em espera — standBy](../implementacoes/standBy/README.md)
 - [Dossiê anterior do assistente — em espera](../implementacoes/standBy/assistente-ia/README.md)
@@ -70,8 +72,8 @@ O projeto contém:
 - editor de peças com autosave no frontend;
 - exportação de peças para Word editável e PDF, com conversor local configurável;
 - assistente de IA com geração em streaming, revisão e aplicação explícita no editor;
-- primeira interface conversacional com chips de contexto, propostas no chat e
-  painel expansível, ainda em validação no PA-18;
+- conversa livre com histórico/memória, documentos nativos, análise e geração
+  duráveis, revisão persistida, histórico pessoal e exclusão autorizada, atrás de flags;
 - controles de tenant, confirmação de transparência, feature flags e kill switch da IA;
 - persistência em PostgreSQL e MongoDB;
 - scraper do portal e-SAJ/TJSP, pausado no fluxo do MVP;
@@ -80,5 +82,5 @@ O projeto contém:
 
 Ainda não há observabilidade distribuída nem contêiner da aplicação. O
 `docker-compose.yml` provisiona MongoDB e PostgreSQL. Rollout comercial,
-retenção automatizada, orçamento operacional completo e validações jurídicas
+proteção das exclusões após restauração, orçamento operacional completo e validações jurídicas
 continuam acompanhados na documentação de implementação.

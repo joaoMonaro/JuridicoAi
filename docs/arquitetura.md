@@ -96,7 +96,9 @@ Templates são origens copiáveis, não vínculos dinâmicos. Alterações poste
 no template não propagam para Peças existentes. A listagem por Caso projeta
 somente metadados para não carregar documentos TipTap potencialmente grandes.
 
-## Fluxo do assistente de IA
+## Assistente de IA — fluxo legado e evolução conversacional
+
+O endpoint legado conserva o fluxo abaixo:
 
 ```text
 POST /pecas/{pecaId}/assistente/solicitacoes
@@ -118,7 +120,15 @@ autosave em `SALVO`, e é persistida posteriormente pelo `PATCH /pecas/{pecaId}`
 já existente. O `OrganizationId` nunca é aceito do corpo da requisição como
 fonte de autoridade.
 
-Consulte [Assistente de IA](backend/assistente-ia.md) para o comportamento
-estável, o [dossiê anterior em espera](../implementacoes/standBy/assistente-ia/README.md)
-para decisões e pendências e a [geração de minutas](../implementacoes/features/geracao-minutas-ia/README.md)
-para a nova implementação ativa, ainda não entregue.
+O chat v2 acrescenta conversa privada persistida, contexto/memória, documentos
+autorizados e propostas tipadas. Com a flag durável, persiste pedido/job, confirma
+o enfileiramento via SSE e usa workers PostgreSQL com leases/checkpoints. O
+frontend acompanha por polling e recupera resultados no histórico. Aprovar uma
+proposta chama a transação de Peça/decisões/recibo, sem PATCH duplicado de autosave.
+Histórico pessoal e exclusão usam sessão separada e worker de expurgo autorizado.
+
+Consulte [Assistente de IA](backend/assistente-ia.md),
+[contratos implementados](../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
+e [estado atual](../implementacoes/features/assistente-conversacional/estado-atual.md).
+O dossiê anterior e o plano de geração de minutas preservam contexto histórico;
+não são inventário de pendências técnicas atuais.
