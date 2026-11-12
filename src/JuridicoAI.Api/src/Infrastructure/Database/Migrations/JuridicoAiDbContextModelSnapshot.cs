@@ -243,8 +243,8 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.Property<string>("PromptVersion")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
                         .HasColumnName("prompt_version");
 
                     b.Property<string>("Provider")
@@ -290,6 +290,235 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                             t.HasCheckConstraint("ck_ai_usage_duration", "duration_ms >= 0");
                         });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseDocumental", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AposOrdem")
+                        .HasColumnType("integer")
+                        .HasColumnName("apos_ordem");
+
+                    b.Property<DateTime>("AtualizadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("atualizada_em");
+
+                    b.Property<Guid>("CasoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("caso_id");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<string>("CodigoErro")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("codigo_erro");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<int>("FonteIndice")
+                        .HasColumnType("integer")
+                        .HasColumnName("fonte_indice");
+
+                    b.Property<JsonDocument>("Fontes")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("fontes");
+
+                    b.Property<DateTime?>("LeaseAte")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lease_ate");
+
+                    b.Property<Guid?>("LeaseToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lease_token");
+
+                    b.Property<JsonDocument>("Manifesto")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("manifesto");
+
+                    b.Property<string>("ManifestoSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("manifesto_sha256");
+
+                    b.Property<string>("Modelo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("modelo");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("PecaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("peca_id");
+
+                    b.Property<Guid>("PedidoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("pedido_id");
+
+                    b.Property<string>("PoliticaVersao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("politica_versao");
+
+                    b.Property<DateTime>("PrazoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("prazo_em");
+
+                    b.Property<Guid>("RespostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resposta_id");
+
+                    b.Property<JsonDocument>("Resumo")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("resumo");
+
+                    b.Property<Guid?>("SolicitacaoFinalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitacao_final_id");
+
+                    b.Property<int>("TokensFinaisReservados")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_finais_reservados");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RespostaId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("ConversaId", "ManifestoSha256");
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("Estado", "LeaseAte");
+
+                    b.HasIndex("PedidoId", "ConversaId", "OrganizationId");
+
+                    b.HasIndex("RespostaId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_document_analyses", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseLote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AnaliseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analise_id");
+
+                    b.Property<int>("Chamadas")
+                        .HasColumnType("integer")
+                        .HasColumnName("chamadas");
+
+                    b.Property<Guid?>("ConsolidadoPorId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("consolidado_por_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<Guid?>("DocumentoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("documento_id");
+
+                    b.Property<JsonDocument>("Entradas")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("entradas");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("estado");
+
+                    b.Property<int>("Ordem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ordem");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<JsonDocument>("Referencias")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("referencias");
+
+                    b.Property<JsonDocument>("Registros")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("registros");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("tipo");
+
+                    b.Property<int>("TokensLiquidados")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_liquidados");
+
+                    b.Property<int>("TokensReservados")
+                        .HasColumnType("integer")
+                        .HasColumnName("tokens_reservados");
+
+                    b.Property<int?>("UltimaOrdem")
+                        .HasColumnType("integer")
+                        .HasColumnName("ultima_ordem");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("AnaliseId", "Ordem")
+                        .IsUnique();
+
+                    b.HasIndex("AnaliseId", "OrganizationId");
+
+                    b.ToTable("ai_document_analysis_batches", (string)null);
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAplicacaoRecibo", b =>
@@ -610,11 +839,75 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("ai_document_chunks", (string)null);
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMemoria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("AteSequencia")
+                        .HasColumnType("bigint")
+                        .HasColumnName("ate_sequencia");
+
+                    b.Property<Guid>("ConversaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversa_id");
+
+                    b.Property<DateTime>("CriadaEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("criada_em");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<string>("PoliticaVersao")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("politica_versao");
+
+                    b.Property<JsonDocument>("Registros")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("registros");
+
+                    b.Property<Guid>("RespostaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resposta_id");
+
+                    b.Property<int>("Versao")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("Id", "OrganizationId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.HasIndex("RespostaId")
+                        .IsUnique();
+
+                    b.HasIndex("ConversaId", "OrganizationId");
+
+                    b.HasIndex("ConversaId", "Versao")
+                        .IsUnique();
+
+                    b.HasIndex("RespostaId", "ConversaId", "OrganizationId");
+
+                    b.ToTable("ai_memories", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AnaliseDocumentalId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("analise_documental_id");
 
                     b.Property<string>("Autor")
                         .IsRequired()
@@ -626,10 +919,18 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("client_request_id");
 
+                    b.Property<JsonDocument>("CoberturaDocumental")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("cobertura_documental");
+
                     b.Property<string>("CodigoErro")
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
                         .HasColumnName("codigo_erro");
+
+                    b.Property<JsonDocument>("ContextoHistorico")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("contexto_historico");
 
                     b.Property<Guid>("ConversaId")
                         .HasColumnType("uuid")
@@ -695,7 +996,7 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.HasIndex("ConversaId")
                         .IsUnique()
-                        .HasFilter("estado = 'Gerando'");
+                        .HasFilter("estado IN ('Gerando', 'AguardandoAnalise')");
 
                     b.HasIndex("OrganizationId");
 
@@ -709,6 +1010,8 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                     b.HasIndex("ConversaId", "Sequencia")
                         .IsUnique();
+
+                    b.HasIndex("AnaliseDocumentalId", "ConversaId", "OrganizationId");
 
                     b.HasIndex("PropostaId", "ConversaId", "OrganizationId");
 
@@ -1635,6 +1938,58 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseDocumental", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("PedidoId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("RespostaId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseLote", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseDocumental", null)
+                        .WithMany()
+                        .HasForeignKey("AnaliseId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteAplicacaoRecibo", b =>
                 {
                     b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
@@ -1718,6 +2073,29 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMemoria", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteConversa", null)
+                        .WithMany()
+                        .HasForeignKey("ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", null)
+                        .WithMany()
+                        .HasForeignKey("RespostaId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteMensagemPersistida", b =>
                 {
                     b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
@@ -1732,6 +2110,12 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasPrincipalKey("Id", "OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AssistenteAnaliseDocumental", null)
+                        .WithMany()
+                        .HasForeignKey("AnaliseDocumentalId", "ConversaId", "OrganizationId")
+                        .HasPrincipalKey("Id", "ConversaId", "OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("JuridicoAI.Api.Domain.Entities.AssistentePropostaPersistida", null)
                         .WithMany()

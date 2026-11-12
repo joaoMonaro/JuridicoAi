@@ -2,16 +2,26 @@
 
 > **Estado:** standBy por orientação do proprietário do projeto
 >
-> **Revisão documental:** 2026-10-23
+> **Revisão documental:** 2026-11-11
+
+## Prioridade atual e OCR
+
+A implementação ativa é o [assistente conversacional](../features/assistente-conversacional/README.md).
+A [calibração do OCR](calibracao-ocr/README.md) foi colocada em espera em
+2026-11-11 para concluir o fluxo atual com documentos nativos. As prioridades
+vigentes estão no [TODO](../../TODO.md).
+
+## Dossiê anterior
 
 O dossiê anterior do [assistente de IA](assistente-ia/README.md) combina partes
 implementadas e trabalho restante. Foi colocado em espera, preservando decisões,
 especificações, checklists e evidências. Os registros concluídos estão em
 [`alreadyDone`](../alreadyDone/README.md).
 
-A única prioridade ativa é [geração de minutas por pedido livre](../features/geracao-minutas-ia/README.md).
-Ela assume o PA-16 e a parte da intenção automática necessária para criar uma
-minuta. A intenção automática geral para outras tarefas continua em espera.
+A [geração de minutas por pedido livre](../features/geracao-minutas-ia/README.md)
+foi incorporada ao assistente conversacional. As pendências abaixo registram o
+dossiê anterior; o estado atual de cada recorte deve ser conferido na feature
+ativa e em suas evidências.
 
 ## Pendências identificadas
 

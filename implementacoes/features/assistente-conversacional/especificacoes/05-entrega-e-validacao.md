@@ -10,8 +10,10 @@ abertas onde exigem chat completo, fila, documentos ou validação integral.
 Etapa seguinte: [histórico completo e contexto básico](../evidencias/e1-e3-historico-2026-11-11.md).
 Persistência e recuperação abrangem perguntas/respostas, com política de
 continuidade e Peça atual no input. A [conversa livre](../evidencias/e3-conversa-livre-2026-11-11.md)
-adiciona intenção automática e ajuste de propostas. Resumos, busca e worker
-continuam pendentes; a geração ainda é ligada à requisição.
+adiciona intenção automática e ajuste de propostas. A [memória versionada](../evidencias/e2-memoria-conversa-2026-11-12.md)
+acrescenta resumo, recuperação lexical/cronológica e invalidação. A [análise documental durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md)
+acrescenta leitura em lotes, consolidação e resposta final após a conexão do chat.
+A geração sem esse fluxo continua ligada à requisição; minutas por seções estão pendentes.
 
 ## Decisões técnicas consolidadas
 
@@ -34,6 +36,12 @@ das verificações abaixo; não há aprovação automática de fornecedores ou c
 Não criar um segundo backend, outro banco vetorial ou serviço cloud nesta etapa.
 
 ## Etapas com dependências
+
+Priorização atualizada em 2026-11-11: calibração do OCR em
+[stand by](../../../standBy/calibracao-ocr/README.md), por orientação do responsável
+pelo produto. Prosseguir com documentos nativos, recuperação de contexto e demais
+pendências do assistente. A pausa não conclui os itens de OCR nem libera leitura
+de digitalizações. Próximo recorte ativo registrado no [TODO](../../../../TODO.md).
 
 ### E0 — contratos e provas de compatibilidade
 
@@ -59,6 +67,13 @@ trazer a consequência concreta para decisão de produto.
 
 ### E2 — documentos e contexto
 
+- [x] Análise extensa durável com sínteses/citações por lote, consolidação,
+  cobertura distinguida de consulta direta e preparação final do pedido; ver
+  [evidências](../evidencias/e2-analise-documental-duravel-2026-11-12.md).
+
+- [x] Recuperação documental integrada à conversa por ferramentas de listagem,
+  busca e leitura, com cobertura persistida e bloqueio de propostas integrais
+  incompletas; ver [evidências](../evidencias/e2-recuperacao-documental-2026-11-11.md).
 - [x] Recorte de upload privado, qualidade por trecho, extração nativa PDF/DOCX/TXT,
   fonte do Caso automática, progresso no frontend e worker documental com fence.
 - [x] Pipeline OCR real, métricas e corpus sintético inicial; calibração não aprovada,
@@ -67,7 +82,7 @@ trazer a consequência concreta para decisão de produto.
   reprocessada invalida publicação, aplicação e reutilização de histórico derivado.
 - [ ] Upload privado, extração/OCR por página e indicadores de qualidade.
 - [ ] Extração dos documentos já cadastrados no Caso, com versão e autorização.
-- [ ] Busca filtrada antes de ranking, memória com proveniência e invalidação.
+- [x] Busca documental filtrada e memória de conversa com proveniência/invalidação; recuperação do histórico por texto/intervalo.
 - [ ] Limites de arquivo, páginas, custo e recuperação após falha.
 
 ### E3 — conversa com IA e geração

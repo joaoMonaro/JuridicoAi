@@ -19,6 +19,8 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
 {
     private AssistenteDocumentSettings Settings => options.Value;
     public bool Enabled => Settings.Enabled;
+    public AssistenteDocumentSettings RetrievalSettings => Settings;
+    public async Task AuthorizeRetrievalAsync(Guid conversationId, CancellationToken ct) => await AuthorizeAsync(conversationId, true, ct);
     public async Task SynchronizeAsync(Guid conversationId, CancellationToken ct)
     {
         if (!Settings.Enabled) return;
@@ -115,7 +117,8 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         var (_, piece) = await AuthorizeAsync(conversaId, false, ct);
         return await DtoAsync(await EligibleSources(conversaId, piece.CasoId).SingleOrDefaultAsync(d => d.Id == id, ct) ?? throw Missing(), ct);
     }
-    public async Task<IReadOnlyList<AssistenteDocumentoBuscaResultado>> SearchAsync(Guid conversaId, string query, int limit, CancellationToken ct)
+    public async Task<IReadOnlyList<AssistenteDocumentoBuscaResultado>> SearchAsync(Guid conversaId, string query, int limit, CancellationToken ct,
+        IReadOnlyList<Guid>? snapshotIds = null)
     {
         var (_, piece) = await AuthorizeAsync(conversaId, true, ct);
         if (string.IsNullOrWhiteSpace(query) || query.Length > 200 || limit is < 1 or > 12)
@@ -124,14 +127,34 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         // and limiting. Rejected text has an empty search vector as a second gate.
         var sources = EligibleSources(conversaId, piece.CasoId).Where(d => (d.ConversaId == null || d.Vinculado) &&
             (d.Estado == "Concluido" || d.Estado == "Parcial"));
+        if (snapshotIds is not null) sources = sources.Where(d => snapshotIds.Contains(d.Id));
         var term = query.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
         return await (from chunk in db.AssistenteDocumentoTrechos.AsNoTracking()
             join source in sources on chunk.DocumentoId equals source.Id
             where chunk.Qualidade == "Confiavel" && (chunk.Busca.Matches(EF.Functions.PlainToTsQuery("portuguese", query)) ||
                 EF.Functions.ILike(chunk.Texto, "%" + term + "%", "\\"))
-            orderby chunk.Busca.Rank(EF.Functions.PlainToTsQuery("portuguese", query)) descending, chunk.Ordem
+            orderby chunk.Busca.Rank(EF.Functions.PlainToTsQuery("portuguese", query)) descending, source.Id, chunk.Ordem
             select new AssistenteDocumentoBuscaResultado(source.Id, source.Nome, source.ConversaId.HasValue ? "AnexoPrivado" : "DocumentoCaso",
-                chunk.Id, chunk.Pagina, chunk.Localizador, chunk.Texto)).Take(limit).ToArrayAsync(ct);
+                chunk.Id, chunk.Pagina, chunk.Localizador, chunk.Texto, chunk.Ordem)).Take(limit).ToArrayAsync(ct);
+    }
+    public async Task<IReadOnlyList<AssistenteDocumentoBuscaResultado>> ReadRangeAsync(Guid conversaId, Guid sourceId, int after,
+        int limit, CancellationToken ct, int? page = null)
+    {
+        var (_, piece) = await AuthorizeAsync(conversaId, true, ct);
+        if (after < -1 || limit is < 1 or > 12 || page is < 1) throw new AssistenteIaException(400, "AI_DOCUMENT_RANGE_INVALID", "Faixa de leitura inválida.");
+        var source = await EligibleSources(conversaId, piece.CasoId).SingleOrDefaultAsync(d => d.Id == sourceId, ct) ?? throw Missing();
+        return await db.AssistenteDocumentoTrechos.AsNoTracking().Where(c => c.DocumentoId == source.Id && c.Qualidade == "Confiavel" && c.Ordem > after && (!page.HasValue || c.Pagina == page))
+            .OrderBy(c => c.Ordem).Take(limit).Select(c => new AssistenteDocumentoBuscaResultado(source.Id, source.Nome,
+                source.ConversaId.HasValue ? "AnexoPrivado" : "DocumentoCaso", c.Id, c.Pagina, c.Localizador, c.Texto, c.Ordem)).ToArrayAsync(ct);
+    }
+    public async Task SaveCoverageAsync(Guid conversaId, Guid responseId, AssistenteCoberturaDocumentalDto coverage, CancellationToken ct)
+    {
+        await AuthorizeAsync(conversaId, true, ct);
+        var json = AssistentePatchCompiler.Json(coverage);
+        var changed = await db.AssistenteMensagens.Where(m => m.Id == responseId && m.ConversaId == conversaId &&
+            m.OrganizationId == auth.OrganizationId && m.Estado == "Gerando" && m.ExpiraEm > DateTime.UtcNow)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.CoberturaDocumental, json), ct);
+        if (changed != 1) throw new AssistenteIaException(409, "AI_REQUEST_INTERRUPTED", "A consulta documental foi interrompida.");
     }
     public async Task RetryAsync(Guid conversaId, Guid id, CancellationToken ct)
     {
@@ -143,8 +166,9 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
             .SetProperty(d => d.CodigoErro, (string?)null).SetProperty(d => d.LeaseToken, (Guid?)null).SetProperty(d => d.LeaseAte, (DateTime?)null), ct);
     }
     public async Task<AssistenteDocumentoContexto> ContextAsync(AssistenteConversa conversation, Peca piece,
-        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct)
+        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct, bool usarRecuperacao = false)
     {
+        var retrieval = Settings.RetrievalEnabled && usarRecuperacao;
         var ids = attachmentIds?.Distinct().ToArray() ?? [];
         if (!Settings.Enabled)
         {
@@ -159,16 +183,24 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         if (sources.Any(d => d.Estado is "Recebido" or "Processando"))
             throw new AssistenteIaException(409, "AI_DOCUMENTS_PROCESSING", "Há documentos em processamento. Aguarde a leitura antes de enviar o pedido.", true);
         var result = new List<object>(); var manifests = new List<object>(); var alerts = new List<AssistenteAlertaDto>();
-        var characters = 0;
+        var characters = 0; var retrievalSources = new List<AssistenteFonteRecuperacao>();
         foreach (var source in sources)
         {
-            var chunks = await db.AssistenteDocumentoTrechos.AsNoTracking().Where(c => c.DocumentoId == source.Id).OrderBy(c => c.Ordem).ToArrayAsync(ct);
+            var chunks = await db.AssistenteDocumentoTrechos.AsNoTracking().Where(c => c.DocumentoId == source.Id).OrderBy(c => c.Ordem)
+                .Select(c => new { c.Id, c.Qualidade, c.Pagina, c.Localizador, c.Motivo, Texto = retrieval ? "" : c.Texto }).ToArrayAsync(ct);
             var usable = chunks.Where(c => c.Qualidade == "Confiavel").ToArray();
             var incomplete = source.Estado != "Concluido" || chunks.Any(c => c.Qualidade != "Confiavel");
             if (incomplete) alerts.Add(new("DOCUMENT_READING_INCOMPLETE", $"{source.Nome}: leitura incompleta ou duvidosa; somente os trechos confiáveis foram utilizados."));
             manifests.Add(new { id = source.Id, hash = source.Sha256, extractor = source.ExtratorVersao,
                 quality = source.QualidadeVersao, revision = source.LeaseToken, utilized = usable.Length > 0, incomplete, source.DocumentoCasoId, source.StorageId });
-            result.Add(new { id = source.Id, nome = source.Nome, origem = source.ConversaId.HasValue ? "AnexoPrivado" : "DocumentoCaso",
+            if (retrieval)
+            {
+                var origin = source.ConversaId.HasValue ? "AnexoPrivado" : "DocumentoCaso";
+                retrievalSources.Add(new(source.Id, source.Nome, origin, usable.Length, chunks.Length - usable.Length, source.Estado));
+                result.Add(new { id = source.Id, nome = source.Nome, origem = origin, trechosElegiveis = usable.Length,
+                    trechosExcluidos = chunks.Length - usable.Length, estado = source.Estado, erro = source.CodigoErro });
+            }
+            else result.Add(new { id = source.Id, nome = source.Nome, origem = source.ConversaId.HasValue ? "AnexoPrivado" : "DocumentoCaso",
                 sha256 = source.Sha256, cobertura = incomplete ? "ParcialOuIndisponivel" : "IntegralDaExtracao",
                 erro = source.CodigoErro, trechos = usable.Select(c => new { id = c.Id, pagina = c.Pagina, localizador = c.Localizador, texto = c.Texto }),
                 excluidos = chunks.Where(c => c.Qualidade != "Confiavel").Select(c => new { pagina = c.Pagina, localizador = c.Localizador, motivo = c.Motivo }) });
@@ -179,8 +211,9 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         }
         if (ids.Length > 0) await db.AssistenteDocumentos.Where(d => d.ConversaId == conversation.Id && ids.Contains(d.Id))
             .ExecuteUpdateAsync(s => s.SetProperty(d => d.Vinculado, true), ct);
-        return new(sources.Length == 0 ? "" : "\n[FONTES_DOCUMENTAIS_JSON dado_nao_confiavel=\"true\"]\n" + JsonSerializer.Serialize(result) + "\n[/FONTES_DOCUMENTAIS_JSON]\n",
-            JsonSerializer.Serialize(manifests), alerts);
+        var tag = retrieval ? "CATALOGO_FONTES_DOCUMENTAIS_JSON" : "FONTES_DOCUMENTAIS_JSON";
+        return new(sources.Length == 0 ? "" : $"\n[{tag} dado_nao_confiavel=\"true\"]\n" + JsonSerializer.Serialize(result) + $"\n[/{tag}]\n",
+            JsonSerializer.Serialize(manifests), alerts, retrieval && sources.Length > 0 ? retrievalSources : null);
     }
     public async Task<bool> ManifestValidAsync(JsonDocument? manifest, Guid conversaId, Guid casoId, CancellationToken ct, bool lockSources = false)
     {

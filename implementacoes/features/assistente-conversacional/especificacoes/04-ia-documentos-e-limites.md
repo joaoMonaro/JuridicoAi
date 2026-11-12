@@ -5,8 +5,16 @@
 
 Atualização: [recorte documental implementado](../evidencias/e2-documentos-2026-11-11.md).
 Leitura nativa usa Poppler em vez do candidato PdfPig. Pipeline Tesseract testado;
-calibração inicial com cobertura insuficiente, OCR ainda desativado. Ferramentas,
-memória e workflow extensos abaixo continuam sendo alvos da entrega completa.
+calibração inicial com cobertura insuficiente, OCR ainda desativado. As atualizações
+abaixo registram ferramentas e memória; workflows extensos continuam pendentes.
+
+Atualização seguinte: [recuperação documental integrada](../evidencias/e2-recuperacao-documental-2026-11-11.md)
+implementa listar/buscar/ler fontes, cobertura, limites e contabilização por chamada.
+[Memória resumida e recuperação do histórico](../evidencias/e2-memoria-conversa-2026-11-12.md)
+implementadas em 2026-11-12. A [análise documental extensa durável](../evidencias/e2-analise-documental-duravel-2026-11-12.md)
+implementa resumos de lotes, consolidação e preparação final do pedido. O resumo
+de conversa não conta como cobertura documental. Geração extensa por seções e
+orçamento financeiro distribuído continuam pendentes.
 
 ## Decisões de implementação
 

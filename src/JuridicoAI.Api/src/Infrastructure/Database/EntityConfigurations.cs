@@ -396,7 +396,7 @@ internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.Operation).HasColumnName("operation").HasMaxLength(40);
         builder.Property(x => x.Provider).HasColumnName("provider").HasMaxLength(40).IsRequired();
         builder.Property(x => x.Model).HasColumnName("model").HasMaxLength(100).IsRequired();
-        builder.Property(x => x.PromptVersion).HasColumnName("prompt_version").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.PromptVersion).HasColumnName("prompt_version").HasMaxLength(256).IsRequired();
         builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
         builder.Property(x => x.InputTokens).HasColumnName("input_tokens");
         builder.Property(x => x.CachedInputTokens).HasColumnName("cached_input_tokens");

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace JuridicoAI.Api.Controllers.Assistente;
 
 [ApiController, Authorize, Route("assistente/v2")]
-public sealed class AssistenteChatController(AssistenteChatService chat, AssistenteIaApplicationService generator, AssistenteWorkspaceService workspace,
+public sealed class AssistenteChatController(AssistenteChatService chat, AssistenteIaApplicationService generator, AssistenteWorkspaceService workspace, AssistenteDocumentAnalysisService analyses,
     ILogger<AssistenteChatController> logger) : ControllerBase
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
@@ -29,7 +29,7 @@ public sealed class AssistenteChatController(AssistenteChatService chat, Assiste
     {
         generator.ValidarEntrada(conversaId, request);
         var start = await chat.IniciarAsync(conversaId, request, ct);
-        if (!start.Novo && start.Resposta.Estado != "Concluida")
+        if (!start.Novo && start.Resposta.Estado is not ("Concluida" or "AguardandoAnalise"))
             throw new AssistenteIaException(409, start.Resposta.Estado == "Gerando" ? "AI_CONVERSATION_BUSY" : "AI_REQUEST_TERMINAL",
                 start.Resposta.Estado == "Gerando" ? "Este pedido ainda está em andamento. Consulte o histórico." : "Este pedido foi interrompido ou falhou. O histórico foi preservado; um novo envio cria outro pedido.");
         AssistenteIaExecucao? execution = null;
@@ -37,14 +37,22 @@ public sealed class AssistenteChatController(AssistenteChatService chat, Assiste
         try
         {
             AssistenteSolicitacaoConcluidaDto? result = AssistenteChatService.Read<AssistenteSolicitacaoConcluidaDto>(start.Resposta.Resultado);
-            if (start.Novo) execution = await generator.PrepararAsync(start.PecaId, request, ct, start.Contexto, conversaLivre: livre);
+            if (start.Novo) execution = await generator.PrepararAsync(start.PecaId, request, ct, start.Contexto, conversaLivre: livre,
+                ferramentasDocumentais: livre ? chat.CriarFerramentasDocumentais(start, (coverage, token) => Event("contexto.documental", coverage),
+                    state => Event("contexto.historico", state)) : null);
             else if (result?.Proposta is { } stored) result = result with { Proposta = await workspace.PropostaAsync(stored.Id, ct) };
             Response.ContentType = "text/event-stream; charset=utf-8";
             Response.Headers.CacheControl = "no-store";
             Response.Headers["X-Accel-Buffering"] = "no";
             await Event("solicitacao.iniciada", new AssistenteSolicitacaoIniciadaDto(start.Resposta.Id, request.ClientRequestId,
                 execution?.CorrelationId ?? Guid.NewGuid()));
+            if (start.Historico is not null) await Event("contexto.historico", start.Historico.Estado);
             await Response.Body.FlushAsync(ct);
+            if (start.Resposta.Estado == "AguardandoAnalise" && start.Resposta.AnaliseDocumentalId is { } analysisId)
+            {
+                await Event("solicitacao.aguardando", await analyses.GetAsync(conversaId, analysisId, ct));
+                await Response.Body.FlushAsync(ct); return;
+            }
             if (execution is not null)
             {
                 result = await generator.GerarAsync(execution, ct);
@@ -57,6 +65,14 @@ public sealed class AssistenteChatController(AssistenteChatService chat, Assiste
             if (!string.IsNullOrEmpty(result.Sugestao.Texto)) await Event("conteudo.delta", new { delta = result.Sugestao.Texto });
             await Event("solicitacao.concluida", result);
             await Response.Body.FlushAsync(ct);
+        }
+        catch (AssistenteAnalysisQueuedException queued)
+        {
+            if (!ct.IsCancellationRequested)
+            {
+                await Event("solicitacao.aguardando", queued.Analysis);
+                await Response.Body.FlushAsync(ct);
+            }
         }
         catch (Exception ex)
         {

@@ -101,7 +101,7 @@ public sealed record AssistenteUsageRecord(
     int? OutputTokens,
     string Status,
     string? ErrorCode,
-    long DurationMs);
+    long DurationMs, bool RequirePersistence = false);
 
 public interface IAssistenteUsageRecorder
 {

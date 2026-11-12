@@ -6,6 +6,14 @@ public sealed class AssistenteIaSettings
     public bool ReviewV2Enabled { get; set; }
     public bool ConversationV2Enabled { get; set; }
     public bool AutomaticConversationEnabled { get; set; }
+    public bool HistoryMemoryEnabled { get; set; }
+    public int HistoryCompactionMessages { get; set; } = 64;
+    public int HistoryRecentMessages { get; set; } = 16;
+    public int HistoryRecentCharacters { get; set; } = 16_000;
+    public int HistoryBatchCharacters { get; set; } = 24_000;
+    public int HistoryMemoryCharacters { get; set; } = 12_000;
+    public int HistoryToolRounds { get; set; } = 8;
+    public int HistoryTotalTokens { get; set; } = 180_000;
     public string Provider { get; set; } = "OpenAI";
     public string Model { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;

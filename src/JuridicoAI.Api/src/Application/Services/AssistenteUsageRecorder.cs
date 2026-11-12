@@ -44,7 +44,7 @@ public sealed class AssistenteUsageRecorder(
         {
             await repository.AdicionarAsync(entry, cancellationToken);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex) when (ex is not OperationCanceledException && !record.RequirePersistence)
         {
             logger.LogError(
                 "Falha ao registrar consumo de IA. SolicitacaoId={SolicitacaoId} CorrelationId={CorrelationId} ErrorType={ErrorType}",

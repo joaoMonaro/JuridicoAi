@@ -21,7 +21,9 @@ public sealed record RejeitarGruposRequest(int RevisaoProposta, int VersaoDeciso
 public sealed record AssistenteConversaDto(Guid Id, Guid PecaId, string Titulo, DateTime CriadaEm);
 public sealed record AssistenteMensagemDto(Guid Id, long Sequencia, string Autor, string Texto, Guid? PropostaId, DateTime CriadaEm,
     Guid? ClientRequestId = null, Guid? RespostaAId = null, string Estado = "Concluida", string? CodigoErro = null,
-    CriarSolicitacaoAssistenteRequest? Solicitacao = null, AssistenteSolicitacaoConcluidaDto? Resultado = null);
+    CriarSolicitacaoAssistenteRequest? Solicitacao = null, AssistenteSolicitacaoConcluidaDto? Resultado = null,
+    AssistenteCoberturaDocumentalDto? CoberturaDocumental = null,
+    AssistenteContextoHistoricoDto? ContextoHistorico = null, Guid? AnaliseDocumentalId = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EnviarMensagemChatRequest(Guid ClientRequestId, AssistenteModo Modo, string? Instrucao,
@@ -53,3 +55,6 @@ public sealed record AssistenteReciboDto(string SchemaVersion, Guid RequestId, G
     int VersaoAnterior, int VersaoResultante, int VersaoPecaAtual, bool ResultadoAindaAtual,
     IReadOnlyList<Guid> GruposAplicados, JsonElement ConteudoJson, string DocumentSha256,
     DateTime DataAtualizacao, AssistentePropostaDto PropostaRestante);
+
+public sealed record AssistenteContextoHistoricoDto(int? VersaoMemoria, long AteSequencia, int MensagensRecentes,
+    int RegistrosInvalidados, bool HistoricoAdicionalDisponivel);

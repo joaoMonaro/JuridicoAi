@@ -45,13 +45,17 @@ internal sealed class AssistenteMensagemConfiguration : IEntityTypeConfiguration
         b.Property(x => x.Solicitacao).HasColumnType("jsonb");
         b.Property(x => x.Resultado).HasColumnType("jsonb");
         b.Property(x => x.FontesDocumentais).HasColumnType("jsonb");
+        b.Property(x => x.CoberturaDocumental).HasColumnType("jsonb");
+        b.Property(x => x.ContextoHistorico).HasColumnType("jsonb");
         b.HasIndex(x => new { x.ConversaId, x.ClientRequestId }).IsUnique();
-        b.HasIndex(x => x.ConversaId).IsUnique().HasFilter("estado = 'Gerando'");
+        b.HasIndex(x => x.ConversaId).IsUnique().HasFilter("estado IN ('Gerando', 'AguardandoAnalise')");
         b.HasIndex(x => new { x.ConversaId, x.RespostaAId }).IsUnique();
         b.HasIndex(x => new { x.ConversaId, x.Sequencia }).IsUnique();
         b.HasOne<AssistenteConversa>().WithMany().HasForeignKey(x => new { x.ConversaId, x.OrganizationId })
             .HasPrincipalKey(x => new { x.Id, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<AssistentePropostaPersistida>().WithMany().HasForeignKey(x => new { x.PropostaId, x.ConversaId, x.OrganizationId })
+            .HasPrincipalKey(x => new { x.Id, x.ConversaId, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<AssistenteAnaliseDocumental>().WithMany().HasForeignKey(x => new { x.AnaliseDocumentalId, x.ConversaId, x.OrganizationId })
             .HasPrincipalKey(x => new { x.Id, x.ConversaId, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<AssistenteMensagemPersistida>().WithMany().HasForeignKey(x => new { x.RespostaAId, x.ConversaId, x.OrganizationId })
             .HasPrincipalKey(x => new { x.Id, x.ConversaId, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
@@ -83,5 +87,21 @@ internal sealed class AssistenteReciboConfiguration : IEntityTypeConfiguration<A
             .HasPrincipalKey(x => new { x.Id, x.ConversaId, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<AssistenteConversa>().WithMany().HasForeignKey(x => new { x.ConversaId, x.OrganizationId })
             .HasPrincipalKey(x => new { x.Id, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AssistenteMemoriaConfiguration : IEntityTypeConfiguration<AssistenteMemoria>
+{
+    public void Configure(EntityTypeBuilder<AssistenteMemoria> b)
+    {
+        WorkspaceConfiguration.Base(b, "ai_memories");
+        b.Property(x => x.PoliticaVersao).HasMaxLength(100);
+        b.Property(x => x.Registros).HasColumnType("jsonb");
+        b.HasIndex(x => new { x.ConversaId, x.Versao }).IsUnique();
+        b.HasIndex(x => x.RespostaId).IsUnique();
+        b.HasOne<AssistenteConversa>().WithMany().HasForeignKey(x => new { x.ConversaId, x.OrganizationId })
+            .HasPrincipalKey(x => new { x.Id, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<AssistenteMensagemPersistida>().WithMany().HasForeignKey(x => new { x.RespostaId, x.ConversaId, x.OrganizationId })
+            .HasPrincipalKey(x => new { x.Id, x.ConversaId, x.OrganizationId }).OnDelete(DeleteBehavior.Restrict);
     }
 }

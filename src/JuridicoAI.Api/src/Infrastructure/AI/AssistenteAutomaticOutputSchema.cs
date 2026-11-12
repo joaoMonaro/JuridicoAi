@@ -5,7 +5,7 @@ namespace JuridicoAI.Api.Infrastructure.AI;
 
 internal static class AssistenteAutomaticOutputSchema
 {
-    public static JsonElement Criar(bool podeEditar, bool podeGerarMinuta)
+    public static JsonElement Criar(bool podeEditar, bool podeGerarMinuta, bool recuperacao = false)
     {
         var intents = new List<string> { "Responder" };
         if (podeEditar) intents.Add("EditarPeca");
@@ -46,6 +46,11 @@ internal static class AssistenteAutomaticOutputSchema
                 ("startIndex", Number()), ("deleteCount", Number()), ("novosBlocos", Array(Ref("Node"))))))))),
             ("substituirPropostaReferenciada", new JsonObject { ["type"] = "boolean" }));
         schema["$defs"] = definitions;
+        if (recuperacao)
+        {
+            schema["properties"]!["coberturaPretendida"] = Str("Relevantes", "Todos");
+            ((JsonArray)schema["required"]!).Add("coberturaPretendida");
+        }
         return JsonSerializer.SerializeToElement(schema);
     }
 }

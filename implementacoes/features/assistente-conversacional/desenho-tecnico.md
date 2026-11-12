@@ -2,10 +2,10 @@
 
 > **Estado:** conversa livre, propostas automáticas, revisão persistida e contexto
 > de histórico integrados ao editor atrás de flags. Anexos/leitura nativa e worker
-> documental integrados; calibração de OCR, resumos, worker da geração e avaliação
+> documental, memória versionada e análise documental durável integrados; calibração de OCR, geração extensa e avaliação
 > com modelo real pendentes.
 >
-> **Atualizado em:** 2026-11-11
+> **Atualizado em:** 2026-11-12
 >
 > **Base:** [escopo e decisões de produto](README.md).
 
@@ -399,3 +399,10 @@ não são perguntas de produto pendentes nem funcionalidades já entregues.
 
 Este documento propõe a arquitetura; não instala bibliotecas, escolhe serviços
 externos, cria migrations ou inicia a implementação.
+
+Atualização: [memória versionada e recuperação do histórico](evidencias/e2-memoria-conversa-2026-11-12.md)
+implementadas atrás de flag, preservando originais e revalidando proveniência.
+
+A [análise documental extensa durável](evidencias/e2-analise-documental-duravel-2026-11-12.md)
+preserva lotes/sínteses, consolida e prepara o resultado do pedido em segundo plano.
+A durabilidade geral da geração e minutas por seções continuam abertas.

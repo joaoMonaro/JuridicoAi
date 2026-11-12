@@ -3,6 +3,18 @@ namespace JuridicoAI.Api.Infrastructure.Settings;
 public sealed class AssistenteDocumentSettings
 {
     public bool Enabled { get; set; }
+    public bool RetrievalEnabled { get; set; }
+    public int MaxRetrievalRounds { get; set; } = 8;
+    public int MaxRetrievalTotalTokens { get; set; } = 180_000;
+    public int MaxRetrievalResultCharacters { get; set; } = 12_000;
+    public bool AnalysisEnabled { get; set; }
+    public int MaxAnalysisCalls { get; set; } = 12;
+    public int MaxAnalysisTotalTokens { get; set; } = 180_000;
+    public int AnalysisBatchCharacters { get; set; } = 24_000;
+    public int AnalysisSummaryCharacters { get; set; } = 8_000;
+    public int AnalysisOutputTokens { get; set; } = 2_000;
+    public int AnalysisLeaseSeconds { get; set; } = 180;
+    public int AnalysisDeadlineSeconds { get; set; } = 600;
     // OCR must be explicitly calibrated for the deployment/model set.
     public bool OcrEnabled { get; set; }
     public string OcrCalibrationVersion { get; set; } = "";

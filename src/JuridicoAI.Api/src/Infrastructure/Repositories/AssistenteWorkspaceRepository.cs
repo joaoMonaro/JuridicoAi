@@ -80,7 +80,7 @@ public sealed class AssistenteWorkspaceRepository(JuridicoAiDbContext context) :
     public Task<AssistenteMensagemPersistida?> ObterRespostaAsync(Guid conversaId, Guid mensagemId, CancellationToken ct) =>
         context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && x.RespostaAId == mensagemId, ct);
     public Task<AssistenteMensagemPersistida?> ObterMensagemAtivaAsync(Guid conversaId, CancellationToken ct) =>
-        context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && x.Estado == "Gerando", ct);
+        context.AssistenteMensagens.AsNoTracking().SingleOrDefaultAsync(x => x.ConversaId == conversaId && (x.Estado == "Gerando" || x.Estado == "AguardandoAnalise"), ct);
     public async Task<IReadOnlyList<AssistenteMensagemPersistida>> ListarContextoAsync(Guid conversaId, CancellationToken ct) =>
         await context.AssistenteMensagens.AsNoTracking().Where(x => x.ConversaId == conversaId).OrderBy(x => x.Sequencia).Take(1001).ToArrayAsync(ct);
 

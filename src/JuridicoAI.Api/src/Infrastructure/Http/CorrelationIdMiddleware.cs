@@ -28,9 +28,9 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next, ILogger<Correl
     }
 }
 
-public sealed class HttpCorrelationContext(IHttpContextAccessor accessor) : ICorrelationContext
+public sealed class HttpCorrelationContext(IHttpContextAccessor accessor, JuridicoAI.Api.Infrastructure.Auth.AssistenteBackgroundIdentity? background = null) : ICorrelationContext
 {
-    public Guid CorrelationId => accessor.HttpContext?.Items[CorrelationHeaders.ItemKey] is Guid value
+    public Guid CorrelationId => background?.CorrelationId is { } durable ? durable : accessor.HttpContext?.Items[CorrelationHeaders.ItemKey] is Guid value
         ? value
         : throw new InvalidOperationException("CorrelationId não foi inicializado.");
 }

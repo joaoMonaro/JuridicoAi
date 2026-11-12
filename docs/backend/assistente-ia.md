@@ -65,6 +65,11 @@ autorizados do Caso. O aviso passa a exigir aceite `-documents-v1`.
 OCR permanece desligado por padrão; não se anuncia leitura de digitalizações.
 Veja [ativação, limites e evidências documentais](../../implementacoes/features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md).
 
+Com `AssistenteDocumentos:RetrievalEnabled=true`, o catálogo substitui o envio
+integral de documentos no fluxo livre. Ferramentas autorizadas buscam/leem trechos,
+com cobertura persistida e evento SSE `contexto.documental`. Pedidos de leitura
+integral incompleta ficam sem grupos aplicáveis. Veja [contratos efetivos e limites](../../implementacoes/features/assistente-conversacional/evidencias/e2-recuperacao-documental-2026-11-11.md).
+
 O comportamento abaixo corresponde às flags conversacionais desligadas. Com a
 conversa livre ativa, Peça e histórico são automáticos, modos ficam ocultos e
 propostas persistidas vão diretamente à revisão no documento.
@@ -169,3 +174,21 @@ possui testes Vitest, React Testing Library, Playwright e axe-core. As respostas
 jurídicas são acompanhadas por uma
 [suíte de avaliações](../../avaliacoes/qualidade-juridica/README.md); ela reduz
 regressões, mas não substitui homologação jurídica profissional.
+
+## Memória de conversas extensas
+
+`AssistenteIa:HistoryMemoryEnabled` (default false) habilita resumo privado versionado,
+origens verificadas e `consultar_historico`, independentemente da leitura de documentos.
+A atualização automática compartilha limites e ledger da geração. Não substitui nem
+exclui o histórico, e não altera a aprovação visual de mudanças. Aplicar a migration
+`20261112120759_AddAssistantVersionedMemory` antes de habilitar. Confira
+[ativação, limites, invalidação e evidências](../../implementacoes/features/assistente-conversacional/evidencias/e2-memoria-conversa-2026-11-12.md).
+
+## Análise documental extensa durável
+
+`AssistenteDocumentos:AnalysisEnabled` (default false) habilita sínteses por lote,
+consolidação e preparação final do mesmo pedido em segundo plano. Exige documentos,
+recuperação e conversa livre. Migrations, estados, orçamento, retomada e evidências
+estão no [registro da implementação](../../implementacoes/features/assistente-conversacional/evidencias/e2-analise-documental-duravel-2026-11-12.md).
+Aprovação visual continua sendo a única aplicação na Peça; geração fora desse fluxo
+ainda depende da requisição e a geração extensa por seções permanece pendente.

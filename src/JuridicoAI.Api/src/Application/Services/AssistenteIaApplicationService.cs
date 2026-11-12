@@ -70,7 +70,7 @@ public sealed class AssistenteIaApplicationService(
         CriarSolicitacaoAssistenteRequest request,
         CancellationToken cancellationToken,
         string? contextoConversa = null,
-        bool conversaLivre = false)
+        bool conversaLivre = false, AssistenteDocumentTools? ferramentasDocumentais = null)
     {
         ValidateBaseRequest(pecaId, request);
         if (request.InteracaoAutomatica != conversaLivre || conversaLivre && (!Settings.AutomaticConversationEnabled || contextoConversa is null))
@@ -131,6 +131,7 @@ public sealed class AssistenteIaApplicationService(
                 throw new AssistenteIaException(413, "AI_HISTORY_CONTEXT_TOO_LARGE", "O histórico permanece salvo, mas o contexto completo excede o limite desta etapa.");
         }
 
+        var correlationId = correlationContext.CorrelationId;
         var usageLease = await usageLimiter.AdquirirAsync(
             authContext.OrganizationId,
             authContext.UserId,
@@ -153,11 +154,13 @@ public sealed class AssistenteIaApplicationService(
             documento.Selecao?.TextoOriginal);
         var providerRequest = new AssistenteIaProviderRequest(
             (conversaLivre ? promptPolicy.CriarInstrucoesLivres(operacoesPermitidas.Contains(AssistenteOperacao.ProporAlteracoes), podeGerarMinuta) :
-                promptPolicy.CriarInstrucoes(request.Modo, operacoesPermitidas)) + (contextoConversa is null ? "" : AssistenteConversationPolicy.Instrucoes),
+                promptPolicy.CriarInstrucoes(request.Modo, operacoesPermitidas)) + (contextoConversa is null ? "" : AssistenteConversationPolicy.Instrucoes) +
+                (ferramentasDocumentais?.HasDocumentTools == true ? AssistenteDocumentRetrievalPolicy.Instructions : "") +
+                (ferramentasDocumentais?.AdditionalInstructions ?? ""),
             input,
             request.Modo,
             operacoesPermitidas,
-            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta);
+            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta, FerramentasDocumentais: ferramentasDocumentais);
         var solicitationId = Guid.NewGuid();
         var startedAt = TimeProvider.System.GetTimestamp();
         var execution = new AssistenteIaExecucao(
@@ -166,21 +169,31 @@ public sealed class AssistenteIaApplicationService(
             authContext.OrganizationId,
             authContext.UserId,
             pecaId,
-            correlationContext.CorrelationId,
+            correlationId,
             request.Modo,
             anchor,
             providerRequest,
             InputTokensContados: null,
             StartedAtTimestamp: startedAt,
             UsageLease: usageLease,
-            PromptVersion: (conversaLivre ? AssistentePromptPolicy.AutomaticVersion : AssistentePromptPolicy.Version) + (contextoConversa is null ? "" : "/" + AssistenteConversationPolicy.Version),
+            PromptVersion: (conversaLivre ? AssistentePromptPolicy.AutomaticVersion : AssistentePromptPolicy.Version) + (contextoConversa is null ? "" : "/" + AssistenteConversationPolicy.Version) +
+                (ferramentasDocumentais?.HasDocumentTools == true ? "/" + AssistenteDocumentRetrievalPolicy.Version : "") +
+                (ferramentasDocumentais?.AdditionalPolicyVersion ?? ""),
             DocumentoBase: conversaLivre ? peca.ConteudoJson.RootElement.Clone() : null);
 
         try
         {
             using var timeout = CreateTimeout(cancellationToken, startedAt);
+            if (ferramentasDocumentais?.BeforeCall is not null) await ferramentasDocumentais.BeforeCall(timeout.Token);
             var inputTokens = await tokenCounter.ContarTokensEntradaAsync(providerRequest, timeout.Token);
             execution = execution with { InputTokensContados = inputTokens };
+            if (ferramentasDocumentais is not null)
+            {
+                ferramentasDocumentais.InitialInputTokens = inputTokens;
+                ferramentasDocumentais.MaxInputTokens = Settings.MaxInputTokens;
+                var currentExecution = execution;
+                ferramentasDocumentais.RecordCall = call => RecordProviderCallAsync(currentExecution, call);
+            }
             if (inputTokens > Settings.MaxInputTokens)
                 throw InputTooLarge("O contexto selecionado ultrapassa o limite de tokens permitido.");
 
@@ -274,6 +287,14 @@ public sealed class AssistenteIaApplicationService(
             using var timeout = CreateTimeout(cancellationToken, startedAt);
             var result = providerResult = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
             ValidateProviderResult(result, execution.Modo, execution.ProviderRequest.OperacoesPermitidas);
+            AssistenteCoberturaDocumentalDto? coverage = null;
+            if (execution.ProviderRequest.FerramentasDocumentais is { HasDocumentTools: true } tools)
+            {
+                if (result.CoberturaPretendida is not ("Todos" or "Relevantes")) throw ProviderOutputInvalid("A IA não indicou o escopo da consulta documental.");
+                tools.SetScope?.Invoke(result.CoberturaPretendida);
+                coverage = tools.Coverage;
+                result = AssistenteDocumentRetrievalPolicy.ValidateCoverage(result, coverage);
+            }
             if (execution.ProviderRequest.Conversacional)
             {
                 var draft = result.RascunhoAutomatico;
@@ -329,8 +350,10 @@ public sealed class AssistenteIaApplicationService(
                 suggestion,
                 new AssistenteUsoDto(inputTokens, result.SaidaTokens, result.EntradaTokensEmCache),
                 result.Modelo,
-                RascunhoAutomatico: execution.ProviderRequest.Conversacional ? result.RascunhoAutomatico : null);
+                RascunhoAutomatico: execution.ProviderRequest.Conversacional ? result.RascunhoAutomatico : null,
+                CoberturaDocumental: coverage);
         }
+        catch (AssistenteAnalysisQueuedException) { throw; }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
@@ -549,7 +572,7 @@ public sealed class AssistenteIaApplicationService(
         int? outputTokens,
         string status,
         string? errorCode,
-        long durationMs) => usageRecorder.RegistrarAsync(new AssistenteUsageRecord(
+        long durationMs) => execution.ProviderRequest.FerramentasDocumentais?.RecordedCalls > 0 ? Task.CompletedTask : usageRecorder.RegistrarAsync(new AssistenteUsageRecord(
             execution.OrganizationId,
             execution.UserId,
             execution.PecaId,
@@ -569,6 +592,12 @@ public sealed class AssistenteIaApplicationService(
             errorCode,
             durationMs),
         CancellationToken.None);
+
+    private Task RecordProviderCallAsync(AssistenteIaExecucao execution, AssistenteProviderCall call) =>
+        usageRecorder.RegistrarAsync(new AssistenteUsageRecord(execution.OrganizationId, execution.UserId, execution.PecaId,
+            execution.SolicitacaoId, execution.ClientRequestId, execution.CorrelationId, execution.Modo, null,
+            Settings.Provider, call.Model, execution.PromptVersion, call.Ordinal, call.InputTokens, call.CachedInputTokens,
+            call.OutputTokens, call.Status, call.ErrorCode, call.DurationMs, execution.ProviderRequest.FerramentasDocumentais?.RequireDurableUsage == true), CancellationToken.None);
 
     private static long ElapsedMilliseconds(long startedAt) =>
         (long)TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds;

@@ -31,6 +31,15 @@ builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("P
 builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
 builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
+    .Validate(x => !x.AnalysisEnabled || x.RetrievalEnabled, "Análise extensa exige recuperação documental.")
+    .Validate(x => !x.AnalysisEnabled || x.MaxAnalysisCalls is >= 3 and <= 30 && x.MaxAnalysisTotalTokens > 0 &&
+        x.AnalysisBatchCharacters is >= 8000 and <= 32000 && x.AnalysisSummaryCharacters is >= 2000 and <= 12000 &&
+        x.AnalysisOutputTokens is >= 500 and <= 6000 && x.AnalysisDeadlineSeconds >= x.AnalysisLeaseSeconds &&
+        x.AnalysisLeaseSeconds > builder.Configuration.GetValue<int>("AssistenteIa:TimeoutSeconds", 90) + 30,
+        "Limites da análise documental inválidos.")
+    .Validate(x => !x.RetrievalEnabled || x.Enabled, "Recuperação documental exige documentos habilitados.")
+    .Validate(x => x.MaxRetrievalRounds is >= 1 and <= 12 && x.MaxRetrievalTotalTokens > 0 &&
+        x.MaxRetrievalResultCharacters is >= 4000 and <= 16000, "Limites de recuperação documental inválidos.")
     .Validate(x => !x.Enabled || builder.Configuration.GetValue<bool>("AssistenteIa:AutomaticConversationEnabled"), "Documentos exigem conversa livre.")
     .Validate(x => !x.OcrEnabled || !string.IsNullOrWhiteSpace(x.OcrCalibrationVersion), "OCR exige uma versão de calibração.")
     .Validate(x => !x.OcrEnabled || Path.IsPathRooted(x.TessdataPath) && File.Exists(Path.Combine(x.TessdataPath, "por.traineddata")) &&
@@ -44,6 +53,10 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
         "AssistenteIa:ConversationV2Enabled exige ReviewV2Enabled.")
     .Validate(x => !x.AutomaticConversationEnabled || x.ConversationV2Enabled,
         "AssistenteIa:AutomaticConversationEnabled exige ConversationV2Enabled.")
+    .Validate(x => !x.HistoryMemoryEnabled || x.AutomaticConversationEnabled, "Memória exige conversa livre.")
+    .Validate(x => x.HistoryCompactionMessages >= x.HistoryRecentMessages && x.HistoryCompactionMessages <= 200 && x.HistoryRecentMessages is >= 2 and <= 100 && x.HistoryRecentCharacters is >= 4000 and <= 24000 &&
+        x.HistoryBatchCharacters is >= 4000 and <= 32000 && x.HistoryMemoryCharacters is >= 4000 and <= 16000 &&
+        x.HistoryToolRounds is >= 2 and <= 12 && x.HistoryTotalTokens > 0, "Limites da memória inválidos.")
     .Validate(x => x.TimeoutSeconds > 0 && x.MaxInstructionCharacters > 0 &&
                    x.MaxDocumentContextCharacters > 0 && x.MaxAdditionalContextCharacters > 0 &&
                    x.MaxTotalContextCharacters > 0 && x.MaxInputTokens > 0 && x.MaxOutputCharacters > 0 &&
@@ -185,8 +198,12 @@ builder.Services.AddScoped<OrganizationApplicationService>();
 builder.Services.AddScoped<AssistenteIaApplicationService>();
 builder.Services.AddScoped<AssistenteWorkspaceService>();
 builder.Services.AddScoped<AssistenteChatService>();
+builder.Services.AddScoped<AssistenteHistoryService>();
 builder.Services.AddScoped<AssistenteDocumentService>();
 builder.Services.AddScoped<AssistenteDocumentProcessor>();
+builder.Services.AddScoped<AssistenteDocumentAnalysisService>();
+builder.Services.AddScoped<AssistenteDocumentAnalysisProcessor>();
+builder.Services.AddHostedService<AssistenteDocumentAnalysisWorker>();
 builder.Services.AddSingleton<DocumentProcess>();
 builder.Services.AddSingleton<LocalDocumentExtractor>();
 builder.Services.AddHostedService<AssistenteDocumentWorker>();
@@ -208,7 +225,9 @@ builder.Services.AddScoped<IOrganizationFeatureRepository, OrganizationFeatureRe
 builder.Services.AddScoped<IAiOperationalControlRepository, AiOperationalControlRepository>();
 builder.Services.AddScoped<IAiUsageLedgerRepository, AiUsageLedgerRepository>();
 builder.Services.AddScoped<IAiTransparencyAcknowledgementRepository, AiTransparencyAcknowledgementRepository>();
-builder.Services.AddScoped<IAuthContext, HttpAuthContext>();
+builder.Services.AddScoped<HttpAuthContext>();
+builder.Services.AddScoped<AssistenteBackgroundIdentity>();
+builder.Services.AddScoped<IAuthContext, AssistenteExecutionAuthContext>();
 builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();

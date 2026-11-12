@@ -136,7 +136,9 @@ public sealed record AssistenteSolicitacaoConcluidaDto(
     AssistenteUsoDto Uso,
     string Modelo,
     AssistentePropostaDto? Proposta = null,
-    [property: System.Text.Json.Serialization.JsonIgnore] AssistenteRascunhoAutomatico? RascunhoAutomatico = null);
+    [property: System.Text.Json.Serialization.JsonIgnore] AssistenteRascunhoAutomatico? RascunhoAutomatico = null,
+    AssistenteCoberturaDocumentalDto? CoberturaDocumental = null,
+    AssistenteContextoHistoricoDto? ContextoHistorico = null);
 
 public sealed record AssistenteRascunhoAutomatico(AssistenteIntencao Intencao,
     IReadOnlyList<AssistenteGrupoRequest> Grupos, bool SubstituirPropostaReferenciada);

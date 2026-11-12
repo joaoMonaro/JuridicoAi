@@ -2,12 +2,12 @@
 
 > **Estado:** conversa livre, propostas automáticas, revisão persistida e histórico
 > usados no editor real, atrás de flags (recorte de E1/E3/E4). Conversas extensas
-> com resumo e avaliação com modelo real pendentes. Anexos e leitura nativa
+> com resumo/recuperação e análise documental por etapas implementadas; avaliação com modelo real pendente. Anexos e leitura nativa
 > integrados; OCR com pipeline testado, ainda sem calibração para rollout.
 >
 > **Data:** 2026-11-10
 >
-> **Detalhamento técnico atualizado em:** 2026-11-11
+> **Detalhamento técnico atualizado em:** 2026-11-12
 >
 > **Origem:** conversa com o responsável pelo produto.
 >
@@ -345,7 +345,7 @@ minuta/edição diretamente na comparação e ajuste de proposta pendente por
 referência, preservando grupos já aprovados. Nenhuma alteração é aplicada antes
 da aprovação visual. Veja [ativação, testes e limites da conversa livre](evidencias/e3-conversa-livre-2026-11-11.md).
 Esse recorte foi seguido pela integração documental descrita abaixo;
-resumos/busca para conversas extensas e worker da geração continuam pendentes.
+a memória para conversas extensas foi integrada na etapa seguinte. Worker da geração continua pendente.
 
 O [recorte documental](evidencias/e2-documentos-2026-11-11.md) implementa upload
 privado, processamento durável, leitura nativa PDF/DOCX/TXT, qualidade por trecho,
@@ -353,6 +353,14 @@ contexto de anexos/documentos do Caso e progresso no frontend. O pipeline local
 de OCR está testado, mas a calibração inicial teve cobertura insuficiente;
 digitalizações continuam sinalizadas como não lidas com OCR desligado por padrão.
 Recuperação extensa, worker da geração e exclusão continuam pendentes.
+
+A [recuperação documental por ferramentas](evidencias/e2-recuperacao-documental-2026-11-11.md)
+já está integrada ao chat: busca seletiva, leitura paginada, cobertura por arquivo
+e consumo por chamada. A [memória versionada de conversas extensas](evidencias/e2-memoria-conversa-2026-11-12.md)
+combina resumo, mensagens recentes e recuperação dos originais, com proveniência,
+invalidação e indicação no frontend. A [análise documental durável](evidencias/e2-analise-documental-duravel-2026-11-12.md)
+acrescenta sínteses por lote, consolidação e preparação final do mesmo pedido.
+Geração extensa por seções e durabilidade geral da geração continuam pendentes.
 
 O frontend atual foi conferido em `../JuridicoAi-frontend`. O
 [desenho técnico](desenho-tecnico.md) agora referencia especificações de dados,

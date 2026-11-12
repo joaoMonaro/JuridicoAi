@@ -29,9 +29,12 @@ public sealed class AssistenteMensagemPersistida
     public JsonDocument? Solicitacao { get; init; }
     public JsonDocument? Resultado { get; set; }
     public JsonDocument? FontesDocumentais { get; set; }
+    public JsonDocument? CoberturaDocumental { get; set; }
+    public Guid? AnaliseDocumentalId { get; set; }
+    public JsonDocument? ContextoHistorico { get; set; }
     public string Estado { get; set; } = "Concluida";
     public string? CodigoErro { get; set; }
-    public DateTime? ExpiraEm { get; init; }
+    public DateTime? ExpiraEm { get; set; }
     public DateTime CriadaEm { get; init; }
 }
 
@@ -64,5 +67,19 @@ public sealed class AssistenteAplicacaoRecibo
     public int VersaoResultante { get; init; }
     public JsonDocument ConteudoJson { get; init; } = null!;
     public JsonDocument GruposAplicados { get; init; } = null!;
+    public DateTime CriadaEm { get; init; }
+}
+
+// Append-only derived snapshots. Original messages are never replaced by memory.
+public sealed class AssistenteMemoria
+{
+    public Guid Id { get; init; }
+    public Guid OrganizationId { get; init; }
+    public Guid ConversaId { get; init; }
+    public Guid RespostaId { get; init; }
+    public int Versao { get; init; }
+    public long AteSequencia { get; init; }
+    public string PoliticaVersao { get; init; } = string.Empty;
+    public JsonDocument Registros { get; init; } = null!;
     public DateTime CriadaEm { get; init; }
 }
