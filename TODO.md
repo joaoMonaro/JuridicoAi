@@ -29,6 +29,10 @@ Pendências do escopo ativo:
 - [ ] Fechar orçamento financeiro, monitoramento e condições de rollout do piloto.
 - [ ] Avaliar continuidade, fidelidade às fontes e qualidade jurídica com o modelo real antes da liberação.
 
+Avaliação preparada: [preflight do fluxo conversacional](avaliacoes/assistente-conversacional/preflight-2026-11-12.md),
+com sete cenários, nove interações e controle de custo por chamada. A execução real
+aguarda chave de API local, modelo e teto financeiro; nenhum resultado foi aprovado.
+
 ## Stand by — Calibração do OCR
 
 - [ ] Retomar a calibração de imagens e documentos digitalizados quando essa frente voltar a ser priorizada.

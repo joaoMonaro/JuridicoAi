@@ -52,3 +52,9 @@ avaliacoes/seguranca-ia/execucoes/*
 
 #ARQUIVOS TESTE
 resultado-tjsp.json
+
+# Conversational evaluation artifacts and Python bytecode
+__pycache__/
+*.pyc
+avaliacoes/assistente-conversacional/execucoes/*
+!avaliacoes/assistente-conversacional/execucoes/.gitkeep
