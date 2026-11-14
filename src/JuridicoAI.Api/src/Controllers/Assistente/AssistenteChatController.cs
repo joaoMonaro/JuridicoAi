@@ -28,7 +28,10 @@ public sealed class AssistenteChatController(AssistenteChatService chat, Assiste
     private async Task Executar(Guid conversaId, CriarSolicitacaoAssistenteRequest request, bool livre, CancellationToken ct)
     {
         generator.ValidarEntrada(conversaId, request);
-        var start = await chat.IniciarAsync(conversaId, request, ct);
+        using var scope = logger.BeginScope(new Dictionary<string, object>
+        { ["ConversationId"] = conversaId, ["ClientRequestId"] = request.ClientRequestId });
+        var start = await AssistenteLatency.MeasureAsync(logger, "chat.accept",
+            () => chat.IniciarAsync(conversaId, request, ct));
         if (start.Resposta.GeracaoId is { } generationId && start.Resposta.Estado != "Concluida")
         {
             var state = await generations.GetAsync(conversaId, generationId, ct);

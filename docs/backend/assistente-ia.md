@@ -5,6 +5,11 @@ implementação ativa: conversa livre, contexto/histórico, memória, documentos
 nativos, análise e geração duráveis, minutas por seções, revisão transacional,
 histórico pessoal e exclusão autorizada do ambiente ativo.
 
+Atualização em **2026-11-14**: correção local de reagendamento/admissão e
+instrumentação por etapa verificadas. Comparação real concluída: consulta de
+63,941 s para 22,697 s; espera restante dominada pela cota local, acompanhada em M03. Ver [diagnóstico local](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-local-2026-11-14.md)
+e [teste real de M01](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
+
 - [Estado atual e evidências](../../implementacoes/features/assistente-conversacional/estado-atual.md).
 - [Contratos HTTP, persistência e configuração efetivos](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
 - [TODO da feature, pendências e melhorias](../../implementacoes/features/assistente-conversacional/TODO.md).

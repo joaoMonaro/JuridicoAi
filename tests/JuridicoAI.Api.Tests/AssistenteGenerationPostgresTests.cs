@@ -19,6 +19,51 @@ namespace JuridicoAI.Api.Tests;
 public sealed partial class AssistenteWorkspacePostgresTests
 {
     [ReviewPostgresFact]
+    public async Task Geracao_LimiteLocalReavaliaCapacidadeSemEsperarOutraJanelaNemChamarModeloAntesDaLiberacao()
+    {
+        await using var db = await Database.Create();
+        var storage = new DocumentMemoryStorage(); var model = new GenerationModel { AnswerOnly = true };
+        var (_, start) = await QueueGeneration(db, storage, model);
+        var gate = new LocalCapacityGate();
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            await using var scope = db.Context();
+            Assert.True(await GenerationServices(db, scope, storage, model, gate).Processor.ProcessNextAsync(default));
+            var job = await scope.Set<AssistenteGeracao>().AsNoTracking().SingleAsync();
+            Assert.Equal("NaFila", job.Estado);
+            Assert.NotNull(job.LeaseAte);
+            // A whole-window Retry-After must not postpone the next local check by 60s.
+            Assert.InRange((job.LeaseAte.Value - DateTime.UtcNow).TotalSeconds, -1, 2.1);
+            Assert.Equal(0, model.Calls);
+            Assert.Empty(await scope.AiUsageLedger.ToArrayAsync());
+            Assert.Empty(await scope.Set<AssistenteGeracaoEtapa>().ToArrayAsync());
+            Assert.False(await GenerationServices(db, scope, storage, model, gate).Processor.ProcessNextAsync(default));
+            var wait = job.LeaseAte.Value - DateTime.UtcNow + TimeSpan.FromMilliseconds(50);
+            if (wait > TimeSpan.Zero) await Task.Delay(wait);
+        }
+        gate.Open = true;
+        await using var ready = db.Context();
+        Assert.True(await GenerationServices(db, ready, storage, model, gate).Processor.ProcessNextAsync(default));
+        Assert.Equal("Concluida", (await ready.Set<AssistenteGeracao>().AsNoTracking().SingleAsync()).Estado);
+        Assert.Equal(1, model.Calls);
+        Assert.Single(await ready.AiUsageLedger.ToArrayAsync());
+        Assert.Empty(await ready.AssistentePropostas.ToArrayAsync());
+        Assert.Equal("Resposta preservada.", (await ready.AssistenteMensagens.SingleAsync(m => m.Id == start.Resposta.Id)).Texto);
+    }
+
+    private sealed class LocalCapacityGate : IAssistenteUsageLimiter
+    {
+        public bool Open;
+        public ValueTask<IAsyncDisposable> AdquirirAsync(Guid organization, Guid user, CancellationToken ct)
+        {
+            if (!Open) throw new AssistenteIaException(429, "AI_USER_RATE_LIMITED", "Limite local sintético.",
+                retryable: true, retryAfter: TimeSpan.FromMinutes(1));
+            return ValueTask.FromResult<IAsyncDisposable>(new Released());
+        }
+        private sealed class Released : IAsyncDisposable { public ValueTask DisposeAsync() => ValueTask.CompletedTask; }
+    }
+
+    [ReviewPostgresFact]
     public async Task Geracao_FilaAntesDoModeloERespostaNormalSobreviveAoFechamentoSemDuplicarPedido()
     {
         await using var db = await Database.Create(); var storage = new DocumentMemoryStorage(); var model = new GenerationModel { AnswerOnly = true };
@@ -260,7 +305,8 @@ public sealed partial class AssistenteWorkspacePostgresTests
         Assert.Fail("Geração não atingiu estado terminal.");
     }
     private static (AssistenteChatService Chat, AssistenteGenerationService Generations, AssistenteGenerationProcessor Processor, AssistenteDocumentAnalysisProcessor AnalysisProcessor, AssistenteDocumentService Documents)
-        GenerationServices(Database db, JuridicoAiDbContext context, DocumentMemoryStorage storage, GenerationModel model)
+        GenerationServices(Database db, JuridicoAiDbContext context, DocumentMemoryStorage storage, GenerationModel model,
+            IAssistenteUsageLimiter? capacity = null)
     {
         var repository = new AssistenteWorkspaceRepository(context); var pieces = new PecaRepository(context); var cases = new CasoRepository(context);
         var identity = new AssistenteBackgroundIdentity(); var auth = new TestAuthContext(db.OrgId, db.UserId); var monitor = new Monitor(db.Settings); var correlation = new AnalysisCorrelation(); var config = Options.Create(AnalysisSettings());
@@ -270,7 +316,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var analyses = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), documents, config, monitor, identity, correlation, generations);
         var chat = new AssistenteChatService(repository, pieces, auth, db.Access, new Transparency(), monitor, documents, history, analysis: analyses, generations: generations);
         var provider = new OpenAiAssistenteIaProvider(new HttpClient(new MemoryHandler(model.Send)) { BaseAddress = new("https://synthetic.test/v1/") }, Options.Create(db.Settings));
-        var limiter = new AnalysisLimiter(model.Analysis); var usage = new AssistenteUsageRecorder(new AiUsageLedgerRepository(context), monitor, NullLogger<AssistenteUsageRecorder>.Instance);
+        var limiter = capacity ?? new AnalysisLimiter(model.Analysis); var usage = new AssistenteUsageRecorder(new AiUsageLedgerRepository(context), monitor, NullLogger<AssistenteUsageRecorder>.Instance);
         var generator = new AssistenteIaApplicationService(pieces, cases, auth, provider, provider, new AssistenteContextBuilder(Options.Create(db.Settings)), new AssistentePromptPolicy(), new AssistenteRequestRegistry(), db.Access, new Transparency(), limiter, usage,
             correlation, monitor, NullLogger<AssistenteIaApplicationService>.Instance, config);
         return (chat, generations, new(context, generations, chat, generator, provider, provider, db.Access, usage, limiter, monitor),

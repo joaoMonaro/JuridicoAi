@@ -26,6 +26,11 @@ com 18 chamadas e custo calculado de **US$ 0,04549805**. Ver
 A avaliação ampla e a homologação jurídica continuam pendentes. A chave foi usada
 apenas temporariamente e o responsável foi avisado de que pode revogá-la. A suíte
 completa permanece disponível para uma avaliação posterior com orçamento próprio.
+Em **2026-11-14**, somente CONV-001 foi repetido com a instrumentação 1.1.0 e
+correções de M01: três interações aprovadas, 11 chamadas, custo de US$ 0,03260130.
+A consulta passou de 63,941 s para 22,697 s nessa comparação. Ver
+[resultado e divisão dos tempos](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
+Essa execução não amplia a cobertura aos cenários extensos adiados.
 OCR permanece desligado; nenhum caso depende da calibração em espera.
 
 ## Validação local, sem API
@@ -108,7 +113,25 @@ banco descartável, para testar o commit. O modelo não aprova e nenhuma Peça r
 - `physical-calls.json`: nomes de ferramentas e hashes, sem argumentos livres ou
   raciocínio interno do provedor.
 - `product-ledger.json`: conciliação com o ledger técnico da aplicação.
+- `latency.json` (avaliador 1.1.0): eventos técnicos permitidos de etapas,
+  aquisição e espera local, com IDs de correlação; sem prompts ou respostas.
 - `api-operational.log`: log protegido da API descartável, sem logging sensível.
+
+O avaliador 1.1.0 acrescenta `clientTimingMs` aos resultados (enfileiramento,
+espera pelo terminal e recuperação) e `duration_ms`/data/correlação ao ledger.
+Habilita console JSON e Information somente nas categorias de diagnóstico da API
+isolada. Os tempos de etapas aninhadas se sobrepõem: não somá-los. Log antigo ou
+categoria desabilitada produz medição indisponível, sem inventar tempo zero.
+
+Prova HTTP da instrumentação **sem chave ou chamada externa**:
+
+```bash
+python3 tools/smoke-tests/assistant-latency-http.py
+```
+
+Ela inicia API/PostgreSQL descartáveis e usa transporte de IA em memória com
+atrasos conhecidos; não mede a velocidade do GPT-6.1 Terra. Ver
+[diagnóstico local M01](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-local-2026-11-14.md).
 
 Não são gravados chaves, cookies, JWTs, sessões hospedadas ou raciocínio interno.
 Uma saída gerada pode conter referência inventada: revisar os artefatos antes de

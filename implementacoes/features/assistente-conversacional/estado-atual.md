@@ -1,6 +1,9 @@
 # Estado atual da implementação — assistente conversacional
 
 Registro consolidado em **2026-11-12**, após a primeira avaliação real reduzida.
+Atualização de **2026-11-14**: diagnóstico/correção local de M01 e instrumentação
+verificados inicialmente sem chamada paga. Depois, comparação real de M01
+concluída com chave temporária, teto de US$ 1 e custo de US$ 0,03260130.
 Esta é a referência de andamento da feature. O [escopo](README.md) descreve o
 produto; o [plano E0–E5](especificacoes/05-entrega-e-validacao.md) detalha os
 checklists e o [TODO da feature](TODO.md) acompanha as pendências e melhorias.
@@ -65,8 +68,10 @@ resultados e limitações na data de cada etapa.
 Resultados anteriores de backend/frontend preservados abaixo; a avaliação real
 reduzida foi executada nesta atualização e está identificada separadamente:
 
-- Backend: **281 testes aprovados e 1 teste de OCR ignorado** por indisponibilidade
-  do runtime local. Inclui testes PostgreSQL de transações, autorização, jobs e exclusão.
+- Backend: **287 testes aprovados e 1 teste de OCR ignorado** na rodada local de
+  2026-11-14, por indisponibilidade do runtime OCR. A rodada anterior de 2026-11-12
+  tinha 281 aprovados. Inclui PostgreSQL, transações, autorização, jobs, exclusão,
+  reagendamento, admissão e medições de latência.
 - Frontend: **133 testes unitários**, build e lint aprovados.
 - Playwright: **30 cenários focados distintos aprovados**, incluindo histórico
   pessoal, conversa livre, histórico e revisão persistida. Não corresponde à
@@ -76,12 +81,20 @@ reduzida foi executada nesta atualização e está identificada separadamente:
   simulado; histórico pessoal, separação de sessões e exclusão sem chamadas de IA.
   Ver [geração](evidencias/e2-e3-geracao-duravel-2026-11-12.md) e
   [histórico pessoal](evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).
-- Ferramenta de avaliação: **20 testes offline aprovados** e validação estrutural
+- Ferramenta de avaliação: **24 testes offline aprovados** em 2026-11-14 (20 na
+  preparação anterior), incluindo extração protegida dos tempos, e validação estrutural
   das suítes. A [preparação](../../../avaliacoes/assistente-conversacional/preflight-2026-11-12.md)
   original fez **zero chamadas ao modelo real e incorreu em US$ 0 de geração**.
 - Rodada real reduzida: **6 interações, 18 chamadas físicas, zero falhas nos checks**,
   custo calculado de **US$ 0,04549805**, uso conciliado com o ledger. API/PostgreSQL
   descartáveis encerrados. Ver [resultados e limitações](evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+- M01 local: regressão de espera adicional de 60 s reproduzida/corrigida;
+  tentativas negadas não consomem cota. API/PostgreSQL e transporte em memória
+  verificaram as medições separadas, sem representar benchmark do modelo. Ver
+  [diagnóstico e testes](evidencias/m01-latencia-local-2026-11-14.md).
+- M01 real: três interações aprovadas; consulta de **63,941 s para 22,697 s**.
+  Provedor levou 2,555 s; o limite local dominou a espera restante. Onze chamadas,
+  custo US$ 0,03260130, sem uso incerto. Ver [confirmação real](evidencias/m01-latencia-real-2026-11-14.md).
 
 Testes com provedor simulado comprovam mecanismos e contratos. A rodada real
 acrescenta evidência limitada aos quatro cenários executados; fidelidade às fontes,
@@ -115,7 +128,7 @@ fechados, sem tratar propostas do desenho como SLAs aprovados.
 
 | ID | Ponto restante | Natureza e condição de conclusão |
 |---|---|---|
-| P01 | Completar avaliação conversacional real | **Avaliação.** Recorte inicial concluído: quatro cenários/seis interações, GPT-6.1 Terra, US$ 0,04549805. Restam CONV-002/003/004 e investigação de latência da consulta simples (63,941 s). Definir orçamento adicional e credencial temporária para nova rodada; registrar/corrigir achados. |
+| P01 | Completar avaliação conversacional real | **Avaliação.** Recorte inicial concluído: quatro cenários/seis interações, GPT-6.1 Terra, US$ 0,04549805. Restam CONV-002/003/004. A comparação real de M01 foi concluída; política de espera restante está em M03. Definir orçamento adicional e credencial temporária para nova rodada; registrar/corrigir achados. |
 | P02 | Homologar qualidade jurídica e fidelidade às fontes | **Revisão humana.** Revisar os artefatos reais de P01 com a rubrica, conferir fatos/citações e aprovar ou registrar limitações. Aprovação de checks automáticos não encerra esta etapa. |
 | P03 | Completar controle financeiro de produção | **Implementação + configuração.** Definir preços e limites financeiros do piloto, reserva/coordenação de consumo agregado entre instâncias e tratamento visível ao atingir limites ou haver custo incerto. O proxy de orçamento da avaliação não substitui esse controle do produto. |
 | P04 | Preparar monitoramento operacional | **Instrumentação + operação.** Fechar métricas, alertas e rotina de resposta para custo, falhas, jobs sem progresso, leases e exclusões pendentes. Usar metadados técnicos, sem conteúdo jurídico ou credenciais nos logs. |
@@ -132,14 +145,19 @@ amplos de P07 não devem reaparecer como ausência dessas implementações.
 
 ## Próxima etapa
 
-Revisar os resultados reais com a rubrica (**P02**) e investigar a latência da
-consulta após aprovação, que levou 63,941 s. A primeira rodada de P01 já está
+O próximo desenvolvimento é **P03 — controle financeiro de produção**. O recorte
+local de M01 está implementado/testado: reagendamento e admissão corrigidos,
+medições por etapa disponíveis. A comparação real também foi concluída: 22,697 s
+na consulta, ante 63,941 s. A espera remanescente por cota está em M03; esse ganho
+observado não foi inferido da prova sintética nem configura SLA.
+
+Revisar os resultados reais com a rubrica (**P02**). A primeira rodada de P01 já está
 concluída no [recorte reduzido](../../../avaliacoes/assistente-conversacional/rodada-1usd.md):
 quatro cenários/seis interações, abaixo do teto total de US$ 1,00. Os três cenários
 adiados permanecem pendentes e exigem orçamento adicional definido para execução.
 
-P03–P08 continuam como condições para liberar o piloto. A investigação de
-latência está identificada como M01 no TODO; M02 registra a correção já concluída
+P03–P08 continuam como condições para liberar o piloto. M01 está concluído no
+recorte de latência; M03 acompanha a política de cotas. M02 registra a correção concluída
 na preparação do teste de isolamento. P09 não bloqueia a
 continuidade do escopo ativo de documentos nativos. A chave foi temporária e não
 foi mantida configurada para novas chamadas. Não houve ativação em produção.

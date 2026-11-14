@@ -9,75 +9,62 @@ namespace JuridicoAI.Api.Application.Services;
 
 public sealed class AssistenteUsageLimiter(IOptionsMonitor<AssistenteIaSettings> options) : IAssistenteUsageLimiter, IDisposable
 {
+    private readonly object _admissionLock = new();
     private readonly ConcurrentDictionary<Guid, FixedWindowRateLimiter> _userRates = new();
     private readonly ConcurrentDictionary<Guid, FixedWindowRateLimiter> _organizationRates = new();
     private readonly ConcurrentDictionary<Guid, ConcurrencyLimiter> _userConcurrency = new();
     private readonly ConcurrentDictionary<Guid, ConcurrencyLimiter> _organizationConcurrency = new();
 
-    public async ValueTask<IAsyncDisposable> AdquirirAsync(
+    public ValueTask<IAsyncDisposable> AdquirirAsync(
         Guid organizationId,
         Guid userId,
         CancellationToken cancellationToken)
     {
-        var settings = options.CurrentValue;
-        var acquired = new List<RateLimitLease>(4);
-        try
+        cancellationToken.ThrowIfCancellationRequested();
+        // All probes and acquisitions are nonblocking (QueueLimit=0). Keep this
+        // local admission atomic: a denied attempt must not consume rate permits.
+        lock (_admissionLock)
         {
-            await AcquireAsync(
-                _userRates.GetOrAdd(userId, _ => CreateRate(settings.RequestsPerUserPerMinute)),
-                acquired,
-                "AI_USER_RATE_LIMITED",
-                "O limite de solicitações de IA por usuário foi atingido.",
-                cancellationToken);
-            await AcquireAsync(
-                _organizationRates.GetOrAdd(organizationId, _ => CreateRate(settings.RequestsPerOrganizationPerMinute)),
-                acquired,
-                "AI_ORGANIZATION_RATE_LIMITED",
-                "O limite de solicitações de IA da organização foi atingido.",
-                cancellationToken);
-            await AcquireAsync(
-                _userConcurrency.GetOrAdd(userId, _ => CreateConcurrency(settings.ConcurrentRequestsPerUser)),
-                acquired,
-                "AI_USER_CONCURRENCY_LIMITED",
-                "Já existem solicitações de IA demais em andamento para este usuário.",
-                cancellationToken);
-            await AcquireAsync(
-                _organizationConcurrency.GetOrAdd(organizationId, _ => CreateConcurrency(settings.ConcurrentRequestsPerOrganization)),
-                acquired,
-                "AI_ORGANIZATION_CONCURRENCY_LIMITED",
-                "Já existem solicitações de IA demais em andamento nesta organização.",
-                cancellationToken);
-            return new CompositeLease(acquired);
-        }
-        catch
-        {
-            foreach (var lease in acquired) lease.Dispose();
-            throw;
+            cancellationToken.ThrowIfCancellationRequested();
+            var settings = options.CurrentValue;
+            var acquired = new List<RateLimitLease>(4);
+            var userRate = _userRates.GetOrAdd(userId, _ => CreateRate(settings.RequestsPerUserPerMinute));
+            var organizationRate = _organizationRates.GetOrAdd(organizationId, _ => CreateRate(settings.RequestsPerOrganizationPerMinute));
+            try
+            {
+                using var userProbe = Acquire(userRate, 0, "AI_USER_RATE_LIMITED",
+                    "O limite de solicitações de IA por usuário foi atingido.");
+                using var organizationProbe = Acquire(organizationRate, 0, "AI_ORGANIZATION_RATE_LIMITED",
+                    "O limite de solicitações de IA da organização foi atingido.");
+                acquired.Add(Acquire(_userConcurrency.GetOrAdd(userId, _ => CreateConcurrency(settings.ConcurrentRequestsPerUser)),
+                    1, "AI_USER_CONCURRENCY_LIMITED", "Já existem solicitações de IA demais em andamento para este usuário."));
+                acquired.Add(Acquire(_organizationConcurrency.GetOrAdd(organizationId, _ => CreateConcurrency(settings.ConcurrentRequestsPerOrganization)),
+                    1, "AI_ORGANIZATION_CONCURRENCY_LIMITED", "Já existem solicitações de IA demais em andamento nesta organização."));
+                acquired.Add(Acquire(userRate, 1, "AI_USER_RATE_LIMITED",
+                    "O limite de solicitações de IA por usuário foi atingido."));
+                acquired.Add(Acquire(organizationRate, 1, "AI_ORGANIZATION_RATE_LIMITED",
+                    "O limite de solicitações de IA da organização foi atingido."));
+                return ValueTask.FromResult<IAsyncDisposable>(new CompositeLease(acquired));
+            }
+            catch
+            {
+                foreach (var lease in acquired) lease.Dispose();
+                throw;
+            }
         }
     }
 
-    private static async Task AcquireAsync(
-        RateLimiter limiter,
-        ICollection<RateLimitLease> acquired,
-        string code,
-        string message,
-        CancellationToken cancellationToken)
+    private static RateLimitLease Acquire(RateLimiter limiter, int permits, string code, string message)
     {
-        var lease = await limiter.AcquireAsync(1, cancellationToken);
+        var lease = limiter.AttemptAcquire(permits);
         if (!lease.IsAcquired)
         {
-            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var value)
-                ? value
-                : (TimeSpan?)null;
+            var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var value) ? value : (TimeSpan?)null;
             lease.Dispose();
-            throw new AssistenteIaException(
-                StatusCodes.Status429TooManyRequests,
-                code,
-                message,
-                retryable: true,
-                retryAfter: retryAfter);
+            throw new AssistenteIaException(StatusCodes.Status429TooManyRequests, code, message,
+                retryable: true, retryAfter: retryAfter);
         }
-        acquired.Add(lease);
+        return lease;
     }
 
     private static FixedWindowRateLimiter CreateRate(int permitLimit) => new(new FixedWindowRateLimiterOptions

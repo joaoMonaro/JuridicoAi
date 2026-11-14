@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
+using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
 
@@ -12,7 +13,8 @@ namespace JuridicoAI.Api.Infrastructure.AI;
 
 public sealed class OpenAiAssistenteIaProvider(
     HttpClient httpClient,
-    IOptions<AssistenteIaSettings> options) : IAssistenteIaProvider, IAssistenteTokenCounter
+    IOptions<AssistenteIaSettings> options,
+    ILogger<OpenAiAssistenteIaProvider>? logger = null) : IAssistenteIaProvider, IAssistenteTokenCounter
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
     private static readonly JsonElement OutputSchema = CreateOutputSchema();
@@ -22,6 +24,7 @@ public sealed class OpenAiAssistenteIaProvider(
         AssistenteIaProviderRequest request,
         CancellationToken cancellationToken)
     {
+        using var timing = AssistenteLatency.Measure(logger, "provider.input_tokens");
         using var message = new HttpRequestMessage(HttpMethod.Post, "responses/input_tokens");
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
         var payload = CreateInputPayload(request); payload.Remove("include");
@@ -71,6 +74,7 @@ public sealed class OpenAiAssistenteIaProvider(
     private async Task<ProviderTurn> GerarTurnoAsync(AssistenteIaProviderRequest request,
         Dictionary<string, object?> payload, CancellationToken cancellationToken)
     {
+        using var timing = AssistenteLatency.Measure(logger, "provider.generation");
         using var message = new HttpRequestMessage(HttpMethod.Post, "responses");
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
@@ -82,10 +86,10 @@ public sealed class OpenAiAssistenteIaProvider(
 
         try
         {
-            using var response = await httpClient.SendAsync(
+            using var response = await AssistenteLatency.MeasureAsync(logger, "provider.headers", () => httpClient.SendAsync(
                 message,
                 HttpCompletionOption.ResponseHeadersRead,
-                cancellationToken);
+                cancellationToken));
             if (!response.IsSuccessStatusCode)
                 throw CreateHttpException(response.StatusCode);
 
@@ -291,6 +295,7 @@ public sealed class OpenAiAssistenteIaProvider(
 
     private async Task<int> CountPayloadAsync(Dictionary<string, object?> payload, CancellationToken ct)
     {
+        using var timing = AssistenteLatency.Measure(logger, "provider.input_tokens");
         payload = new(payload); payload.Remove("include");
         try
         {

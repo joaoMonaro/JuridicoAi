@@ -13,6 +13,13 @@ exemplos de `EnviarMensagem`, `MensagemAceita` e `Evento` do catálogo inicial
 não representam integralmente os endpoints atuais. Em particular, execução
 durável não exige uma resposta HTTP 202 de envio nem um journal SSE no banco.
 
+Atualização de **2026-11-14**: reagendamento por limites locais é reavaliado em
+até 2 s, passando novamente pela admissão, sem esperar outra janela inteira de
+60 s. A admissão local não desconta cota em tentativas negadas. Eventos técnicos
+6401–6403 permitem separar etapas; não alteram DTOs/rotas nem o tratamento de
+chamada externa incerta. Ver [M01](../evidencias/m01-latencia-local-2026-11-14.md).
+Coordenação distribuída e monitoramento operacional completo seguem pendentes.
+
 - [Controllers](../../../../src/JuridicoAI.Api/src/Controllers/Assistente/).
 - [DTOs de conversa, propostas, recibos e geração](../../../../src/JuridicoAI.Api/src/Application/DTOs/AssistenteWorkspaceDtos.cs).
 - [DTOs documentais](../../../../src/JuridicoAI.Api/src/Application/DTOs/AssistenteDocumentDtos.cs).

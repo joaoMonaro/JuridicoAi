@@ -157,6 +157,56 @@ public sealed class AssistenteIaGovernanceTests
     }
 
     [Fact]
+    public async Task Limiter_NegacaoDaOrganizationNaoConsomeCotaDoUsuarioEmOutraOrganization()
+    {
+        using var limiter = new AssistenteUsageLimiter(new StaticOptionsMonitor<AssistenteIaSettings>(new()
+        { RequestsPerUserPerMinute = 1, RequestsPerOrganizationPerMinute = 1 }));
+        var fullOrganization = Guid.NewGuid(); var user = Guid.NewGuid();
+        await using (await limiter.AdquirirAsync(fullOrganization, Guid.NewGuid(), default)) { }
+        for (var i = 0; i < 5; i++)
+            Assert.Equal("AI_ORGANIZATION_RATE_LIMITED", (await Assert.ThrowsAsync<AssistenteIaException>(async () =>
+                await limiter.AdquirirAsync(fullOrganization, user, default))).Code);
+        await using var allowed = await limiter.AdquirirAsync(Guid.NewGuid(), user, default);
+    }
+
+    [Fact]
+    public async Task Limiter_RechecagensDeConcorrenciaNaoEsgotamCotaPorMinuto()
+    {
+        using var limiter = new AssistenteUsageLimiter(new StaticOptionsMonitor<AssistenteIaSettings>(new()
+        { RequestsPerUserPerMinute = 2, RequestsPerOrganizationPerMinute = 2, ConcurrentRequestsPerUser = 1 }));
+        var organization = Guid.NewGuid(); var user = Guid.NewGuid();
+        var active = await limiter.AdquirirAsync(organization, user, default);
+        try
+        {
+            for (var i = 0; i < 5; i++)
+                Assert.Equal("AI_USER_CONCURRENCY_LIMITED", (await Assert.ThrowsAsync<AssistenteIaException>(async () =>
+                    await limiter.AdquirirAsync(organization, user, default))).Code);
+        }
+        finally { await active.DisposeAsync(); }
+        await using (await limiter.AdquirirAsync(organization, user, default)) { }
+        Assert.Equal("AI_USER_RATE_LIMITED", (await Assert.ThrowsAsync<AssistenteIaException>(async () =>
+            await limiter.AdquirirAsync(organization, user, default))).Code);
+    }
+
+    [Fact]
+    public async Task Limiter_AdmissaoConcorrenteNaoExcedeCotaEIsolaCancelamento()
+    {
+        using var limiter = new AssistenteUsageLimiter(new StaticOptionsMonitor<AssistenteIaSettings>(new()
+        { RequestsPerUserPerMinute = 3, RequestsPerOrganizationPerMinute = 3, ConcurrentRequestsPerUser = 30, ConcurrentRequestsPerOrganization = 30 }));
+        var organization = Guid.NewGuid(); var user = Guid.NewGuid();
+        using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+            await limiter.AdquirirAsync(organization, user, cancelled.Token));
+        var accepted = 0;
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
+        {
+            try { await using var lease = await limiter.AdquirirAsync(organization, user, default); Interlocked.Increment(ref accepted); }
+            catch (AssistenteIaException ex) { Assert.Equal("AI_USER_RATE_LIMITED", ex.Code); }
+        })));
+        Assert.Equal(3, accepted);
+    }
+
+    [Fact]
     public async Task Limiter_InformaRetryAfterQuandoJanelaDoUsuarioEsgota()
     {
         using var limiter = new AssistenteUsageLimiter(new StaticOptionsMonitor<AssistenteIaSettings>(new()

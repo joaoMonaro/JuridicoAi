@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 from eval_budget import RunBudget, decimal_value
 from eval_proxy import EvaluationProxy
 from eval_suite import load_suite, evaluate_turn
+from eval_latency import extract_latency
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITE = ROOT / 'avaliacoes/assistente-conversacional/suite.json'
@@ -137,7 +138,12 @@ class Product:
                     'AssistenteDocumentos__Enabled': 'true', 'AssistenteDocumentos__RetrievalEnabled': 'true',
                     'AssistenteDocumentos__AnalysisEnabled': 'true', 'AssistenteDocumentos__OcrEnabled': 'false',
                     'DocumentStorage__RootPath': str(Path(self.temp.name) / 'files'),
-                    'Logging__LogLevel__Default': 'Warning'})
+                    'Logging__LogLevel__Default': 'Warning',
+                    'Logging__Console__FormatterName': 'json',
+                    'Logging__Console__FormatterOptions__IncludeScopes': 'true',
+                    'Logging__LogLevel__JuridicoAI.Api.Infrastructure.AI.OpenAiAssistenteIaProvider': 'Information',
+                    'Logging__LogLevel__JuridicoAI.Api.Infrastructure.Documents.AssistenteGenerationProcessor': 'Information',
+                    'Logging__LogLevel__JuridicoAI.Api.Controllers.Assistente.AssistenteChatController': 'Information'})
         self.log = open(self.output / 'api-operational.log', 'w', encoding='utf-8')
         os.chmod(self.output / 'api-operational.log', 0o600)
         self.api = subprocess.Popen(['dotnet', 'bin/Debug/net10.0/JuridicoAI.Api.dll'],
@@ -240,6 +246,7 @@ class Product:
         before = self.http('GET', '/pecas/' + piece['id'])
         started = time.monotonic()
         sse = self.http('POST', f'/assistente/v2/conversas/{conversation}/interacoes', request, raw=True)
+        enqueued_at = time.monotonic()
         frames = [json.loads(frame.split('\ndata: ', 1)[1]) for frame in sse.split('\n\n') if 'event: solicitacao.enfileirada\ndata: ' in frame]
         if len(frames) != 1:
             raise RuntimeError('Durable generation enqueue event missing')
@@ -252,6 +259,7 @@ class Product:
                 self.http('POST', f'/assistente/v2/conversas/{conversation}/geracoes/{generation_id}/cancelamento', {})
                 raise RuntimeError(self.proxy.stop_reason or 'evaluation_turn_deadline')
             time.sleep(.5)
+        terminal_at = time.monotonic()
         messages = self.http('GET', f'/assistente/v2/conversas/{conversation}/mensagens?limite=50')
         response = next(item for item in messages if item.get('geracaoId') == generation_id)
         proposal = (response.get('resultado') or {}).get('proposta')
@@ -262,6 +270,9 @@ class Product:
         names = [item['name'] for item in self.proxy.tools[before_tools:]]
         evaluated = evaluate_turn(turn, response, proposal, names, unchanged)
         evaluated.update(durationSeconds=round(time.monotonic() - started, 3), generation=generation,
+                         clientTimingMs={'enqueue': round((enqueued_at - started) * 1000, 3),
+                                         'waitForTerminal': round((terminal_at - enqueued_at) * 1000, 3),
+                                         'fetchResult': round((time.monotonic() - terminal_at) * 1000, 3)},
                          toolNames=names, response=response, proposal=proposal,
                          durableTransport='closed_after_enqueue', pieceChangedBeforeApproval=not unchanged)
         if previous and turn.get('referencePrevious') and proposal:
@@ -284,7 +295,7 @@ class Product:
         return evaluated, piece, proposal or previous
 
     def export_ledger(self):
-        return json.loads(self.sql("SELECT coalesce(json_agg(x),'[]'::json) FROM (SELECT solicitacao_id,client_request_id,mode,model,prompt_version,attempt_count,input_tokens,cached_input_tokens,output_tokens,status,error_code,estimated_cost_usd FROM ai_usage_ledger ORDER BY created_at,id) x;"))
+        return json.loads(self.sql("SELECT coalesce(json_agg(x),'[]'::json) FROM (SELECT solicitacao_id,client_request_id,correlation_id,mode,model,prompt_version,attempt_count,input_tokens,cached_input_tokens,output_tokens,status,error_code,estimated_cost_usd,duration_ms,created_at FROM ai_usage_ledger ORDER BY created_at,id) x;"))
 
     def close(self):
         if self.api and self.api.poll() is None:
@@ -383,7 +394,7 @@ def main():
     product = Product(output, proxy, model, prices)
     results = []
     manifest = {'suiteVersion': suite['suiteVersion'], 'commit': commit, 'workingTreeChanges': changes.splitlines(),
-                'evaluationVersion': 'conversa-eval-1.0.0',
+                'evaluationVersion': 'conversa-eval-1.1.0',
                 'evaluationFilesSha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(Path(__file__).parent.glob('*.py'))},
                 'suiteSha256': hashlib.sha256(arguments.suite.read_bytes()).hexdigest(),
                 'model': model, 'executedAtUtc': datetime.now(timezone.utc).isoformat(),
@@ -433,6 +444,7 @@ def main():
             if proxy.thread.is_alive():
                 proxy.close()
         write_json(output / 'usage.json', budget.snapshot())
+        write_json(output / 'latency.json', extract_latency(output / 'api-operational.log'))
         write_json(output / 'results.json', results)
         write_json(output / 'manifest.json', manifest)
         (output / 'report.md').write_text(report(manifest, results), encoding='utf-8')

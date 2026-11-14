@@ -36,7 +36,8 @@ public sealed class AssistenteGenerationWorker(IServiceScopeFactory scopes, IOpt
 }
 public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, AssistenteGenerationService service, AssistenteChatService chat,
     AssistenteIaApplicationService generator, IAssistenteIaProvider provider, IAssistenteTokenCounter counter, IAssistenteFeatureAccess features,
-    IAssistenteUsageRecorder usage, IAssistenteUsageLimiter limiter, IOptionsMonitor<AssistenteIaSettings> options)
+    IAssistenteUsageRecorder usage, IAssistenteUsageLimiter limiter, IOptionsMonitor<AssistenteIaSettings> options,
+    ILogger<AssistenteGenerationProcessor>? logger = null)
 {
     private AssistenteIaSettings Settings => options.CurrentValue;
     private static readonly JsonSerializerOptions Json = new(AssistentePatchCompiler.JsonOptions) { UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
@@ -57,12 +58,22 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
                 .SetProperty(j => j.LeaseAte, job.LeaseAte).SetProperty(j => j.AtualizadaEm, now), ct);
             await tx.CommitAsync(ct);
         }
+        using var scope = logger?.BeginScope(new Dictionary<string, object>
+        {
+            ["GenerationId"] = job.Id, ["ConversationId"] = job.ConversaId,
+            ["ClientRequestId"] = job.ClientRequestId, ["CorrelationId"] = job.CorrelationId
+        });
+        logger?.LogInformation(new EventId(6403, "AssistenteGenerationClaim"),
+            "AI_GENERATION_CLAIM State={State} SinceCreatedMs={SinceCreatedMs}", job.Estado,
+            Math.Max(0, (now - job.CriadaEm).TotalMilliseconds));
+        using var processing = AssistenteLatency.Measure(logger, "generation.processing");
         try
         {
             await service.BindAsync(job, ct); await service.ValidateAsync(job, ct);
             if (await db.Set<AssistenteGeracaoEtapa>().AnyAsync(s => s.GeracaoId == job.Id && (s.Estado == "Chamando" || s.Estado == "Recebida"), ct))
                 throw Changed("AI_GENERATION_CALL_UNCERTAIN");
-            var start = await chat.PrepararGeracaoAsync(job, ct);
+            var start = await AssistenteLatency.MeasureAsync(logger, "generation.context",
+                () => chat.PrepararGeracaoAsync(job, ct));
             if (job.Contexto is null)
             {
                 job.Contexto = AssistentePatchCompiler.Json(Context(start) with { Pedido = await service.RequestContextAsync(start.CasoId!.Value,
@@ -86,10 +97,18 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
         catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch (AssistenteIaException ex) when (ex.Code is "AI_DOCUMENTS_PROCESSING" or "AI_USER_RATE_LIMITED" or "AI_ORGANIZATION_RATE_LIMITED" or "AI_USER_CONCURRENCY_LIMITED" or "AI_ORGANIZATION_CONCURRENCY_LIMITED")
         {
+            // FixedWindowRateLimiter returns whole windows, not the time left until
+            // replenishment. Recheck LOCAL capacity without bypassing the limiter;
+            // this must never become an automatic retry of an external paid call.
+            var delay = ex.RetryAfter ?? TimeSpan.FromSeconds(2);
+            if (ex.Code != "AI_DOCUMENTS_PROCESSING" && delay > TimeSpan.FromSeconds(2))
+                delay = TimeSpan.FromSeconds(2);
+            logger?.LogInformation(new EventId(6402, "AssistenteGenerationDeferred"),
+                "AI_GENERATION_DEFERRED Reason={Reason} RetryAfterMs={RetryAfterMs}", ex.Code, delay.TotalMilliseconds);
             await SaveAsync(job, async token =>
             {
                 await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, ex.Code == "AI_DOCUMENTS_PROCESSING" ? "AguardandoDocumentos" : job.Plano == null ? "NaFila" : "Redigindo")
-                    .SetProperty(j => j.LeaseAte, DateTime.UtcNow.Add(ex.RetryAfter ?? TimeSpan.FromSeconds(2))), token);
+                    .SetProperty(j => j.LeaseAte, DateTime.UtcNow.Add(delay)), token);
             }, CancellationToken.None); return true;
         }
         catch (Exception ex)
@@ -163,7 +182,8 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
         try
         {
             await SetStateAsync(job, "Executando", ct);
-            execution = await generator.PrepararAsync(job.PecaId, request, ct, start.Contexto, request.InteracaoAutomatica, tools);
+            execution = await AssistenteLatency.MeasureAsync(logger, "generation.prepare",
+                () => generator.PrepararAsync(job.PecaId, request, ct, start.Contexto, request.InteracaoAutomatica, tools));
             AttachMeter(job, tools, execution.SolicitacaoId, "Normal");
             var result = await generator.GerarAsync(execution, ct);
             result = result with { Sugestao = result.Sugestao with { MensagemUsuarioId = start.Pedido.Id } };
@@ -300,6 +320,7 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
     }
     private async Task PublishAsync(AssistenteChatInicio start, AssistenteSolicitacaoConcluidaDto result, CancellationToken ct)
     {
+        using var measurement = AssistenteLatency.Measure(logger, "generation.publish");
         await service.ValidateAsync(start.Geracao!, ct);
         if (AssistenteChatService.Read<CriarSolicitacaoAssistenteRequest>(start.Pedido.Solicitacao)!.InteracaoAutomatica) await chat.ConcluirLivreAsync(start, result, ct);
         else await chat.ConcluirAsync(start, result, ct);

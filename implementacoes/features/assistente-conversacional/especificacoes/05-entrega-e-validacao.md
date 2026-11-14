@@ -162,10 +162,17 @@ no [estado atual](../estado-atual.md#verificações-já-registradas).
 
 ## Ordem de continuidade
 
-1. Revisar a rodada real reduzida (P02) e investigar a latência observada.
+1. Revisar os resultados reais (P02); M01 tem comparação concluída e a espera remanescente fica em M03.
 2. Completar os cenários adiados de P01 com orçamento adicional definido.
 3. Fechar P03–P08 e registrar evidências antes da liberação controlada.
 4. Manter P09 em espera até repriorização explícita.
 
 Não há prazo de entrega, SLA de exclusão de backups ou custo do piloto aprovado
 por este plano. As flags permanecem desligadas por padrão.
+
+Atualização em **2026-11-14**: diagnóstico e correções locais de M01 concluídos,
+com [regressão e medições verificadas](../evidencias/m01-latencia-local-2026-11-14.md).
+A [comparação real](../evidencias/m01-latencia-real-2026-11-14.md) também foi concluída: consulta de
+63,941 s para 22,697 s; política de espera restante em M03. O próximo
+desenvolvimento de código é P03; a instrumentação deste recorte não conclui o
+monitoramento operacional de P04 nem muda os demais gates do piloto.

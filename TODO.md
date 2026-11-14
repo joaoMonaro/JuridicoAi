@@ -3,28 +3,39 @@
 Atualizado em **2026-11-14**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
+## Pendência com alta prioridade
+
+- [ ] implementacao do fluxo total do assistente conversasional (definido na feature assistente-conversacional)
+
 ## Pendências
 
-- [ ] **PROJ-001 — Testar e corrigir a latência da IA. Prioridade: `medium` (média).**
+- [x] **PROJ-001 — Testar e corrigir a latência da IA. Prioridade: `medium` (média).**
 
 Na avaliação reduzida, uma consulta simples sobre a minuta aprovada levou
 **63,941 segundos**, enquanto as demais interações ficaram entre 5,300 e
-22,993 segundos. O tempo medido é o da interação completa; a causa da demora
-ainda não foi identificada.
+22,993 segundos. O tempo medido é o da interação completa; os registros originais
+não separaram as etapas da demora.
 
-Próximas ações:
+**Concluído em 2026-11-14:** diagnóstico, correção, instrumentação e repetição
+real com GPT-6.1 Terra. A consulta passou de **63,941 s para 22,697 s** nesta
+comparação. O cenário completo de três interações passou nos checks técnicos,
+com custo calculado de **US$ 0,03260130**. Ver
+[evidência real](implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
 
-1. Reproduzir a consulta e medir separadamente fila, preparação do contexto,
-   contagem de tokens, chamada ao provedor e publicação da resposta.
-2. Identificar o gargalo e corrigir esperas desnecessárias comprovadas.
-3. Comparar os tempos antes/depois e verificar que contexto, aprovação e
-   execução durável continuam corretos, começando por testes locais.
-4. Registrar diagnóstico, alterações e resultados. Novas chamadas pagas exigem
-   orçamento definido; não há SLA de latência aprovado.
+A geração no provedor levou 2,555 s; a espera dominante foi de aproximadamente
+18,905 s até a admissão pelo limite local. Essa política remanescente está em
+**M03 (medium)** no TODO da feature, separada da correção de reagendamento.
 
-Detalhamento e critérios de conclusão: **M01** no
-[TODO do assistente conversacional](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
-Origem: [avaliação real reduzida](implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+Verificações realizadas:
+
+1. Consulta reproduzida e etapas medidas separadamente.
+2. Reagendamento excessivo e consumo de cota em negações corrigidos/testados.
+3. Tempos comparados com o modelo real, sem elevar cotas ou reduzir contexto.
+4. Diagnóstico/resultados registrados. Não há SLA aprovado; novas rodadas pagas
+   continuam exigindo orçamento definido.
+
+Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
+A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
 
 ## Acompanhamento por feature
 

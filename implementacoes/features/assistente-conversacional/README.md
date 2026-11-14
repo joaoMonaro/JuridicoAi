@@ -350,11 +350,14 @@ mantém as novas flags desligadas por padrão.
 
 ## Sequência restante
 
-1. Revisar os resultados da avaliação real reduzida e investigar a consulta
-   simples de 63,941 s; fechar revisão humana — P02.
-2. Completar os três cenários adiados de P01 com orçamento adicional definido.
-3. Completar controle financeiro, monitoramento, proteção de restaurações,
+1. Revisar os resultados da avaliação real reduzida — P02. O diagnóstico e a
+   correção locais da latência foram [verificados em 2026-11-14](evidencias/m01-latencia-local-2026-11-14.md);
+   a [comparação real](evidencias/m01-latencia-real-2026-11-14.md) também foi concluída
+   (63,941 s para 22,697 s). A política de espera remanescente fica em M03.
+2. Desenvolver controle financeiro de produção — P03; completar monitoramento,
+   proteção de restaurações,
    rollout, compatibilidade e implantação antes do piloto — P03–P08.
+3. Completar os três cenários adiados de P01 com orçamento adicional definido.
 4. Retomar OCR somente quando repriorizado — P09, em espera.
 
 A [primeira rodada reduzida](../../../avaliacoes/assistente-conversacional/rodada-1usd.md)

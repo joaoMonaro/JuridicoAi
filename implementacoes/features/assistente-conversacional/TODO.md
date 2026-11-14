@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-12**. Referência completa:
+Atualizado em **2026-11-14**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -36,14 +36,16 @@ utilizada foi temporária; não ficou configurada para novas chamadas.
 
 ## Próximos passos de desenvolvimento
 
-Sequência para o trabalho de implementação e preparação restante. Começar pela
-investigação M01 abaixo; a revisão dos resultados já disponíveis (P02) continua
-aberta. Esta lista não libera o piloto sem as validações e condições operacionais.
+Sequência para o trabalho de implementação e preparação restante. O diagnóstico,
+a correção, a instrumentação e a comparação real de M01 foram concluídos. A
+espera remanescente pela política de cotas está em M03. O próximo desenvolvimento é P03. A revisão dos
+resultados disponíveis (P02) continua aberta. Esta lista não libera o piloto sem
+as validações e condições operacionais.
 Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento próprio.
 
 | Ordem | Frente | Próxima entrega concreta |
 |---|---|---|
-| 1 | M01 — Latência | Medir as etapas da consulta de 63,941 s, identificar a causa e corrigir esperas comprovadas; validar localmente |
+| 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
 | 2 | P03 — Controle financeiro | Reserva e liquidação financeiras persistidas, com limite agregado entre instâncias e bloqueio antes da próxima chamada |
 | 3 | P04 — Monitoramento | Instrumentação, métricas e alertas de consumo, falhas, jobs sem progresso e exclusões pendentes |
 | 4 | P05 — Backup/exclusão | Registro externo mínimo, reaplicação automatizada e ensaio de restauração sem reativar conteúdo excluído |
@@ -93,23 +95,35 @@ ensaio. Permanecem condições para o piloto, não apenas melhorias opcionais.
 Origem: [rodada real com GPT-6.1 Terra](evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
 Estas melhorias não substituem as entregas P01–P08 ainda pendentes.
 
-- [ ] **M01 — Investigar e reduzir a latência da consulta após aprovação.**
+- [x] **M01 — Investigar e reduzir a latência da consulta após aprovação.**
   Prioridade no [TODO geral do projeto](../../../TODO.md): **medium** (PROJ-001).
   CONV-001/3 levou **63,941 s** para responder apenas o nome da contratante e o
-  valor já aprovados. Ainda não foi identificada a causa. Separar as medições de
-  fila, montagem do contexto, contagem de tokens, chamada ao provedor e publicação;
-  registrar somente metadados técnicos, sem conteúdo jurídico ou credenciais.
-  Corrigir esperas desnecessárias que forem comprovadas e verificar com testes
-  locais se aprovação, contexto e durabilidade continuam corretos. Comparar os
-  tempos antes/depois; novas medições pagas precisam de orçamento definido.
-  Conclusão: causa documentada, correção ou encaminhamento justificado e evidência
-  de verificação. Não há SLA de latência aprovado. Relaciona-se a P04/P07.
+  valor já aprovados. **Recorte local concluído em 2026-11-14:** reproduzidos o
+  reagendamento adicional de aproximadamente 60 s e o consumo de cota em tentativas
+  negadas. Worker reavalia capacidade local em até 2 s, sem contornar o limitador;
+  admissão foi corrigida e etapas ganharam medições sem conteúdo jurídico.
+  Ver [diagnóstico, correções e testes](evidencias/m01-latencia-local-2026-11-14.md).
+  **Comparação real concluída em 2026-11-14:** cenário original de três interações
+  aprovado; consulta de 63,941 s para **22,697 s**, com geração no provedor de
+  2,555 s e aproximadamente 18,905 s até a admissão, após nove bloqueios locais.
+  Custo total de US$ 0,03260130. Ver [teste real](evidencias/m01-latencia-real-2026-11-14.md).
+  Redução observada em uma rodada, sem SLA universal. A espera remanescente pela
+  política de cotas fica em M03. Relaciona-se a P04/P07.
 - [x] **M02 — Corrigir a preparação do cenário de isolamento entre usuários.**
   O avaliador fazia upload com o segundo titular fictício antes de confirmar seu
   aviso de IA e recebia HTTP 428 (`AI_TRANSPARENCY_ACK_REQUIRED`). O setup passou a
   consultar/confirmar o aviso com a sessão desse titular. Correção verificada com
   API/PostgreSQL sem IA, 20 testes offline e execução real de CONV-007 aprovada.
   A proteção do produto foi preservada; a falha estava na preparação do teste.
+
+- [ ] **M03 — Rever a política de cotas para etapas internas e mensagens.**
+  Prioridade: **medium**. A consulta real ainda aguardou aproximadamente 18,9 s
+  pela reposição da cota, após duas minutas de cinco etapas cada. Avaliar a
+  distinção entre interação do usuário e operação interna, mantendo proteção de
+  concorrência, abuso e orçamento. Definir a política antes de mudar limites ou
+  unidade de admissão; não elevar cotas automaticamente para aparentar melhoria.
+  Acompanhar com as medições existentes e articular com P03/P04. Não é falha do
+  modelo nem novo retry externo; não bloqueia o desenvolvimento financeiro P03.
 
 Na leitura parcial, os alertas estruturados estavam presentes e os checks
 passaram. Conferir sua apresentação no frontend continua no fechamento de P07;
