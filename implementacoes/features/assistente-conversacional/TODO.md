@@ -94,6 +94,7 @@ Origem: [rodada real com GPT-6.1 Terra](evidencias/avaliacao-reduzida-gpt-6.1-te
 Estas melhorias não substituem as entregas P01–P08 ainda pendentes.
 
 - [ ] **M01 — Investigar e reduzir a latência da consulta após aprovação.**
+  Prioridade no [TODO geral do projeto](../../../TODO.md): **medium** (PROJ-001).
   CONV-001/3 levou **63,941 s** para responder apenas o nome da contratante e o
   valor já aprovados. Ainda não foi identificada a causa. Separar as medições de
   fila, montagem do contexto, contagem de tokens, chamada ao provedor e publicação;
