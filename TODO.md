@@ -72,6 +72,21 @@ Verificações realizadas:
 Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
 A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
 
+## Melhorias futuras — fora do MVP
+
+- [ ] **PROJ-004 — Pesquisa de jurisprudência na web pelo chatbot.** Integrar
+  pesquisa web em fontes oficiais, com filtros por tribunal, referências
+  verificáveis e links preservados no histórico. Permitir propor a inclusão dos
+  julgados na Peça, mantendo a aplicação sujeita à aprovação do usuário.
+
+- [ ] **PROJ-005 — RAG sobre base jurídica de referência.** Definir o acervo,
+  a ingestão, a indexação e a recuperação de trechos relevantes para fundamentar
+  respostas e propostas do assistente, com identificação das fontes e respeito
+  às permissões de acesso. Avaliar a qualidade da recuperação e das citações.
+
+Estas melhorias ficam para depois da conclusão e validação do MVP; não são
+critérios de lançamento nem reintroduzem o scraper no escopo atual.
+
 ## Acompanhamento por feature
 
 - [Assistente conversacional — entregas, validações e melhorias](implementacoes/features/assistente-conversacional/TODO.md).
