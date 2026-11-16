@@ -1,11 +1,27 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-14**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-16**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
 ## Pendência com alta prioridade
 
 - [ ] implementacao do fluxo total do assistente conversasional (definido na feature assistente-conversacional)
+
+- [ ] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
+
+Decisão de escopo: a coleta e o processamento de jurisprudências acrescentam
+complexidade desnecessária ao MVP. As rotas atuais permitem ingestão e
+reprocessamento sem autenticação, além de consulta pública aos dados brutos.
+
+Retirar os endpoints de `/api/jurisprudencias`, o projeto `JuridicoAI.Scrapper`
+e os serviços, repositórios, configurações e dependências exclusivos desse fluxo,
+incluindo MongoDB e Playwright. Atualizar a solução, o Docker Compose e a
+documentação para refletir o escopo reduzido. A retirada deve preservar os fluxos
+de autenticação, Casos, Peças, documentos, exportação e assistente de IA.
+
+Critério de conclusão: nenhuma rota de jurisprudências exposta nem dependência
+desse fluxo exigida para compilar ou executar o MVP, com os testes dos fluxos
+preservados aprovados. A tarefa não autoriza apagar dados ou volumes existentes.
 
 ## Pendências
 
