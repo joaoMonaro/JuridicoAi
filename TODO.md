@@ -3,9 +3,14 @@
 Atualizado em **2026-11-16**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
+O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
+empresarial, a entrada de dados pelo chatbot e o congelamento de novas
+funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP.
+
 ## Pendência com alta prioridade
 
-- [ ] implementacao do fluxo total do assistente conversasional (definido na feature assistente-conversacional)
+- [ ] Validar e concluir a jornada de redação de peças conforme os critérios do
+  [MVP](MVP.md), usando a implementação existente do assistente conversacional.
 
 - [ ] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
 
@@ -22,6 +27,20 @@ de autenticação, Casos, Peças, documentos, exportação e assistente de IA.
 Critério de conclusão: nenhuma rota de jurisprudências exposta nem dependência
 desse fluxo exigida para compilar ou executar o MVP, com os testes dos fluxos
 preservados aprovados. A tarefa não autoriza apagar dados ou volumes existentes.
+
+- [ ] **PROJ-003 — Adequar a jornada ao MVP sem cadastros manuais de dados. Prioridade: `high` (alta).**
+
+Retirar da jornada os formulários de dados jurídicos e o cadastro separado de
+documentos do Caso. Fatos, dados de empresas/partes e arquivos entram no contexto
+pelo chatbot. Manter configurações e modelos de layout da Peça, edição manual
+do texto, salvamento, retomada e exportação.
+
+Simplificar a entrada no trabalho, hoje dependente dos formulários de criação
+de Caso e Peça, reaproveitando as entidades existentes sem exigir repetição dos
+dados fornecidos na conversa. Esta tarefa ajusta o fluxo existente; não inclui
+cadastros estruturados automáticos pela IA nem ampliação de funcionalidades.
+Validar a jornada com as tarefas do advogado empresarial definidas no escopo.
+Não apagar registros existentes como parte da retirada das telas.
 
 ## Pendências
 
