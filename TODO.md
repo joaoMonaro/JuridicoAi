@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-16**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-17**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
 O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
@@ -12,21 +12,22 @@ funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP
 - [ ] Validar e concluir a jornada de redação de peças conforme os critérios do
   [MVP](MVP.md), usando a implementação existente do assistente conversacional.
 
-- [ ] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
+- [x] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
 
 Decisão de escopo: a coleta e o processamento de jurisprudências acrescentam
-complexidade desnecessária ao MVP. As rotas atuais permitem ingestão e
+complexidade desnecessária ao MVP. As rotas anteriores permitiam ingestão e
 reprocessamento sem autenticação, além de consulta pública aos dados brutos.
 
-Retirar os endpoints de `/api/jurisprudencias`, o projeto `JuridicoAI.Scrapper`
-e os serviços, repositórios, configurações e dependências exclusivos desse fluxo,
-incluindo MongoDB e Playwright. Atualizar a solução, o Docker Compose e a
-documentação para refletir o escopo reduzido. A retirada deve preservar os fluxos
-de autenticação, Casos, Peças, documentos, exportação e assistente de IA.
+**Concluído em 2026-11-17:** endpoints de `/api/jurisprudencias`, serviços,
+repositórios, configurações e dependências exclusivos retirados da API,
+incluindo MongoDB e Playwright. Solução, Docker Compose e documentação
+atualizados. O scraper foi extraído para `../JuridicoAI.Scrapper`, com CLI
+independente e cópia do legado de integração para consulta.
 
-Critério de conclusão: nenhuma rota de jurisprudências exposta nem dependência
-desse fluxo exigida para compilar ou executar o MVP, com os testes dos fluxos
-preservados aprovados. A tarefa não autoriza apagar dados ou volumes existentes.
+Verificação: build sem avisos/erros, **291 testes aprovados e 1 de OCR ignorado**,
+incluindo PostgreSQL descartável e regressão das quatro rotas removidas. Nenhum
+banco ou volume existente foi apagado. Ver
+[registro da extração e validação](implementacoes/alreadyDone/extracao-scraper-2026-11-17.md).
 
 - [ ] **PROJ-003 — Adequar a jornada ao MVP sem cadastros manuais de dados. Prioridade: `high` (alta).**
 

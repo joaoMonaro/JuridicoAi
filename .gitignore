@@ -50,9 +50,6 @@ avaliacoes/qualidade-juridica/execucoes/*
 avaliacoes/seguranca-ia/execucoes/*
 !avaliacoes/seguranca-ia/execucoes/.gitkeep
 
-#ARQUIVOS TESTE
-resultado-tjsp.json
-
 # Conversational evaluation artifacts and Python bytecode
 __pycache__/
 *.pyc

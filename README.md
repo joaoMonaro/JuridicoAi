@@ -1,27 +1,26 @@
 # JuridicoAI
 
 Backend do JuridicoAI: uma API ASP.NET Core para autenticação e multitenancy,
-organização de Casos, edição persistente de Peças, assistência jurídica por IA
-e ingestão de jurisprudências.
+organização de Casos, edição persistente de Peças e assistência jurídica por IA.
 
 ## Componentes principais
 
 ```text
 Frontend -> API .NET -> PostgreSQL
-                   |-> OpenAI Responses API
-                   |-> MongoDB
-                   `-> Scraper TJSP
+                   `-> OpenAI Responses API
 ```
 
 - PostgreSQL armazena identidade, organizações, Casos, Peças e governança da IA;
-- MongoDB armazena jurisprudências brutas e processadas;
 - o assistente gera respostas em SSE e nunca altera uma Peça sem aplicação
-  explícita no frontend;
-- o scraper do TJSP permanece no código, mas está fora do fluxo do MVP da IA.
+  explícita no frontend.
+
+O scraper do TJSP foi separado em um projeto independente em
+`../JuridicoAI.Scrapper`. Ele não integra a solução nem é necessário para
+compilar ou executar esta API.
 
 ## Início rápido
 
-Configure `.env` para os bancos, suba os serviços e defina os segredos locais:
+Configure `.env` para o PostgreSQL, suba o serviço e defina os segredos locais:
 
 ```bash
 cp .env.example .env
@@ -38,9 +37,8 @@ dotnet user-secrets --project src/JuridicoAI.Api set \
 dotnet run --project src/JuridicoAI.Api
 ```
 
-MongoDB é necessário para os fluxos de jurisprudência. A chave e o modelo da
-OpenAI são necessários somente para executar o assistente. Não versione
-segredos; consulte [User Secrets](docs/user-secrets.md).
+A chave e o modelo da OpenAI são necessários somente para executar o
+assistente. Não versione segredos; consulte [User Secrets](docs/user-secrets.md).
 
 As migrations do Entity Framework Core são aplicadas na inicialização quando
 `Postgres:RunMigrations=true`.

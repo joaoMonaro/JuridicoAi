@@ -181,9 +181,7 @@ Acesso a outra Organization retorna 404, sem revelar a existência do dado.
 Peças validam que Caso e Template pertencem à Organization atual e preservam o
 update atômico por `id + organizationId + versao`.
 
-Envolvidos, contextos e documentos são isolados por meio do Caso pai. A base de
-jurisprudências no MongoDB permanece global porque representa conteúdo público
-compartilhado, não dados privados de um cliente.
+Envolvidos, contextos e documentos são isolados por meio do Caso pai.
 
 ## Migração de dados anteriores
 

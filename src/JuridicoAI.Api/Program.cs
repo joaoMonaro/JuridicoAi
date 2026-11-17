@@ -26,9 +26,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 const string CorsPolicy = "LocalFrontend";
 
-builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("Mongo"));
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
-builder.Services.Configure<ScraperSettings>(builder.Configuration.GetSection("Scraper"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
 builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
     .Validate(x => !x.AnalysisEnabled || x.RetrievalEnabled, "Análise extensa exige recuperação documental.")
@@ -192,10 +190,6 @@ builder.Services.AddRateLimiter(options =>
         }));
 });
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ScraperService>();
-builder.Services.AddScoped<JurisprudenciaNormalizerService>();
-builder.Services.AddScoped<JurisprudenciaClassifierService>();
-builder.Services.AddScoped<JurisprudenciaIngestionService>();
 builder.Services.AddScoped<CasoApplicationService>();
 builder.Services.AddScoped<PecaApplicationService>();
 builder.Services.Configure<PecaExportSettings>(builder.Configuration.GetSection("PecaExport"));
@@ -229,8 +223,6 @@ builder.Services.AddSingleton<AssistenteRequestRegistry>();
 builder.Services.AddScoped<IAssistenteFeatureAccess, AssistenteFeatureAccessService>();
 builder.Services.AddSingleton<IAssistenteUsageLimiter, AssistenteUsageLimiter>();
 builder.Services.AddScoped<IAssistenteUsageRecorder, AssistenteUsageRecorder>();
-builder.Services.AddScoped<JurisprudenciaRawRepository>();
-builder.Services.AddScoped<JurisprudenciaRepository>();
 builder.Services.AddScoped<ICasoRepository, CasoRepository>();
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();

@@ -32,6 +32,24 @@ public sealed class AssistenteIaHttpSecurityTests
 {
     private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
 
+    [Theory]
+    [InlineData("GET", "api/jurisprudencias")]
+    [InlineData("GET", "api/jurisprudencias/raw")]
+    [InlineData("POST", "api/jurisprudencias/ingest")]
+    [InlineData("POST", "api/jurisprudencias/reprocess")]
+    public async Task Http_RotasDeJurisprudenciasRemovidasRetornam404(string method, string path)
+    {
+        await using var api = await TestApi.CreateAsync();
+        using var client = api.CreateAnonymousClient();
+        using var request = new HttpRequestMessage(new HttpMethod(method), path);
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(0, api.Provider.CountCalls);
+        Assert.Equal(0, api.Provider.GenerateCalls);
+    }
+
     [Fact]
     public async Task Http_SemIdentidadeRetorna401AntesDoProvider()
     {

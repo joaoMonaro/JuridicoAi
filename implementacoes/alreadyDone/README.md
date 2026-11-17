@@ -18,3 +18,7 @@ vale para sua configuração congelada e não representa homologação comercial
 
 As entregas restantes estão em [`standBy`](../standBy/README.md), e a criação
 de minutas por pedido livre é a [implementação ativa](../features/geracao-minutas-ia/README.md).
+
+## Simplificação do MVP
+
+- [PROJ-002 — extração do scraper e retirada do fluxo de jurisprudências da API](extracao-scraper-2026-11-17.md).

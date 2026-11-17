@@ -3,10 +3,10 @@
 ## Pré-requisitos
 
 - SDK do .NET 10;
-- MongoDB 7 ou compatível;
-- PostgreSQL 17 ou compatível;
-- Chromium/Chrome, necessário para a sessão automatizada do TJSP;
-- acesso de rede ao TJSP.
+- PostgreSQL 17 ou compatível.
+
+Para exportar PDF, configure também o conversor local conforme
+[Configuração da exportação Word e PDF](operacao/exportacao-word-pdf.md).
 
 ## Restaurar e compilar
 
@@ -17,19 +17,9 @@ dotnet restore
 dotnet build
 ```
 
-Se não houver Chromium/Chrome em um dos caminhos reconhecidos pelo código,
-instale o navegador do Playwright após a compilação:
+## PostgreSQL com Docker Compose
 
-```bash
-pwsh src/JuridicoAI.Scrapper/bin/Debug/net10.0/playwright.ps1 install chromium
-```
-
-Em Linux, o ambiente também precisa das bibliotecas de sistema exigidas pelo
-Chromium.
-
-## Bancos com Docker Compose
-
-O Compose cria MongoDB e PostgreSQL e mantém os dados nos volumes `mongo_data` e `postgres_data`.
+O Compose cria o PostgreSQL e mantém os dados no volume `postgres_data`.
 
 Crie o arquivo local `.env` a partir do modelo versionado:
 
@@ -41,8 +31,6 @@ Edite o `.env` e defina:
 
 ```dotenv
 COMPOSE_PROJECT_NAME=juridicoai
-MONGO_ROOT_USERNAME=juridico
-MONGO_ROOT_PASSWORD=defina-uma-senha-local
 POSTGRES_DB=juridicoai
 POSTGRES_USER=juridico
 POSTGRES_PASSWORD=defina-uma-senha-local
@@ -55,7 +43,7 @@ prioridade sobre o valor do `.env`. Remova-o antes de iniciar o projeto:
 unset COMPOSE_PROJECT_NAME
 ```
 
-Em seguida, inicie os bancos:
+Em seguida, inicie o banco:
 
 ```bash
 docker compose up -d
@@ -65,7 +53,8 @@ O nome `COMPOSE_PROJECT_NAME=juridicoai` isola os containers, redes e volumes
 deste repositório dos demais projetos Compose da máquina.
 
 Evite `docker compose down -v` quando quiser preservar os dados. A opção `-v`
-remove também os volumes do MongoDB e do PostgreSQL.
+remove também o volume do PostgreSQL. A extração do scraper não exige
+remover containers ou volumes MongoDB existentes.
 
 ## Configurações da API
 
@@ -74,7 +63,6 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 
 | Chave | Padrão | Finalidade |
 |---|---:|---|
-| `Mongo:ConnectionString` | vazio | conexão obrigatória para operações com MongoDB |
 | `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
 | `Postgres:RunMigrations` | `true` | aplica migrations pendentes do EF Core ao iniciar |
 | `Auth:JwtSecret` | vazio | segredo JWT obrigatório, com ao menos 32 caracteres |
@@ -104,12 +92,6 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `AssistenteIa:RequestsPerOrganizationPerMinute` | `30` | limite agregado por Organization |
 | `AssistenteIa:ConcurrentRequestsPerOrganization` | `6` | concorrência por Organization |
 | `Auth:PersonalHistoryAllowedOrigins` | lista opcional | origens adicionais para autenticação pessoal; exige HTTPS e mesmo site para refresh Strict |
-| `Mongo:DatabaseName` | `JuridicoAi` | nome do banco |
-| `Mongo:RawCollectionName` | `jurisprudencias_raw` | dados coletados |
-| `Mongo:JurisprudenciasCollectionName` | `jurisprudencias` | dados processados |
-| `Mongo:ServerSelectionTimeoutSeconds` | `10` | timeout de seleção/conexão do servidor |
-| `Scraper:TimeoutSeconds` | `120` | timeout total da coleta iniciada pela API |
-| `Scraper:MaxResults` | `30` | máximo padrão quando a requisição omite o valor |
 
 Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
 o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
@@ -122,26 +104,12 @@ Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 
 ```bash
 dotnet user-secrets --project src/JuridicoAI.Api set \
-  "Mongo:ConnectionString" \
-  "mongodb://juridico:defina-uma-senha-local@localhost:27017/?authSource=admin"
-
-dotnet user-secrets --project src/JuridicoAI.Api set \
   "Postgres:ConnectionString" \
   "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=defina-uma-senha-local"
 
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Auth:JwtSecret" \
   "um-segredo-aleatorio-com-pelo-menos-32-caracteres"
-```
-
-Também é possível sobrescrever configurações operacionais:
-
-```bash
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "Scraper:TimeoutSeconds" "180"
-
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "Scraper:MaxResults" "50"
 ```
 
 Para listar o que está configurado:
@@ -158,12 +126,8 @@ Variáveis exportadas no terminal têm prioridade sobre user-secrets. A convers�
 de nomes usa dois sublinhados:
 
 ```text
-Mongo:ConnectionString -> Mongo__ConnectionString
 Postgres:ConnectionString -> Postgres__ConnectionString
 ```
-
-Se a senha do MongoDB possuir caracteres reservados de URL, como `@`, `:`, `/`,
-`?` ou `#`, codifique esses caracteres na connection string.
 
 ## Executar a API
 
@@ -177,25 +141,10 @@ O perfil HTTP de desenvolvimento usa `http://localhost:5299`. O endpoint raiz
 O CORS aceita origens cujo host seja `localhost` ou `127.0.0.1`, em qualquer
 porta. Isso não é uma política pronta para produção.
 
-## Executar o scraper isoladamente
-
-```bash
-dotnet run --project src/JuridicoAI.Scrapper/JuridicoAI.Scrapper.csproj -- \
-  --termo "negativação indevida dano moral" \
-  --max 20 \
-  --output resultado.json
-```
-
-Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
-
 ## Configuração mínima por funcionalidade
 
 | Funcionalidade | Requisitos |
 |---|---|
-| Scraper pela CLI | .NET, Chromium e acesso ao TJSP |
-| Ingestão pela API | MongoDB, Chromium e acesso ao TJSP |
-| Consulta de jurisprudências | MongoDB |
-| Reprocessamento | MongoDB |
 | Fundação do caso, autenticação e Peças | PostgreSQL, segredo JWT e diretório de storage gravável |
 | Assistente de IA | requisitos de Peças, chave/modelo do provider, configuração habilitada, kill switch e flags da Organization |
 
@@ -203,14 +152,12 @@ Consulte [Uso pela linha de comando](scraper/cli.md) para todas as opções.
 
 1. Execute `cp .env.example .env` e altere a senha.
 2. Remova um eventual projeto global com `unset COMPOSE_PROJECT_NAME`.
-3. Inicie os bancos com `docker compose up -d`.
-4. Configure `Mongo:ConnectionString`, `Postgres:ConnectionString` e
-   `Auth:JwtSecret` nos user-secrets.
+3. Inicie o PostgreSQL com `docker compose up -d`.
+4. Configure `Postgres:ConnectionString` e `Auth:JwtSecret` nos user-secrets.
 5. Execute `dotnet restore` e `dotnet build`.
-6. Instale o Chromium do Playwright, se necessário.
-7. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
+6. Inicie a API; as migrations do EF Core serão aplicadas antes de a aplicação
    começar a atender requisições.
-8. Valide `GET http://localhost:5299/`.
+7. Valide `GET http://localhost:5299/`.
 
 Para usar a IA, configure separadamente o provider e libere apenas a
 Organization desejada conforme [User Secrets](user-secrets.md). A configuração

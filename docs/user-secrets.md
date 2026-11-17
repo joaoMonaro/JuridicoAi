@@ -59,10 +59,6 @@ Chaves hierárquicas usam `:` no comando do Secret Manager:
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Postgres:ConnectionString" \
   "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=senha-local"
-
-dotnet user-secrets --project src/JuridicoAI.Api set \
-  "Mongo:ConnectionString" \
-  "mongodb://juridico:senha-local@localhost:27017/?authSource=admin"
 ```
 
 ### Assistente de IA
