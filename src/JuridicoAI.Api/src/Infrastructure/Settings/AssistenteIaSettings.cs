@@ -5,7 +5,6 @@ public sealed class AssistenteIaSettings
     public bool Enabled { get; set; }
     public bool ReviewV2Enabled { get; set; }
     public bool ConversationV2Enabled { get; set; }
-    public bool AutomaticConversationEnabled { get; set; }
     public bool DurableGenerationEnabled { get; set; }
     public int GenerationMaxSections { get; set; } = 8;
     public int GenerationMaxCalls { get; set; } = 12;

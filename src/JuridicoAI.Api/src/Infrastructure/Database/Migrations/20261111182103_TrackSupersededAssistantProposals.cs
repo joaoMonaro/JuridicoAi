@@ -37,7 +37,7 @@ namespace JuridicoAI.Api.src.Infrastructure.Database.Migrations
             migrationBuilder.Sql("""
                 DO $$ BEGIN
                     IF EXISTS (SELECT 1 FROM ai_proposals WHERE substituida_por_id IS NOT NULL) THEN
-                        RAISE EXCEPTION 'O vínculo de propostas substituídas deve ser preservado. Use AutomaticConversationEnabled=false para rollback funcional.';
+                        RAISE EXCEPTION 'O vínculo de propostas substituídas deve ser preservado. Use AssistenteIa:Enabled=false para desabilitar a IA sem remover vínculos históricos.';
                     END IF;
                 END $$;
                 """);

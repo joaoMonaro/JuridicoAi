@@ -67,7 +67,8 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var otherUser = Guid.NewGuid(); ctx.Add(new User { Id = otherUser, Nome = "Outro titular", Email = otherUser + "@example.test", PasswordHash = "ficticio", DataCriacao = DateTime.UtcNow, DataAtualizacao = DateTime.UtcNow }); await ctx.SaveChangesAsync();
         var other = await db.Service(ctx, otherUser).ObterOuCriarAsync(db.PecaId, default);
         await Upload(Documents(db, ctx, storage, otherUser), other.Id, "alheio.txt", "Arquivo do outro chat.");
-        await docs.SynchronizeAsync(proposal.ConversaId, default);
+        // Prepare an existing shared source explicitly; normal chat no longer imports Case files.
+        await docs.SynchronizeAsync(proposal.ConversaId, default, incluirFontesCaso: true);
         var response = await ctx.AssistenteMensagens.AsNoTracking().FirstAsync(m => m.Autor == "Assistente");
         ctx.Add(new AssistenteMemoria { Id = Guid.NewGuid(), OrganizationId = db.OrgId, ConversaId = proposal.ConversaId, RespostaId = response.Id, Versao = 1, AteSequencia = 2, PoliticaVersao = "teste", Registros = JsonDocument.Parse("[]"), CriadaEm = DateTime.UtcNow }); await ctx.SaveChangesAsync();
         var personal = Personal(db, ctx, storage); var request = new DeleteConversationRequest(Guid.NewGuid(), false);

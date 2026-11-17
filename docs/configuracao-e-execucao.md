@@ -75,7 +75,6 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `AssistenteIa:Enabled` | `false` | trava de configuração superior do assistente |
 | `AssistenteIa:ReviewV2Enabled` | `false` | revisão persistida e aprovação transacional |
 | `AssistenteIa:ConversationV2Enabled` | `false` | histórico persistido no contexto |
-| `AssistenteIa:AutomaticConversationEnabled` | `false` | intenção automática/conversa livre |
 | `AssistenteIa:DurableGenerationEnabled` | `false` | geração do chat v2 em worker com checkpoints |
 | `AssistenteIa:HistoryMemoryEnabled` | `false` | memória versionada e recuperação do histórico |
 | `AssistenteDocumentos:Enabled` | `false` | extração nativa e contexto documental |

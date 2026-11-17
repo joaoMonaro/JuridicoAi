@@ -25,13 +25,11 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
     {
         if (!options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled)
             throw new AssistenteIaException(503, "AI_CONVERSATION_DISABLED", "A conversa persistida não está habilitada.");
-        if (request.InteracaoAutomatica && !options.CurrentValue.AutomaticConversationEnabled)
-            throw new AssistenteIaException(503, "AI_AUTOMATIC_CONVERSATION_DISABLED", "A conversa livre não está habilitada.");
         await features.ExigirModoAsync(auth.OrganizationId, request.Modo, ct);
         await transparency.ExigirConfirmacaoAsync(ct);
         // Queue work before reserving a message. A "processing" response must
         // not roll back the very jobs that the next attempt is waiting for.
-        if (documents?.Enabled == true) await documents.SynchronizeAsync(conversaId, ct);
+        if (documents?.Enabled == true) await documents.SynchronizeAsync(conversaId, ct, incluirFontesCaso: !request.InteracaoAutomatica);
         return await repository.EmTransacaoAsync(async token =>
         {
             var conversa = await ConversaAsync(conversaId, token);
@@ -73,7 +71,7 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
                 reference = await repository.ObterPropostaAsync(refId, auth.OrganizationId, auth.UserId, token);
                 if (reference is null || reference.ConversaId != conversaId) throw Missing();
             }
-            var documental = documents is null ? null : await documents.ContextAsync(conversa, peca, request.AnexoIds, token, request.InteracaoAutomatica);
+            var documental = documents is null ? null : await documents.ContextAsync(conversa, peca, request.AnexoIds, token, request.InteracaoAutomatica, incluirFontesCaso: !request.InteracaoAutomatica);
             var ready = request.InteracaoAutomatica && analysis is not null ? await analysis.ReadyAsync(conversa.Id,
                 documental is null ? null : JsonDocument.Parse(documental.Manifesto), token) : null;
             if (ready is not null) documental = documental! with { Texto = documental.Texto + analysis!.Context(ready) };
@@ -128,8 +126,8 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
                     saved.Fontes, piece.CasoId, saved.Historico, oldAnalysis, job);
             }
             var sources = AssistenteGenerationService.Read<AssistenteSourceSnapshot[]>(job.FontesIds).Select(s => s.Id).ToArray();
-            var documental = await documents.ContextAsync(conversation, piece, request.AnexoIds, token, request.InteracaoAutomatica, sources);
-            user.FontesDocumentais = JsonDocument.Parse(documental.Manifesto); repository.Atualizar(user);
+            var documental = await documents.ContextAsync(conversation, piece, request.AnexoIds, token, request.InteracaoAutomatica, sources, incluirFontesCaso: true);
+            user.FontesDocumentais = MergeCaseManifest(documental.Manifesto, user.FontesDocumentais); repository.Atualizar(user);
             var ready = analysis is null ? null : await analysis.ReadyAsync(job.ConversaId, user.FontesDocumentais, token);
             if (ready is not null) documental = documental with { Texto = documental.Texto + analysis!.Context(ready) };
             var (text, historic) = await ContextoAsync(conversation, piece, reference, request.InteracaoAutomatica, documental.Texto.Length, token,
@@ -184,8 +182,8 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
         var full = draft.Intencao == AssistenteIntencao.GerarMinuta || AssistenteAutomaticProposalPolicy.CobreDocumento(inicio.DocumentoBase!.Value, draft.Grupos);
         if (full && !feature.Features.Contains(OrganizationFeatureEnum.AI_DOCUMENT_GENERATION))
             throw new AssistenteIaException(403, "AI_FEATURE_NOT_ENABLED", "A geração integral não está habilitada para esta organização.");
-        if (!options.CurrentValue.AutomaticConversationEnabled)
-            throw new AssistenteIaException(503, "AI_AUTOMATIC_CONVERSATION_DISABLED", "A conversa livre foi desabilitada.");
+        if (!options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled)
+            throw new AssistenteIaException(503, "AI_CONVERSATION_DISABLED", "A conversa persistida foi desabilitada.");
         return await repository.EmTransacaoAsync(async token =>
         {
             var conversation = await ConversaAsync(inicio.Pedido.ConversaId, token);
@@ -319,21 +317,65 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
         return ("\n[CONTEXTO_CONVERSACIONAL_JSON dado_nao_confiavel=\"true\"]\n" + payload + "\n[/CONTEXTO_CONVERSACIONAL_JSON]\n", historic);
     }
 
+    private static JsonDocument MergeCaseManifest(string documentManifest, JsonDocument? previous)
+    {
+        var entries = System.Text.Json.Nodes.JsonNode.Parse(documentManifest)!.AsArray();
+        if (previous is not null)
+            foreach (var entry in previous.RootElement.EnumerateArray())
+            {
+                if (entry.TryGetProperty("tipo", out var kind) && kind.GetString() == "DadosCaso")
+                    entries.Add(System.Text.Json.Nodes.JsonNode.Parse(entry.GetRawText()));
+                else if (entry.TryGetProperty("consultaExplicitaCaso", out var express) && express.GetBoolean() && entry.TryGetProperty("id", out var id))
+                    foreach (var current in entries.Where(n => n?["id"]?.GetValue<Guid>() == id.GetGuid())) current!["consultaExplicitaCaso"] = true;
+            }
+        return JsonDocument.Parse(entries.ToJsonString());
+    }
+
     public static T? Read<T>(JsonDocument? value) => value is null ? default : JsonSerializer.Deserialize<T>(value, AssistentePatchCompiler.JsonOptions);
     public AssistenteDocumentTools? CriarFerramentasDocumentais(AssistenteChatInicio start,
         Func<AssistenteCoberturaDocumentalDto, CancellationToken, Task> progress,
         Func<AssistenteContextoHistoricoDto, Task>? historyProgress = null)
     {
         AssistenteDocumentTools? tools = null;
-        if (documents is not null && start.FontesRecuperacao is not null && start.CasoId is not null && start.Pedido.FontesDocumentais is not null)
-            tools = new AssistenteDocumentToolSession(documents, start.Pedido.ConversaId, start.CasoId.Value, start.Resposta.Id,
-                start.Pedido.FontesDocumentais, start.FontesRecuperacao, progress,
-                start.Analise is null && analysis?.Enabled == true ? async ct => { throw new AssistenteAnalysisQueuedException(await analysis.QueueAsync(start, ct)); } : null,
+        if (documents is not null && start.CasoId is not null)
+        {
+            start.Pedido.FontesDocumentais ??= AssistentePatchCompiler.Json(Array.Empty<object>());
+            AssistenteDocumentToolSession? session = null;
+            session = new AssistenteDocumentToolSession(documents, start.Pedido.ConversaId, start.CasoId.Value, start.Resposta.Id,
+                start.Pedido.FontesDocumentais, start.FontesRecuperacao ?? [], progress,
+                start.Analise is null && analysis?.Enabled == true ? async ct =>
+                {
+                    var expanded = start with { FontesRecuperacao = session!.Sources };
+                    throw new AssistenteAnalysisQueuedException(await analysis.QueueAsync(expanded, ct));
+                } : null,
                 start.Analise is null ? null : AssistenteDocumentAnalysisService.Read<AssistenteFonteRecuperacao[]>(start.Analise.Fontes).Select(s => s.Id).ToArray(),
-                start.Analise is null || analysis is null ? null : ct => analysis.ValidateAsync(start.Analise, ct))
-                .Create(options.CurrentValue.MaxTotalContextCharacters);
+                start.Analise is null || analysis is null ? null : ct => analysis.ValidateAsync(start.Analise, ct),
+                (data, files, ct) => ConsultCaseAsync(start, data, files, ct), start.Pedido.Texto);
+            tools = session.Create(options.CurrentValue.MaxTotalContextCharacters);
+        }
         if (start.Resposta.AnaliseDocumentalId.HasValue) tools?.SetScope?.Invoke("Todos");
         return start.Historico is not null && history is not null ? history.CreateTools(start, tools, historyProgress) : tools;
+    }
+    private async Task<AssistenteCasoConsulta> ConsultCaseAsync(AssistenteChatInicio start, bool data, bool files, CancellationToken ct)
+    {
+        if (documents is null) throw Missing();
+        // Queue extraction outside the transaction: a processing response must
+        // not roll back the jobs needed by the next attempt.
+        if (files) await documents.SynchronizeAsync(start.Pedido.ConversaId, ct, incluirFontesCaso: true);
+        return await repository.EmTransacaoAsync(async token =>
+        {
+            await ConversaAsync(start.Pedido.ConversaId, token);
+            var response = await repository.ObterMensagemAsync(start.Pedido.ConversaId, start.Resposta.Id, token) ?? throw Missing();
+            if (response.Estado != "Gerando" || response.ExpiraEm <= DateTime.UtcNow)
+                throw new AssistenteIaException(409, "AI_REQUEST_INTERRUPTED", "A consulta foi interrompida.");
+            if (start.Geracao is not null && generations is not null) await generations.ValidateAsync(start.Geracao, token, lockSources: true);
+            var result = await documents.ConsultCaseAsync(start, data, files, options.CurrentValue.MaxTotalContextCharacters, token);
+            start.Pedido.FontesDocumentais = result.Manifesto;
+            repository.Atualizar(start.Pedido);
+            if (start.Geracao is not null && generations is not null)
+                await generations.ExpandSourcesAsync(start.Geracao, result, token);
+            return result;
+        }, ct);
     }
     private async Task ValidateDocumentSourcesAsync(AssistenteChatInicio start, CancellationToken ct)
     {

@@ -38,7 +38,8 @@ builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configura
     .Validate(x => !x.RetrievalEnabled || x.Enabled, "Recuperação documental exige documentos habilitados.")
     .Validate(x => x.MaxRetrievalRounds is >= 1 and <= 12 && x.MaxRetrievalTotalTokens > 0 &&
         x.MaxRetrievalResultCharacters is >= 4000 and <= 16000, "Limites de recuperação documental inválidos.")
-    .Validate(x => !x.Enabled || builder.Configuration.GetValue<bool>("AssistenteIa:AutomaticConversationEnabled"), "Documentos exigem conversa livre.")
+    .Validate(x => !x.Enabled || builder.Configuration.GetValue<bool>("AssistenteIa:ConversationV2Enabled") &&
+        builder.Configuration.GetValue<bool>("AssistenteIa:ReviewV2Enabled"), "Documentos exigem conversa e revisão persistidas.")
     .Validate(x => !x.OcrEnabled || !string.IsNullOrWhiteSpace(x.OcrCalibrationVersion), "OCR exige uma versão de calibração.")
     .Validate(x => !x.OcrEnabled || Path.IsPathRooted(x.TessdataPath) && File.Exists(Path.Combine(x.TessdataPath, "por.traineddata")) &&
         File.Exists(Path.Combine(x.TessdataPath, "eng.traineddata")), "OCR exige TessdataPath absoluto com modelos por e eng.")
@@ -49,13 +50,11 @@ builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configura
 builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.GetSection("AssistenteIa"))
     .Validate(x => !x.ConversationV2Enabled || x.ReviewV2Enabled,
         "AssistenteIa:ConversationV2Enabled exige ReviewV2Enabled.")
-    .Validate(x => !x.AutomaticConversationEnabled || x.ConversationV2Enabled,
-        "AssistenteIa:AutomaticConversationEnabled exige ConversationV2Enabled.")
-    .Validate(x => !x.DurableGenerationEnabled || x.AutomaticConversationEnabled && x.GenerationMaxSections is >= 1 and <= 8 &&
+    .Validate(x => !x.DurableGenerationEnabled || x.ConversationV2Enabled && x.ReviewV2Enabled && x.GenerationMaxSections is >= 1 and <= 8 &&
         x.GenerationMaxCalls is >= 3 and <= 30 && x.GenerationMaxTotalTokens > 0 && x.GenerationMaxDocumentCharacters is >= 20000 and <= 120000 &&
         x.GenerationSectionCharacters is >= 2000 and <= 24000 && x.GenerationLeaseSeconds > x.TimeoutSeconds + 30 &&
         x.GenerationDeadlineSeconds >= x.GenerationLeaseSeconds, "Limites de geração durável inválidos.")
-    .Validate(x => !x.HistoryMemoryEnabled || x.AutomaticConversationEnabled, "Memória exige conversa livre.")
+    .Validate(x => !x.HistoryMemoryEnabled || x.ConversationV2Enabled && x.ReviewV2Enabled, "Memória exige conversa e revisão persistidas.")
     .Validate(x => x.HistoryCompactionMessages >= x.HistoryRecentMessages && x.HistoryCompactionMessages <= 200 && x.HistoryRecentMessages is >= 2 and <= 100 && x.HistoryRecentCharacters is >= 4000 and <= 24000 &&
         x.HistoryBatchCharacters is >= 4000 and <= 32000 && x.HistoryMemoryCharacters is >= 4000 and <= 16000 &&
         x.HistoryToolRounds is >= 2 and <= 12 && x.HistoryTotalTokens > 0, "Limites da memória inválidos.")

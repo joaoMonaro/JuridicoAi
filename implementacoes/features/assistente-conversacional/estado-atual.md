@@ -12,6 +12,17 @@ rotas, tabelas e defaults implementados das projeções originais.
 A [conferência documental](evidencias/conferencia-documental-2026-11-12.md)
 registra os ajustes de coerência feitos após a avaliação.
 
+Atualização em **2026-11-17**: painel simplificado para conversa/anexos, contexto
+automático da Peça salva e da própria conversa, materiais do Caso por pedido
+expresso e seleção de trechos pausada em PROJ-006. Backend: 298 testes aprovados
+e 1 de OCR ignorado; frontend: 134 unitários, lint/build e 56 E2Es do assistente
+aprovados. Ver [ajustes, evidências e limites](evidencias/painel-simplificado-2026-11-17.md).
+
+Na sequência, a flag separada de conversa livre foi removida. A nova rodada do
+backend passou com **301 testes aprovados e 1 de OCR ignorado**; frontend manteve
+134 unitários, lint/build e seis E2Es focados aprovados. Chaves locais antigas
+da flag, inclusive em `false`, deixam de bloquear o fluxo conversacional.
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com
@@ -52,7 +63,7 @@ resultados e limitações na data de cada etapa.
 | Persistência e privacidade | Uma conversa por usuário/Peça, perguntas e respostas paginadas, propostas e estados persistidos. Outro usuário tem seu próprio chat; anexos enviados permanecem privados à conversa. | [Histórico](evidencias/e1-e3-historico-2026-11-11.md), [documentos](evidencias/e2-documentos-2026-11-11.md) |
 | Revisão e aplicação | Comparação no documento, grupos de mudanças, aprovação/rejeição individual ou em lote. Aprovar aplica sem nova pergunta no chat. Compilação, hashes, controle de versão, recibo idempotente e transação conjunta com a Peça. | [Revisão persistida](evidencias/e1-revisao-persistida-2026-11-11.md) |
 | Editor e autosave | Coordenação por `ensurePersisted`, reconciliação após perda de resposta, aplicação parcial e undo/redo. Ajustar proposta pendente preserva grupos já aprovados. | [Editor local](evidencias/e0-editor-2026-11-11.md), [revisão persistida](evidencias/e1-revisao-persistida-2026-11-11.md), [conversa livre](evidencias/e3-conversa-livre-2026-11-11.md) |
-| Fontes automáticas | Peça atual, histórico elegível, anexos privados e materiais autorizados do mesmo Caso. Busca/leitura filtradas por autorização; fontes revogadas ou alteradas invalidam derivados. | [Recuperação documental](evidencias/e2-recuperacao-documental-2026-11-11.md) |
+| Fontes automáticas | Peça salva, histórico elegível e anexos privados vinculados à conversa. Materiais do Caso são consultados por pedido expresso; busca/leitura respeitam autorização e fontes revogadas ou alteradas invalidam derivados. | [Contexto atual](evidencias/painel-simplificado-2026-11-17.md), [recuperação documental](evidencias/e2-recuperacao-documental-2026-11-11.md) |
 | Leitura documental | Upload e processamento durável, leitura nativa de PDF/DOCX/TXT, qualidade por trecho e progresso. Trechos duvidosos são excluídos e cobertura parcial é indicada. | [Documentos](evidencias/e2-documentos-2026-11-11.md) |
 | Memória de conversa | Resumo versionado, proveniência e recuperação lexical/cronológica das mensagens originais. Histórico integral preservado, correções recentes priorizadas e contexto derivado invalidável. | [Memória](evidencias/e2-memoria-conversa-2026-11-12.md) |
 | Análise extensa | Leitura por lotes, sínteses com citações literais, consolidação e cobertura persistida. Checkpoints e reaproveitamento seletivo de partes confirmadas. | [Análise durável](evidencias/e2-analise-documental-duravel-2026-11-12.md) |
@@ -103,8 +114,9 @@ homologa o novo fluxo conversacional.
 
 ## Limites e condições atuais
 
-- As flags de revisão, conversa, intenção automática, geração durável, memória
-  e documentos estão **desligadas por padrão** na configuração versionada. Há
+- As flags de revisão, conversa, geração durável, memória e documentos estão
+  **desligadas por padrão** na configuração versionada. Conversa natural é o
+  padrão do fluxo persistido; a antiga flag de intenção automática foi removida. Há
   permissões de IA por organização; falta o gate específico de rollout v2.
 - Histórico pessoal e processamento de exclusões aceitas não dependem de manter
   as flags de geração habilitadas nem do vínculo organizacional do titular.

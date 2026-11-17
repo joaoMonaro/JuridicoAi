@@ -101,11 +101,11 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var id = Guid.NewGuid(); var key = "case/ficticio.txt"; storage.Files[key] = Encoding.UTF8.GetBytes("Documento compartilhado.");
         context.Add(new DocumentoCaso { Id = id, CasoId = piece.CasoId, NomeOriginal = "prova.txt", NomeArmazenado = "prova.txt",
             StorageId = key, TamanhoBytes = storage.Files[key].Length, MimeType = "text/plain", Tipo = "Outro", DataUpload = DateTime.UtcNow }); await context.SaveChangesAsync();
-        await docs.ListAsync(conversation.Id, default);
+        await docs.ListAsync(conversation.Id, default, incluirFontesCaso: true);
         await using (var processing = db.Context()) await Processor(processing, storage).ProcessNextAsync(default);
         context.ChangeTracker.Clear();
         var conv = await context.AssistenteConversas.SingleAsync();
-        var assembled = await docs.ContextAsync(conv, piece, [], default); using var manifest = JsonDocument.Parse(assembled.Manifesto);
+        var assembled = await docs.ContextAsync(conv, piece, [], default, incluirFontesCaso: true); using var manifest = JsonDocument.Parse(assembled.Manifesto);
         Assert.True(await docs.ManifestValidAsync(manifest, conv.Id, piece.CasoId, default));
         await context.DocumentosCaso.Where(d => d.Id == id).ExecuteDeleteAsync();
         Assert.False(await docs.ManifestValidAsync(manifest, conv.Id, piece.CasoId, default));
@@ -216,10 +216,10 @@ public sealed partial class AssistenteWorkspacePostgresTests
     }
 
     [ReviewPostgresFact]
-    public async Task Documentos_PrimeiroEnvioSemListagemAnteriorPreservaFilaDoCaso()
+    public async Task Documentos_ConsultaExplicitaPreservaFilaDoCasoSemContextoAutomatico()
     {
         await using var db = await Database.Create(); await using var context = db.Context();
-        var storage = new DocumentMemoryStorage(); var docs = Documents(db, context, storage);
+        var storage = new DocumentMemoryStorage(); var docs = RetrievalDocuments(db, context, storage);
         var conversation = await db.Service(context).ObterOuCriarAsync(db.PecaId, default); var piece = await context.Pecas.SingleAsync();
         storage.Files["case/auto.txt"] = Encoding.UTF8.GetBytes("Fonte automática do Caso.");
         context.Add(new DocumentoCaso { Id = Guid.NewGuid(), CasoId = piece.CasoId, NomeOriginal = "auto.txt", NomeArmazenado = "auto.txt",
@@ -227,10 +227,22 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var chat = new AssistenteChatService(new AssistenteWorkspaceRepository(context), new PecaRepository(context),
             new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), new Monitor(db.Settings), docs);
         var request = new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Leia a fonte do Caso.", 1).Solicitar();
-        Assert.Equal("AI_DOCUMENTS_PROCESSING", (await Assert.ThrowsAsync<AssistenteIaException>(() => chat.IniciarAsync(conversation.Id, request, default))).Code);
-        Assert.Single(await context.AssistenteDocumentos.ToArrayAsync()); Assert.Empty(await context.AssistenteMensagens.ToArrayAsync());
+        var start = await chat.IniciarAsync(conversation.Id, request, default);
+        Assert.Empty(await context.AssistenteDocumentos.ToArrayAsync());
+        Assert.DoesNotContain("auto.txt", start.Contexto);
+        var tools = chat.CriarFerramentasDocumentais(start, (_, _) => Task.CompletedTask)!;
+        const string arguments = """{"incluirDados":false,"incluirDocumentos":true,"trechoDoPedido":"Leia a fonte do Caso."}""";
+        var waiting = await tools.ExecuteAsync("consultar_caso", arguments, default);
+        Assert.Contains("AI_DOCUMENTS_PROCESSING", waiting);
+        Assert.Equal(AssistenteIntencao.Responder, tools.CompleteAfterTool!()!.RascunhoAutomatico!.Intencao);
+        Assert.Empty(tools.CompleteAfterTool!()!.RascunhoAutomatico!.Grupos);
+        Assert.Single(await context.AssistenteDocumentos.ToArrayAsync());
+        Assert.Equal(2, await context.AssistenteMensagens.CountAsync());
         await using (var processing = db.Context()) await Processor(processing, storage).ProcessNextAsync(default);
-        Assert.Contains(JsonEncodedText.Encode("Fonte automática do Caso.").ToString(), (await chat.IniciarAsync(conversation.Id, request, default)).Contexto);
+        var catalog = await tools.ExecuteAsync("consultar_caso", arguments, default);
+        Assert.Contains("auto.txt", catalog);
+        var found = await tools.ExecuteAsync("buscar_fontes", """{"consulta":"Fonte automática","limite":1}""", default);
+        Assert.Contains(JsonEncodedText.Encode("Fonte automática do Caso.").ToString(), found);
     }
 
     [ReviewPostgresFact]

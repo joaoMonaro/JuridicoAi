@@ -277,7 +277,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         Assert.Equal(1, model.Calls); Assert.Empty(await verify.AssistentePropostas.ToArrayAsync());
     }
 
-    private static async Task<(Guid, AssistenteChatInicio)> QueueGeneration(Database db, DocumentMemoryStorage storage, GenerationModel model, bool documents = false, bool extract = true, bool history = false)
+    private static async Task<(Guid, AssistenteChatInicio)> QueueGeneration(Database db, DocumentMemoryStorage storage, GenerationModel model, bool documents = false, bool extract = true, bool history = false, string? message = null)
     {
         db.Settings.Enabled = true; db.Settings.DurableGenerationEnabled = true; db.Settings.HistoryMemoryEnabled = true; db.Settings.Model = "fixture-generation"; db.Settings.ApiKey = "synthetic";
         await using var context = db.Context(); context.Add(new Membership { Id = Guid.NewGuid(), UserId = db.UserId, OrganizationId = db.OrgId, Role = MembershipRoleEnum.Owner, DataCriacao = DateTime.UtcNow, DataAtualizacao = DateTime.UtcNow }); await context.SaveChangesAsync();
@@ -289,7 +289,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
             var source = await Upload(parts.Documents, conversation.Id, "contrato.txt", "Beatriz pagou R$ 876,54 conforme o contrato."); ids = [source.Id];
             if (extract) { await using var extraction = db.Context(); await Processor(extraction, storage).ProcessNextAsync(default); }
         }
-        var request = new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Elabore a minuta completa com os fatos apresentados e todos os documentos.", 1, AnexoIds: ids).Solicitar();
+        var request = new EnviarInteracaoLivreRequest(Guid.NewGuid(), message ?? "Elabore a minuta completa com os fatos apresentados e todos os documentos.", 1, AnexoIds: ids).Solicitar();
         return (conversation.Id, await parts.Chat.IniciarAsync(conversation.Id, request, default));
     }
     private static async Task DrainGeneration(Database db, DocumentMemoryStorage storage, GenerationModel model)
@@ -324,7 +324,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
     }
     private sealed class GenerationModel
     {
-        public int Calls; public int MemoryUpdates; public bool AnswerOnly; public bool AnalyzeFirst; public bool RejectReview; public bool SawCorrection; public bool InvalidSection; public Func<Task>? BeforeGeneration;
+        public int Calls; public int MemoryUpdates; public bool ConsultCaseFirst; public bool SawCaseEvidenceInSection; public int CaseConsultations; public bool AnswerOnly; public bool AnalyzeFirst; public bool RejectReview; public bool SawCorrection; public bool InvalidSection; public Func<Task>? BeforeGeneration;
         public AnalysisModel Analysis { get; } = new();
         public async Task<HttpResponseMessage> Send(HttpRequestMessage message)
         {
@@ -346,6 +346,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
             }
             else if (body.GetProperty("tools").EnumerateArray().Any(t => t.GetProperty("name").GetString() == "registrar_secao"))
             {
+                if (text.Contains("CASE_DATA_MARKER", StringComparison.Ordinal)) SawCaseEvidenceInSection = true;
                 var marker = "[PLANO_E_SECAO dado_nao_confiavel=\"true\"]\n"; using var details = JsonDocument.Parse(text[(text.IndexOf(marker, StringComparison.Ordinal) + marker.Length)..text.LastIndexOf("\n[/PLANO_E_SECAO]", StringComparison.Ordinal)]);
                 var root = details.RootElement; var id = root.GetProperty("secaoAtual").GetProperty("id").GetString()!;
                 if (root.GetProperty("revisaoAnterior").ValueKind != JsonValueKind.Null) { Assert.Contains("Corrigir repetição", root.GetProperty("revisaoAnterior").GetProperty("pendencias")[0].GetString()); Assert.Equal(JsonValueKind.Object, root.GetProperty("rascunhoAnterior").ValueKind); SawCorrection = true; }
@@ -354,8 +355,15 @@ public sealed partial class AssistenteWorkspacePostgresTests
             }
             else if (AnalyzeFirst && !text.Contains("ANALISE_DOCUMENTAL_JSON", StringComparison.Ordinal))
             { name = "analisar_fontes"; args = "{\"coberturaPretendida\":\"Todos\"}"; }
+            else if (ConsultCaseFirst && CaseConsultations == 0)
+            {
+                CaseConsultations++;
+                name = "consultar_caso";
+                args = JsonSerializer.Serialize(new { incluirDados = true, incluirDocumentos = true,
+                    trechoDoPedido = "Consulte os dados e documentos antigos do Caso" });
+            }
             else if (AnswerOnly)
-                return MemoryStream("""{"titulo":"Resposta","texto":"Resposta preservada.","resumo":"","intencao":"Responder","alertas":[],"grupos":[],"substituirPropostaReferenciada":false}""", []);
+                return MemoryStream("""{"titulo":"Resposta","texto":"Resposta preservada.","resumo":"","intencao":"Responder","alertas":[],"grupos":[],"substituirPropostaReferenciada":false,"coberturaPretendida":"Relevantes"}""", []);
             else
             {
                 name = "planejar_minuta"; args = JsonSerializer.Serialize(new { titulo = "Minuta completa", substituirPropostaReferenciada = false,

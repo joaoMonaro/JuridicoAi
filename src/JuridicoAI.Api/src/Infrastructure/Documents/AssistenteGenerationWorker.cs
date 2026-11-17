@@ -137,9 +137,19 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
             if (extra.EnumerateArray().Any(d => d.GetProperty("name").GetString() == name)) return await execute(name, arguments, token);
             if (original is null) throw Changed("AI_GENERATION_TOOL_INVALID");
             var result = await original.ExecuteAsync(name, arguments, token);
+            // consultar_caso may have expanded the persisted snapshot/context.
+            saved = Read<AssistenteGenerationContext>(job.Contexto!);
             saved = saved with { Historico = start.Historico, Evidencias = saved.Evidencias + "\n[TRECHO_CONSULTADO dado_nao_confiavel=\"true\"]\n" + result + "\n[/TRECHO_CONSULTADO]\n", Cobertura = original.Coverage };
             if (saved.Texto.Length + saved.Evidencias.Length > Settings.MaxTotalContextCharacters) throw Changed("AI_GENERATION_LIMIT");
             job.Contexto = AssistentePatchCompiler.Json(saved);
+            // Persist consulted evidence before another tool can queue analysis
+            // or release this worker's lease. Resumption must retain the exact
+            // material that justified the frozen source manifest.
+            await SaveAsync(job, async inner =>
+            {
+                await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.Contexto, job.Contexto), inner);
+            }, token);
             return result;
         }, () => original?.Coverage ?? new("Completa", "Relevantes", []), Math.Max(0, Math.Min(original?.MaxRounds ?? 8, Settings.GenerationMaxCalls - budget.Calls - 1)),
             Math.Max(1, Settings.GenerationMaxTotalTokens - budget.Tokens), Settings.MaxTotalContextCharacters)
@@ -149,6 +159,7 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
             AdditionalInstructions = (original?.AdditionalInstructions ?? "") + NormalInstructions,
             RequiredTool = original?.RequiredTool,
             SetScope = original?.SetScope, OnLimit = original?.OnLimit,
+            CompleteAfterTool = original?.CompleteAfterTool,
             BeforeCall = async token => { await service.ValidateAsync(job, token); if (original?.BeforeCall is not null) await original.BeforeCall(token); }
         };
         return tools;

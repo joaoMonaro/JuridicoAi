@@ -43,6 +43,12 @@ cadastros estruturados automáticos pela IA nem ampliação de funcionalidades.
 Validar a jornada com as tarefas do advogado empresarial definidas no escopo.
 Não apagar registros existentes como parte da retirada das telas.
 
+Recorte de 2026-11-17: painel do assistente simplificado para conversa e anexos,
+com contexto automático da Peça salva/conversa e consulta ao Caso somente por
+pedido expresso. Seleção de trechos pausada em PROJ-006. Este recorte não encerra
+a retirada dos formulários de Caso/Peça. Ver
+[ajustes e validação](implementacoes/features/assistente-conversacional/evidencias/painel-simplificado-2026-11-17.md).
+
 ## Pendências
 
 - [x] **PROJ-001 — Testar e corrigir a latência da IA. Prioridade: `medium` (média).**
@@ -74,6 +80,14 @@ Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-co
 A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
 
 ## Melhorias futuras — fora do MVP
+
+- [ ] **PROJ-006 — Definir a interação por seleção de trechos no assistente. Em espera.**
+  Seleção de trechos pausada por decisão do produto em 2026-11-17. Novos pedidos
+  e reenvios do painel não devem capturar ou transmitir a seleção nem o cursor
+  do editor. Antes de retomar, definir se a seleção será referência ou limite
+  da edição, sua indicação/remoção no chat e seu comportamento após editar,
+  recarregar ou reenviar um pedido. Edição por instruções na conversa continua
+  disponível, com aprovação das propostas. Esta decisão futura não bloqueia o MVP.
 
 - [ ] **PROJ-004 — Pesquisa de jurisprudência na web pelo chatbot.** Integrar
   pesquisa web em fontes oficiais, com filtros por tribunal, referências

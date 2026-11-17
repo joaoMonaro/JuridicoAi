@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-14**. Referência completa:
+Atualizado em **2026-11-17**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -17,6 +17,11 @@ recuperação por ferramentas, análise extensa, geração durável/minutas por 
 histórico pessoal e exclusão autorizada do ambiente ativo. Evidências e limites
 estão no [registro consolidado](estado-atual.md#o-que-já-foi-feito).
 Isso ainda não declara homologação jurídica ou liberação em produção.
+
+**Ajuste de produto em 2026-11-17:** painel com conversa/anexos e sem atalhos ou
+configuração manual do contexto; materiais do Caso consultados mediante pedido
+expresso. Seleção pausada em PROJ-006. Ver
+[registro dos ajustes e validação](evidencias/painel-simplificado-2026-11-17.md).
 
 ## Avaliação e homologação
 
@@ -137,3 +142,15 @@ O [registro de OCR em espera](../../standBy/calibracao-ocr/README.md)
 preserva os critérios de retomada. O pipeline existe e permanece desativado;
 imagens e regiões digitalizadas continuam sinalizadas como não lidas. Leitura
 nativa de PDF/DOCX/TXT segue no escopo ativo.
+
+## Em espera — seleção de trechos
+
+- [ ] **PROJ-006 — Decidir o comportamento da seleção de trechos.** Pausada
+  por decisão do produto em 2026-11-17. O painel não deve capturar nem enviar
+  seleção/cursor em novos pedidos ou reenvios. Definir futuramente referência
+  versus limite da edição, indicação e remoção do foco e tratamento de seleção
+  desatualizada em edição, retomada e reenvio. Preservar leitura de históricos e
+  propostas antigas. Ver o [TODO da raiz](../../../TODO.md#melhorias-futuras--fora-do-mvp).
+
+O usuário continua podendo descrever o trecho e a alteração desejada no chat.
+A retomada da seleção não é critério de lançamento do MVP.

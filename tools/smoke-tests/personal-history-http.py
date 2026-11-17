@@ -70,7 +70,7 @@ with tempfile.TemporaryDirectory(prefix='juridicoai-personal-http-') as director
                     'Postgres__ConnectionString': f'Host=127.0.0.1;Port={args.postgres_port};Database={database};Username=postgres;Password={args.postgres_password}',
                     'Auth__JwtSecret': 'synthetic-personal-http-signing-key-1234567890',
                     'AssistenteIa__Enabled': 'true', 'AssistenteIa__ReviewV2Enabled': 'true', 'AssistenteIa__ConversationV2Enabled': 'true',
-                    'AssistenteIa__AutomaticConversationEnabled': 'true', 'AssistenteIa__DurableGenerationEnabled': 'false',
+                    'AssistenteIa__DurableGenerationEnabled': 'false',
                     'AssistenteIa__Model': 'synthetic-no-model-call', 'AssistenteIa__ApiKey': 'synthetic-no-real-key',
                     'AssistenteDocumentos__Enabled': 'true', 'AssistenteDocumentos__OcrEnabled': 'false',
                     'DocumentStorage__RootPath': str(files), 'Logging__LogLevel__Default': 'Warning'})

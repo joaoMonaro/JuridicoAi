@@ -51,7 +51,7 @@ public sealed class AssistenteDocumentAnalysisService(JuridicoAiDbContext db, IA
             if (job.Estado != "Concluida" && !await db.Set<AssistenteAnaliseDocumental>().AnyAsync(j => j.Id == job.Id && j.LeaseToken == job.LeaseToken && j.LeaseAte > DateTime.UtcNow &&
                 (j.Estado == "NaFila" || j.Estado == "Lendo" || j.Estado == "Consolidando" || j.Estado == "Pronta" || j.Estado == "PreparandoResposta"), ct)) throw Changed("AI_ANALYSIS_LEASE_LOST");
         }
-        if (!Enabled || !ai.CurrentValue.AutomaticConversationEnabled || !ai.CurrentValue.ConversationV2Enabled || !ai.CurrentValue.ReviewV2Enabled)
+        if (!Enabled || !ai.CurrentValue.ConversationV2Enabled || !ai.CurrentValue.ReviewV2Enabled)
             throw Changed("AI_DOCUMENT_ANALYSIS_DISABLED");
         if (job.PoliticaVersao != Version || job.Modelo != ai.CurrentValue.Model) throw Changed("AI_ANALYSIS_POLICY_CHANGED");
         await features.ExigirModoAsync(auth.OrganizationId, AssistenteModo.Perguntar, ct);

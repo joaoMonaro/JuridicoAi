@@ -41,10 +41,11 @@ segunda pergunta de confirmação no chat.
 
 - Uma conversa persistente por usuário em cada Peça. Outro usuário autorizado
   abre sua própria conversa, sem acesso ao histórico do primeiro.
-- Acesso automático à Peça aberta, à própria conversa e seus anexos, além dos
-  dados e documentos cadastrados no mesmo Caso, respeitando as permissões do
-  usuário e permitindo identificar as fontes utilizadas. Conversas e anexos
-  privados de outros usuários ou de outras Peças não entram no contexto.
+- Acesso automático à versão salva da Peça aberta, à própria conversa e seus
+  anexos vinculados. Dados e documentos antigos do mesmo Caso só são consultados
+  mediante pedido explícito na conversa, respeitando as permissões do usuário
+  e permitindo identificar as fontes utilizadas. Conversas e anexos privados
+  de outros usuários ou de outras Peças não entram no contexto.
 - Documentos enviados pelo chat ficam restritos àquela conversa e não são
   cadastrados automaticamente no Caso.
 - Conversas não expiram por inatividade ou prazo automático. O próprio usuário
@@ -111,11 +112,12 @@ mesma Peça, outro usuário autorizado inicia ou retoma a sua própria conversa;
 não herda mensagens, anexos, orientações privadas ou propostas pendentes do
 primeiro usuário.
 
-O assistente pode consultar automaticamente a Peça atual, a própria conversa e
-seus anexos, além dos dados e documentos cadastrados no mesmo Caso, conforme o
-pedido e as permissões do usuário. Disponibilidade não significa enviar todo o
-material ao modelo em cada mensagem. O isolamento entre conversas abrange também
-texto extraído, OCR, resumos, referências a fontes e mecanismos de busca.
+O contexto automático é a versão salva da Peça atual, a própria conversa e
+seus anexos vinculados. Dados e documentos cadastrados no mesmo Caso só são
+consultados mediante pedido explícito na conversa, respeitando as permissões
+do usuário. Não se envia catálogo ou conteúdo desses materiais por padrão.
+O isolamento entre conversas abrange também texto extraído, OCR, resumos,
+referências a fontes e mecanismos de busca.
 
 A conversa é individual; a Peça é compartilhada conforme suas permissões.
 Alterações aprovadas passam a integrar o documento e podem ser vistas pelos
@@ -127,7 +129,7 @@ outros usuários; propostas antigas precisam ser verificadas contra a versão at
 |---|---|
 | Mensagens do usuário e do assistente | Persistir e permitir retomada da conversa |
 | Documentos fornecidos no chat | Preservar vínculo privado com a conversa, origem, estado de leitura e conteúdo utilizável |
-| Documentos cadastrados no Caso | Consultar automaticamente conforme as permissões, sem incluir anexos privados de outros chats |
+| Dados e documentos cadastrados no Caso | Consultar somente mediante pedido explícito na conversa, conforme as permissões, sem incluir anexos privados de outros chats |
 | Peça atual | Ser a referência para preparar novas edições, incluindo alterações manuais |
 | Propostas | Registrar versão de origem, mudanças e estado: pendente, aplicada, rejeitada ou desatualizada |
 | Decisões e correções | Permitir continuidade sem exigir que o usuário repita orientações |
@@ -173,11 +175,15 @@ comportamento não significa processamento ou geração ilimitados.
 
 - Perguntas e discussões recebem respostas sem exigir aplicação no editor.
 - Pedidos claros de edição produzem mudanças concretas para revisão visual.
-- A Peça aberta compõe o contexto de trabalho; seleção manual é um recurso para
-  delimitar o pedido, não uma exigência para toda edição.
-- O assistente pergunta quando uma ambiguidade ou falta de informação impede um
-  resultado útil. Lacunas que permitam uma minuta preliminar podem virar campos
-  pendentes, apresentados separadamente.
+- A versão salva da Peça aberta compõe o contexto de trabalho. A seleção de
+  trechos está pausada; pedidos e reenvios do painel não capturam seleção/cursor.
+  O usuário descreve o trecho e a mudança desejada na conversa. A decisão futura
+  está em PROJ-006 no [TODO da raiz](../../../TODO.md).
+- O painel oferece uma caixa de mensagem e anexos, sem atalhos de prompts,
+  escolha de modos, escopos ou campos paralelos de contexto.
+- O assistente pergunta quando uma ambiguidade ou falta de informação muda
+  significativamente o resultado. Quando puder avançar, apresenta uma proposta
+  útil e sinaliza lacunas sem inventar fatos; campos pendentes ficam explícitos.
 - O usuário pode pedir ajustes em uma proposta antes de aprová-la, sem alterar
   antecipadamente a Peça.
 - A IA continua limitada às permissões verificadas pela aplicação. Interpretar
@@ -195,8 +201,9 @@ consulta. Esses dados não podem continuar disponíveis ao assistente em uma nov
 conversa. Texto já aprovado na Peça e documentos cadastrados separadamente no
 Caso permanecem preservados.
 
-A nova conversa retoma somente o contexto automático autorizado: Peça atual e
-material do Caso. Não recupera o histórico privado excluído.
+A nova conversa retoma somente o contexto automático autorizado: versão salva
+da Peça atual e materiais vinculados à nova conversa. Materiais preservados do
+Caso exigem novo pedido explícito. Não recupera o histórico privado excluído.
 
 Excluir ou arquivar a Peça, ou retirar o acesso do usuário, não equivale a
 autorizar exclusão do chat. Essas operações não devem acionar exclusão em cascata
@@ -302,7 +309,7 @@ ampliada do editor, a homologação e as condições operacionais estão em
 - [x] Relatar fatos e fornecer documentos no chat permite gerar uma minuta sem selecionar modo técnico.
 - [x] A interface informa quais anexos foram lidos, falharam ou não são suportados.
 - [x] Trechos de leitura incompleta ou duvidosa são sinalizados e excluídos do contexto utilizado.
-- [x] Dados e documentos autorizados do mesmo Caso podem ser consultados sem seleção manual repetitiva.
+- [x] Dados e documentos autorizados do mesmo Caso podem ser consultados mediante pedido explícito na conversa, sem controles manuais de contexto.
 - [ ] A minuta usa o material disponível sem inventar fatos ou fontes para preencher lacunas.
 - [x] Perguntas informativas não alteram o documento nem exigem aprovação de edição.
 - [x] Uma alteração exibe original, resultado e destino antes da aprovação.

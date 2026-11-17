@@ -16,7 +16,7 @@ public sealed class AssistenteGeracao
     public string Modelo { get; init; } = "";
     public string PoliticaVersao { get; init; } = "";
     public string CasoSha256 { get; init; } = "";
-    public JsonDocument FontesIds { get; init; } = null!;
+    public JsonDocument FontesIds { get; set; } = null!;
     public JsonDocument? Contexto { get; set; }
     public JsonDocument? Plano { get; set; }
     public Guid? AnaliseId { get; set; }

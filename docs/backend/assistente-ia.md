@@ -10,6 +10,16 @@ instrumentação por etapa verificadas. Comparação real concluída: consulta d
 63,941 s para 22,697 s; espera restante dominada pela cota local, acompanhada em M03. Ver [diagnóstico local](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-local-2026-11-14.md)
 e [teste real de M01](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
 
+
+Atualização em **2026-11-17**: o painel usa uma única caixa de conversa e anexos,
+sem atalhos de prompts, modos, escopos ou campos paralelos de contexto. A seleção
+de trechos está pausada, inclusive em reenvios; a pendência está em **PROJ-006**
+no [TODO geral](../../TODO.md). A versão salva da Peça, a conversa e os anexos
+vinculados compõem o contexto automático. Dados e documentos antigos do Caso só
+são consultados mediante pedido explícito na conversa. A política orienta a
+perguntar quando a ambiguidade muda significativamente o resultado e a avançar
+com lacunas sinalizadas quando possível, sem inventar fatos.
+
 - [Estado atual e evidências](../../implementacoes/features/assistente-conversacional/estado-atual.md).
 - [Contratos HTTP, persistência e configuração efetivos](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
 - [TODO da feature, pendências e melhorias](../../implementacoes/features/assistente-conversacional/TODO.md).
@@ -52,11 +62,14 @@ desligada por padrão. Veja [rotas, ativação e limites implementados](../../im
 Com `ConversationV2Enabled=true` (que exige `ReviewV2Enabled`), a capacidade
 `suportaHistorico` ativa mensagens/respostas persistidas e recuperação no painel.
 O gerador recebe o histórico elegível da própria conversa e a Peça atual do
-servidor, dentro dos limites de contexto. Nesse recorte isolado, sem intenção automática, os modos são os existentes.
+servidor, dentro dos limites de contexto. A intenção natural é o padrão do
+endpoint de interações; o adaptador legado de mensagens conserva seus contratos
+por compatibilidade.
 Veja [contratos efetivos, evidências e limites](../../implementacoes/features/assistente-conversacional/evidencias/e1-e3-historico-2026-11-11.md).
 
-Com `AutomaticConversationEnabled=true` (exige as duas flags anteriores),
-`suportaConversaLivre` remove a escolha de modos do frontend. O endpoint
+A conversa livre é o comportamento padrão da conversa persistida, sem flag
+separada de intenção automática. Com revisão e histórico habilitados,
+`suportaConversaLivre` informa a disponibilidade desse fluxo ao frontend. O endpoint
 `POST /assistente/v2/conversas/{id}/interacoes` recebe texto natural e versão da
 Peça. A mesma geração decide entre responder, propor edição e gerar minuta.
 Propostas abrem diretamente a comparação; só a aprovação grava a Peça.
@@ -69,8 +82,10 @@ Veja [ativação, contratos, testes e limites](../../implementacoes/features/ass
 
 Com `AssistenteDocumentos:Enabled=true`, o frontend recebe a capacidade `documentos`
 e pode anexar arquivos, acompanhar processamento e sinalizar leitura parcial.
-O contexto inclui trechos confiáveis de anexos associados e documentos atuais
-autorizados do Caso. O aviso passa a exigir aceite `-documents-v1`.
+O contexto automático inclui trechos confiáveis dos anexos vinculados à
+conversa. Documentos antigos do Caso não entram no catálogo/contexto inicial;
+sua consulta exige pedido explícito na conversa e acesso vigente ao mesmo Caso.
+O aviso passa a exigir aceite `-documents-v1`.
 OCR permanece desligado por padrão; não se anuncia leitura de digitalizações.
 Veja [ativação, limites e evidências documentais](../../implementacoes/features/assistente-conversacional/evidencias/e2-documentos-2026-11-11.md).
 
@@ -79,40 +94,26 @@ integral de documentos no fluxo livre. Ferramentas autorizadas buscam/leem trech
 com cobertura persistida e evento SSE `contexto.documental`. Pedidos de leitura
 integral incompleta ficam sem grupos aplicáveis. Veja [contratos efetivos e limites](../../implementacoes/features/assistente-conversacional/evidencias/e2-recuperacao-documental-2026-11-11.md).
 
-## Interface legada e compatibilidade
+## Painel e compatibilidade
 
-O comportamento abaixo corresponde às flags conversacionais desligadas. Com a
-conversa livre ativa, Peça e histórico são automáticos, modos ficam ocultos e
-propostas persistidas vão diretamente à revisão no documento.
+O painel oferece conversa, uma caixa de mensagem, anexos, envio/interrupção,
+progresso e avisos. Propostas continuam sujeitas à revisão e aprovação visual.
+Não há botões que preenchem prompts, escolha manual de modo/escopo, seleção de
+contextos cadastrados ou campo paralelo de instrução.
 
-O frontend apresenta um chat com composer único, ações rápidas, chips removíveis
-de contexto, respostas e cartões de proposta na conversa. A seleção é capturada
-ao abrir o painel ou ao transferir o foco do editor para ele. Sem seleção, o
-pedido começa sem conteúdo da Peça; os demais contextos são adicionados
-explicitamente pelo menu `Adicionar contexto`.
+Antes de enviar, a interface sincroniza a Peça. Seleção e cursor não são
+capturados nem enviados como foco, inclusive ao reenviar um pedido histórico.
+O usuário pode descrever naturalmente o trecho que deseja alterar. As propostas
+históricas permanecem legíveis; a pausa não apaga dados ou muda suas âncoras.
 
-Os cartões permitem editar, comparar com o original, copiar, rejeitar, tentar
-novamente e aplicar no destino indicado. Há larguras predefinidas e modo
-expandido. O pedido livre começa em `Perguntar`; ações rápidas selecionam
-reescrita, revisão ou redação. Intenção automática exige a flag adicional descrita acima.
+A capacidade `suportaConversaLivre` é necessária para novos envios no painel.
+Quando indisponível, a interface informa a condição e mantém a leitura do
+histórico disponível; não retorna aos controles antigos. Endpoints e contratos
+legados permanecem para compatibilidade, sem reativar sua interface.
 
-A conversa permanece em memória ao fechar e reabrir o painel enquanto o editor
-da mesma Peça estiver montado. Trocar de Peça remonta o editor e perde esse
-estado; recarregar a página também o descarta. No fluxo padrão não há histórico
-persistente. O recorte de revisão persistida recupera propostas e salva seus
-pedidos/respostas, mas ainda não recupera todas as mensagens na UI nem envia o
-histórico ao provider como contexto conversacional. `suportaHistorico` permanece
-`false` nesse recorte isolado; a flag adicional `ConversationV2Enabled` ativa a
-integração de histórico descrita acima.
-
-Em propostas com seleção, `Tentar novamente` reutiliza o snapshot anterior.
-Após expiração da âncora, é necessário selecionar o trecho desejado e enviar um
-novo pedido pelo composer. A recuperação guiada ainda está pendente.
-
-A entrega visual permanece parcial no PA-18, cujo restante está em espera.
-Código e testes de componente existem, mas regressão completa e validação manual da nova experiência ainda
-não estão registradas como concluídas. Veja a
-[conferência documental de 2026-10-18](../../implementacoes/alreadyDone/assistente-ia/evidencias/conferencia-documental-2026-10-18.md).
+Fechar e reabrir o painel da mesma Peça preserva o estado local. A retomada após
+reload depende do histórico persistido, habilitado pelas flags de conversa.
+Aplicação e reconciliação continuam sujeitas a acesso, versão, grupos e hashes.
 
 ## Endpoints legados e compartilhados
 
@@ -214,7 +215,8 @@ v1 independente mantém o fluxo ligado à requisição.
 ## Geração geral durável e minutas por seções
 
 `AssistenteIa:DurableGenerationEnabled` habilita a execução durável do chat v2.
-O fluxo livre requer também ReviewV2/ConversationV2/AutomaticConversation. Pedido,
+O fluxo de conversa padrão requer revisão e histórico persistidos
+(`ReviewV2Enabled` e `ConversationV2Enabled`). Pedido,
 resposta e job são persistidos antes de contexto/modelo. O envio retorna SSE 200
 com `solicitacao.enfileirada`; o frontend acompanha
 `/assistente/v2/conversas/{conversaId}/geracoes/{id}` e recupera mensagens finais.

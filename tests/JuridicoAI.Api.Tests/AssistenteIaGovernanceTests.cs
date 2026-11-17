@@ -15,6 +15,26 @@ namespace JuridicoAI.Api.Tests;
 
 public sealed class AssistenteIaGovernanceTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FeatureAccess_GeracaoSegueConversaEPermissaoSemFlagDeModo(bool conversationEnabled)
+    {
+        var organizationId = Guid.NewGuid();
+        var repository = new FeatureRepositoryStub();
+        repository.Features[organizationId] = new HashSet<OrganizationFeatureEnum>
+            { OrganizationFeatureEnum.AI_ASSISTANT, OrganizationFeatureEnum.AI_EDIT, OrganizationFeatureEnum.AI_DOCUMENT_GENERATION };
+        var controls = new OperationalControlStub();
+        var service = new AssistenteFeatureAccessService(repository, controls,
+            new StaticOptionsMonitor<AssistenteIaSettings>(new AssistenteIaSettings
+                { Enabled = true, ConversationV2Enabled = conversationEnabled, ReviewV2Enabled = true }));
+        var snapshot = await service.ObterAsync(organizationId, default);
+        Assert.True(snapshot.Habilitado);
+        Assert.Equal(conversationEnabled, snapshot.Features.Contains(OrganizationFeatureEnum.AI_DOCUMENT_GENERATION));
+        controls.Enabled = false;
+        Assert.False((await service.ObterAsync(organizationId, default)).Habilitado);
+    }
+
     [Fact]
     public async Task FeatureAccess_FalhaFechadoEIsolaConfiguracaoPorOrganization()
     {

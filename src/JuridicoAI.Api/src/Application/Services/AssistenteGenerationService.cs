@@ -38,6 +38,17 @@ public sealed class AssistenteGenerationService(JuridicoAiDbContext db, IAssiste
         await db.SaveChangesAsync(ct);
         db.Add(job); await db.SaveChangesAsync(ct); response.GeracaoId = job.Id; response.Estado = "AguardandoGeracao"; response.ExpiraEm = job.PrazoEm.AddSeconds(30);
     }
+    public async Task ExpandSourcesAsync(AssistenteGeracao job, AssistenteCasoConsulta result, CancellationToken ct)
+    {
+        job.FontesIds = AssistentePatchCompiler.Json(result.Snapshot);
+        if (job.Contexto is not null)
+            job.Contexto = AssistentePatchCompiler.Json(Read<AssistenteGenerationContext>(job.Contexto) with { Fontes = result.Fontes });
+        var changed = await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id && j.LeaseToken == job.LeaseToken &&
+            j.LeaseAte > DateTime.UtcNow && j.Estado != "Cancelada")
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.FontesIds, job.FontesIds).SetProperty(j => j.Contexto, job.Contexto), ct);
+        if (changed != 1) throw Changed("AI_GENERATION_LEASE_LOST");
+    }
+
     private async Task<string> CaseHashAsync(Guid caseId, Guid conversationId, CriarSolicitacaoAssistenteRequest request, CancellationToken ct)
     {
         AssistentePropostaPersistida? reference = null;
@@ -51,10 +62,10 @@ public sealed class AssistenteGenerationService(JuridicoAiDbContext db, IAssiste
     }
     public async Task<string> RequestContextAsync(Guid caseId, CriarSolicitacaoAssistenteRequest request, CancellationToken ct)
     {
-        var include = request.Contexto?.IncluirDadosCaso == true;
+        var include = !request.InteracaoAutomatica && request.Contexto?.IncluirDadosCaso == true;
         var item = include ? await cases.ObterCasoAsync(caseId, auth.OrganizationId, ct) : null;
         var people = include ? await cases.ListarEnvolvidosAsync(caseId, auth.OrganizationId, ct) : [];
-        var contextIds = request.Contexto?.ContextoCasoIds ?? [];
+        var contextIds = request.InteracaoAutomatica ? [] : request.Contexto?.ContextoCasoIds ?? [];
         var contexts = new List<ContextoCaso>();
         foreach (var id in contextIds.Order()) contexts.Add(await cases.ObterContextoAsync(caseId, id, auth.OrganizationId, ct) ?? throw Changed("AI_CONTEXT_SOURCE_CHANGED"));
         var text = new AssistenteContextBuilder(Options.Create(options.CurrentValue)).Criar(request.Instrucao!, request.Contexto!.Documento!, request.Contexto.ContextoAdicional,
@@ -71,7 +82,7 @@ public sealed class AssistenteGenerationService(JuridicoAiDbContext db, IAssiste
     public async Task ValidateAsync(AssistenteGeracao job, CancellationToken ct, bool lockSources = false)
     {
         if (background.Value is not null) await BindAsync(job, ct);
-        if (!Enabled || !options.CurrentValue.AutomaticConversationEnabled || !options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled) throw Changed("AI_GENERATION_DISABLED");
+        if (!Enabled || !options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled) throw Changed("AI_GENERATION_DISABLED");
         if (job.Modelo != options.CurrentValue.Model || job.PoliticaVersao != Version) throw Changed("AI_GENERATION_POLICY_CHANGED");
         if (job.PrazoEm <= DateTime.UtcNow) throw Changed("AI_GENERATION_DEADLINE");
         var conversation = await repository.ObterConversaAsync(job.ConversaId, auth.OrganizationId, auth.UserId, false, ct) ?? throw Missing();

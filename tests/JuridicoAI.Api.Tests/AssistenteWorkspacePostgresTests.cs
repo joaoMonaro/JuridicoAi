@@ -456,7 +456,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         public Guid OrgId { get; } = Guid.NewGuid();
         public Guid UserId { get; } = Guid.NewGuid();
         public Guid PecaId { get; } = Guid.NewGuid();
-        public AssistenteIaSettings Settings { get; } = new() { ReviewV2Enabled = true, ConversationV2Enabled = true, AutomaticConversationEnabled = true };
+        public AssistenteIaSettings Settings { get; } = new() { ReviewV2Enabled = true, ConversationV2Enabled = true };
         public Features Access { get; } = new();
         public JuridicoAiDbContext Context(IInterceptor? interceptor = null)
         {

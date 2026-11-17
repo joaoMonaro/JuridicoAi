@@ -30,10 +30,10 @@ public sealed class AssistenteFeatureAccessService(
         if (!features.Contains(OrganizationFeatureEnum.AI_ASSISTANT))
             return new(false, [], []);
 
-        // AI_DOCUMENT_GENERATION permanece persistível para rollout futuro, mas
-        // não é anunciada até que o endpoint de geração integral exista.
+        // Geração integral só é anunciada com a infraestrutura de conversa
+        // persistida disponível e a permissão da organização habilitada.
         var visibleFeatures = features
-            .Where(x => x != OrganizationFeatureEnum.AI_DOCUMENT_GENERATION || options.CurrentValue.AutomaticConversationEnabled)
+            .Where(x => x != OrganizationFeatureEnum.AI_DOCUMENT_GENERATION || options.CurrentValue.ConversationV2Enabled && options.CurrentValue.ReviewV2Enabled)
             .Order()
             .ToArray();
 

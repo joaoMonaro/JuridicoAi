@@ -127,7 +127,7 @@ class Product:
                     'Postgres__ConnectionString': f'Host=127.0.0.1;Port={database_port};Database=postgres;Username=postgres;Password={password}',
                     'Auth__JwtSecret': 'synthetic-eval-auth-' + uuid.uuid4().hex,
                     'AssistenteIa__Enabled': 'true', 'AssistenteIa__ReviewV2Enabled': 'true',
-                    'AssistenteIa__ConversationV2Enabled': 'true', 'AssistenteIa__AutomaticConversationEnabled': 'true',
+                    'AssistenteIa__ConversationV2Enabled': 'true',
                     'AssistenteIa__DurableGenerationEnabled': 'true', 'AssistenteIa__HistoryMemoryEnabled': 'true',
                     'AssistenteIa__Model': self.model, 'AssistenteIa__ApiKey': 'loopback-evaluation-proxy',
                     'AssistenteIa__BaseUrl': self.proxy.url,

@@ -8,6 +8,7 @@ using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace JuridicoAI.Api.Tests;
@@ -15,9 +16,40 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteIaApplicationServiceTests
 {
     [Fact]
+    public async Task ConversaPadrao_ConfiguracaoAntigaFalseNaoBloqueiaCapacidadeNemGeracao()
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["AssistenteIa:Enabled"] = "true",
+            ["AssistenteIa:ReviewV2Enabled"] = "true",
+            ["AssistenteIa:ConversationV2Enabled"] = "true",
+            ["AssistenteIa:AutomaticConversationEnabled"] = "false",
+            ["AssistenteIa:Model"] = "modelo-teste",
+            ["AssistenteIa:ApiKey"] = "chave-teste"
+        }).Build();
+        var settings = new AssistenteIaSettings();
+        config.GetSection("AssistenteIa").Bind(settings);
+        var setup = Create(configuredSettings: settings);
+        var capabilities = await setup.Service.ObterCapacidadesAsync(default);
+        Assert.True(capabilities.SuportaConversaLivre);
+        Assert.True(capabilities.SuportaHistorico);
+        setup.Provider.Result = setup.Provider.Result with { RascunhoAutomatico = new(AssistenteIntencao.Responder, [], false) };
+        var execution = await setup.Service.PrepararAsync(setup.Peca.Id,
+            Pergunta() with { InteracaoAutomatica = true }, default, "Conversa existente", conversaLivre: true);
+        try
+        {
+            var result = await setup.Service.GerarAsync(execution, default);
+            Assert.Equal(AssistenteIntencao.Responder, result.RascunhoAutomatico!.Intencao);
+            Assert.Equal(1, setup.Provider.GenerateCalls);
+            Assert.Equal(0, setup.Pecas.UpdateCalls);
+        }
+        finally { await setup.Service.FinalizarAsync(execution); }
+    }
+
+    [Fact]
     public async Task ConversaLivre_InterpretaSemClassificadorSeparadoESemEscreverNaPeca()
     {
-        var setup = Create(automatic: true, full: true);
+        var setup = Create(conversationEnabled: true, full: true);
         var request = Pergunta() with { InteracaoAutomatica = true, Instrucao = "Gere a minuta inicial." };
         setup.Provider.Result = setup.Provider.Result with { OperacaoSugerida = AssistenteOperacao.ProporAlteracoes,
             RascunhoAutomatico = new(AssistenteIntencao.GerarMinuta, [new("Minuta", [new(0, 1, [AssistentePatchCompilerTests.Paragraph("Texto inicial")])])], false) };
@@ -40,7 +72,7 @@ public sealed class AssistenteIaApplicationServiceTests
     [Fact]
     public async Task ConversaLivre_NaoContornaGeracaoIntegralComIntencaoDeEdicao()
     {
-        var setup = Create(automatic: true);
+        var setup = Create(conversationEnabled: true);
         var request = Pergunta() with { InteracaoAutomatica = true };
         setup.Provider.Result = setup.Provider.Result with { OperacaoSugerida = AssistenteOperacao.ProporAlteracoes,
             RascunhoAutomatico = new(AssistenteIntencao.EditarPeca, [new("Inserir", [new(0, 0, [AssistentePatchCompilerTests.Paragraph("Minuta")])])], false) };
@@ -59,7 +91,7 @@ public sealed class AssistenteIaApplicationServiceTests
     [Fact]
     public async Task ConversaLivre_ChatSemEdicaoRecebeApenasRespostaPermitida()
     {
-        var setup = Create(automatic: true, edit: false);
+        var setup = Create(conversationEnabled: true, edit: false);
         setup.Provider.Result = setup.Provider.Result with { RascunhoAutomatico = new(AssistenteIntencao.Responder, [], false) };
         var execution = await setup.Service.PrepararAsync(setup.Peca.Id, Pergunta() with { InteracaoAutomatica = true }, default, "Contexto", true);
         try
@@ -75,7 +107,7 @@ public sealed class AssistenteIaApplicationServiceTests
     [Fact]
     public async Task ConversaLivre_FluxoLegadoNaoAceitaMarcadorAutomaticoDoCliente()
     {
-        var setup = Create(automatic: true);
+        var setup = Create(conversationEnabled: true);
         await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.PrepararAsync(setup.Peca.Id, Pergunta() with { InteracaoAutomatica = true }, default));
         Assert.Equal(0, setup.Provider.CountCalls);
     }
@@ -398,15 +430,16 @@ public sealed class AssistenteIaApplicationServiceTests
         Assert.Equal("AI_UNAVAILABLE", usage.ErrorCode);
     }
 
-    private static Setup Create(int maxInputTokens = 60_000, bool automatic = false, bool edit = true, bool full = false)
+    private static Setup Create(int maxInputTokens = 60_000, bool conversationEnabled = false, bool edit = true, bool full = false,
+        AssistenteIaSettings? configuredSettings = null)
     {
-        var settings = new AssistenteIaSettings
+        var settings = configuredSettings ?? new AssistenteIaSettings
         {
             Enabled = true,
             Model = "modelo-teste",
             ApiKey = "chave-teste",
             MaxInputTokens = maxInputTokens,
-            AutomaticConversationEnabled = automatic, ConversationV2Enabled = automatic, ReviewV2Enabled = automatic
+            ConversationV2Enabled = conversationEnabled, ReviewV2Enabled = conversationEnabled
         };
         var auth = new TestAuthContext();
         var peca = CreatePeca(Guid.NewGuid(), Guid.NewGuid(), auth.OrganizationId);

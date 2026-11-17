@@ -26,6 +26,12 @@ Coordenação distribuída e monitoramento operacional completo seguem pendentes
 - [Configuração de IA](../../../../src/JuridicoAI.Api/src/Infrastructure/Settings/AssistenteIaSettings.cs).
 - [Configuração documental](../../../../src/JuridicoAI.Api/src/Infrastructure/Settings/AssistenteDocumentSettings.cs).
 
+A conversa livre é o comportamento padrão do fluxo conversacional, sem flag
+separada de intenção automática. A chave antiga `AutomaticConversationEnabled`
+não é mais lida; valores residuais em variáveis de ambiente ou user-secrets não
+bloqueiam novos pedidos. Habilitação geral, permissões e controles de revisão/
+histórico persistidos continuam sendo aplicados.
+
 ## Conversa organizacional e aplicação
 
 Estas rotas usam a identidade organizacional e verificam titularidade, acesso à
@@ -48,9 +54,15 @@ Peça/Caso e capacidades. Prefixo `/assistente/v2`, exceto onde indicado:
 | `GET /conversas/{id}/aplicacoes/{requestId}` | Reconciliação do recibo por ID |
 | `POST /propostas/{id}/rejeicoes` | Revisão, versão de decisões e IDs de grupos; o DTO não contém `requestId` |
 
-O envio livre contém `clientRequestId`, `texto`, `versaoPecaEsperada`, seleção,
-proposta referenciada e contexto/anexos opcionais. A interface sincroniza a Peça
-antes do envio. O modelo não recebe permissão para aplicar propostas.
+O contrato de envio livre aceita `clientRequestId`, `texto`,
+`versaoPecaEsperada`, proposta referenciada e campos opcionais legados de
+seleção/contexto. Na jornada atual, a interface sincroniza a Peça antes do envio
+e envia diretamente `clientRequestId`, `texto`, `versaoPecaEsperada`, referência
+opcional da proposta e anexos da conversa, exclusivamente em `/interacoes`.
+Campos de modo, escopo, seleção/cursor e contexto manual são omitidos, inclusive
+em reenvios; o servidor mantém os defaults do contrato. A seleção está pausada em
+PROJ-006 do [TODO geral](../../../../TODO.md). O modelo não recebe permissão para
+aplicar propostas.
 
 Uma aplicação recebe `requestId`, `revisaoProposta`, `versaoDecisoes`,
 `versaoPecaEsperada` e pares de ID/hash de preview dos grupos. O commit da Peça,
@@ -107,6 +119,20 @@ Rotas sob `/assistente/v2/conversas/{conversaId}`:
 TXT/DOCX/PDF têm extração nativa. Poppler é usado para PDF e OpenXml para DOCX.
 Tesseract existe no pipeline, mas **OCR permanece desativado e em espera**.
 Originais privados não são promovidos automaticamente a arquivos do Caso.
+
+Desde 2026-11-17, listagem, catálogo e snapshot automáticos consideram somente
+anexos da própria conversa. Dados e documentos antigos do Caso exigem pedido
+expresso na mensagem atual. A ferramenta `consultar_caso` recebe `incluirDados`,
+`incluirDocumentos` e `trechoDoPedido`, uma citação literal da mensagem atual;
+não recebe um ID arbitrário de Caso. O servidor revalida titularidade da
+conversa, acesso à Peça e à organização antes de consultar o mesmo Caso.
+
+Dados/contextos consultados ganham proveniência e hash no manifesto; documentos
+entram no conjunto de fontes somente após a consulta. Alterações ou revogação
+das fontes invalidam derivados e propostas dependentes. Documentos do Caso
+podem aguardar o processamento existente; sua consulta exige leitura documental
+e recuperação habilitadas. A consulta aos dados essenciais não exige leitura
+documental habilitada. Contratos legados seguem disponíveis para compatibilidade.
 
 ## Histórico pessoal e exclusão
 
@@ -170,7 +196,6 @@ sem configurar automaticamente o modelo do ambiente do produto.
 |---|---|
 | `AssistenteIa:ReviewV2Enabled` | Revisão persistida |
 | `ConversationV2Enabled` | Histórico no contexto; depende da revisão |
-| `AutomaticConversationEnabled` | Intenção automática; depende de conversa/revisão |
 | `DurableGenerationEnabled` | Chat v2 em worker; requer o fluxo conversacional habilitado |
 | `HistoryMemoryEnabled` | Memória versionada/recuperação do histórico |
 | `AssistenteDocumentos:Enabled` / `RetrievalEnabled` / `AnalysisEnabled` | Documentos, recuperação e análise extensa |

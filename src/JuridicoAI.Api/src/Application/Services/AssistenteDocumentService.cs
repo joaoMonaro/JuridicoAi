@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Exceptions;
@@ -21,12 +22,18 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
     public bool Enabled => Settings.Enabled;
     public AssistenteDocumentSettings RetrievalSettings => Settings;
     public async Task AuthorizeRetrievalAsync(Guid conversationId, CancellationToken ct) => await AuthorizeAsync(conversationId, true, ct);
-    public async Task SynchronizeAsync(Guid conversationId, CancellationToken ct)
+    public async Task AuthorizeCaseAsync(Guid conversationId, CancellationToken ct)
+    {
+        await features.ExigirModoAsync(auth.OrganizationId, AssistenteModo.Perguntar, ct);
+        await transparency.ExigirConfirmacaoAsync(ct);
+        await AuthorizeAsync(conversationId, false, ct);
+    }
+    public async Task SynchronizeAsync(Guid conversationId, CancellationToken ct, bool incluirFontesCaso = false)
     {
         if (!Settings.Enabled) return;
         var (_, piece) = await AuthorizeAsync(conversationId, true, ct);
-        await EnsureCaseSourcesAsync(piece.CasoId, ct);
-        await RequeueOutdatedAsync(conversationId, piece.CasoId, ct);
+        if (incluirFontesCaso) await EnsureCaseSourcesAsync(piece.CasoId, ct);
+        await RequeueOutdatedAsync(conversationId, piece.CasoId, ct, incluirFontesCaso);
     }
     public async Task<AssistenteDocumentoDto> UploadAsync(Guid conversaId, Guid uploadId, string name,
         Stream input, CancellationToken ct)
@@ -89,17 +96,17 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
             throw;
         }
     }
-    public async Task<IReadOnlyList<AssistenteDocumentoDto>> ListAsync(Guid conversaId, CancellationToken ct)
+    public async Task<IReadOnlyList<AssistenteDocumentoDto>> ListAsync(Guid conversaId, CancellationToken ct, bool incluirFontesCaso = false)
     {
         var (_, piece) = await AuthorizeAsync(conversaId, false, ct);
         if (Settings.Enabled)
         {
             await features.ExigirModoAsync(auth.OrganizationId, AssistenteModo.Perguntar, ct);
             await transparency.ExigirConfirmacaoAsync(ct);
-            await EnsureCaseSourcesAsync(piece.CasoId, ct);
-            await RequeueOutdatedAsync(conversaId, piece.CasoId, ct);
+            if (incluirFontesCaso) await EnsureCaseSourcesAsync(piece.CasoId, ct);
+            await RequeueOutdatedAsync(conversaId, piece.CasoId, ct, incluirFontesCaso);
         }
-        var sources = await EligibleSources(conversaId, piece.CasoId).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
+        var sources = await EligibleSources(conversaId, piece.CasoId).Where(d => incluirFontesCaso || d.ConversaId == conversaId).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
         if (sources.Length > 250) throw new AssistenteIaException(413, "AI_DOCUMENT_SOURCE_LIMIT", "O conjunto de documentos excede o limite desta etapa.");
         var result = new List<AssistenteDocumentoDto>();
         foreach (var source in sources) result.Add(await DtoAsync(source, ct));
@@ -166,7 +173,7 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
             .SetProperty(d => d.CodigoErro, (string?)null).SetProperty(d => d.LeaseToken, (Guid?)null).SetProperty(d => d.LeaseAte, (DateTime?)null), ct);
     }
     public async Task<AssistenteDocumentoContexto> ContextAsync(AssistenteConversa conversation, Peca piece,
-        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct, bool usarRecuperacao = false, IReadOnlyList<Guid>? fontesFixadas = null)
+        IReadOnlyList<Guid>? attachmentIds, CancellationToken ct, bool usarRecuperacao = false, IReadOnlyList<Guid>? fontesFixadas = null, bool incluirFontesCaso = false)
     {
         var retrieval = Settings.RetrievalEnabled && usarRecuperacao;
         var ids = attachmentIds?.Distinct().ToArray() ?? [];
@@ -177,7 +184,7 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         }
         if (ids.Length > Settings.MaxAttachments) throw Limit();
         var sources = await EligibleSources(conversation.Id, piece.CasoId)
-            .Where(d => (fontesFixadas == null || fontesFixadas.Contains(d.Id)) && (d.ConversaId == null || d.Vinculado || ids.Contains(d.Id))).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
+            .Where(d => (incluirFontesCaso || d.ConversaId == conversation.Id) && (fontesFixadas == null || fontesFixadas.Contains(d.Id)) && (d.ConversaId == null || d.Vinculado || ids.Contains(d.Id))).OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
         if (fontesFixadas is not null && sources.Length != fontesFixadas.Count) throw new AssistenteIaException(409, "AI_DOCUMENT_SOURCE_CHANGED", "O conjunto documental mudou após o pedido.");
         if (sources.Length > 250) throw new AssistenteIaException(413, "AI_DOCUMENT_SOURCE_LIMIT", "O conjunto de documentos excede o limite desta etapa.");
         if (ids.Any(id => !sources.Any(d => d.Id == id && d.ConversaId == conversation.Id))) throw Missing();
@@ -214,9 +221,9 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
             .ExecuteUpdateAsync(s => s.SetProperty(d => d.Vinculado, true), ct);
         var tag = retrieval ? "CATALOGO_FONTES_DOCUMENTAIS_JSON" : "FONTES_DOCUMENTAIS_JSON";
         return new(sources.Length == 0 ? "" : $"\n[{tag} dado_nao_confiavel=\"true\"]\n" + JsonSerializer.Serialize(result) + $"\n[/{tag}]\n",
-            JsonSerializer.Serialize(manifests), alerts, retrieval && sources.Length > 0 ? retrievalSources : null);
+            JsonSerializer.Serialize(manifests), alerts, retrieval ? retrievalSources : null);
     }
-    public async Task<AssistenteSourceSnapshot[]> CaptureSourcesAsync(Guid conversationId, IReadOnlyList<Guid>? attachments, CancellationToken ct)
+    public async Task<AssistenteSourceSnapshot[]> CaptureSourcesAsync(Guid conversationId, IReadOnlyList<Guid>? attachments, CancellationToken ct, bool incluirFontesCaso = false)
     {
         if (!Enabled)
         {
@@ -225,12 +232,57 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
         }
         var (_, piece) = await AuthorizeAsync(conversationId, true, ct);
         var selected = attachments?.Distinct().ToArray() ?? [];
-        var rows = await EligibleSources(conversationId, piece.CasoId).Where(d => d.ConversaId == null || d.Vinculado || selected.Contains(d.Id))
+        var rows = await EligibleSources(conversationId, piece.CasoId).Where(d => (incluirFontesCaso || d.ConversaId == conversationId) && (d.ConversaId == null || d.Vinculado || selected.Contains(d.Id)))
             .OrderBy(d => d.CriadoEm).Take(251).ToArrayAsync(ct);
         if (rows.Length > 250 || selected.Length > Settings.MaxAttachments) throw Limit();
         if (selected.Any(id => !rows.Any(d => d.Id == id && d.ConversaId == conversationId))) throw Missing();
         await db.AssistenteDocumentos.Where(d => d.ConversaId == conversationId && selected.Contains(d.Id)).ExecuteUpdateAsync(s => s.SetProperty(d => d.Vinculado, true), ct);
         return rows.Select(d => new AssistenteSourceSnapshot(d.Id, d.Sha256, d.StorageId)).ToArray();
+    }
+
+    public async Task<AssistenteCasoConsulta> ConsultCaseAsync(AssistenteChatInicio start, bool includeData,
+        bool includeDocuments, int maxCharacters, CancellationToken ct)
+    {
+        await AuthorizeCaseAsync(start.Pedido.ConversaId, ct);
+        var (conversation, piece) = await AuthorizeAsync(start.Pedido.ConversaId, false, ct);
+        if (includeDocuments && (!Settings.Enabled || !Settings.RetrievalEnabled))
+            throw new AssistenteIaException(503, "AI_DOCUMENTS_DISABLED", "A leitura dos documentos antigos do Caso não está habilitada. Forneça as informações necessárias na conversa.");
+        if (piece.Id != start.PecaId) throw Missing();
+        var manifest = start.Pedido.FontesDocumentais is null ? new JsonArray() : JsonNode.Parse(start.Pedido.FontesDocumentais.RootElement.GetRawText())!.AsArray();
+        var sourceIds = manifest.Where(n => n?["id"] is not null).Select(n => n!["id"]!.GetValue<Guid>()).ToList();
+        if (includeDocuments)
+            sourceIds.AddRange(await EligibleSources(conversation.Id, piece.CasoId).Where(d => d.ConversaId == null).Select(d => d.Id).ToArrayAsync(ct));
+        var documental = await ContextAsync(conversation, piece, [], ct, usarRecuperacao: true,
+            fontesFixadas: sourceIds.Distinct().ToArray(), incluirFontesCaso: true);
+        var newManifest = JsonNode.Parse(documental.Manifesto)!.AsArray();
+        foreach (var node in newManifest.Where(n => n?["DocumentoCasoId"] is not null))
+            node!["consultaExplicitaCaso"] = true;
+        foreach (var node in manifest.Where(n => n?["tipo"]?.GetValue<string>() == "DadosCaso")) newManifest.Add(node!.DeepClone());
+        var data = "";
+        if (includeData)
+        {
+            var result = await CaseDataAsync(piece.CasoId, null, maxCharacters, ct);
+            data = result.Texto;
+            for (var i = newManifest.Count - 1; i >= 0; i--)
+                if (newManifest[i]?["tipo"]?.GetValue<string>() == "DadosCaso") newManifest.RemoveAt(i);
+            newManifest.Add(JsonSerializer.SerializeToNode(new { tipo = "DadosCaso", casoId = piece.CasoId,
+                contextosIds = result.ContextosIds, hash = AssistentePatchCompiler.Hash(data) }, AssistentePatchCompiler.JsonOptions));
+        }
+        var text = data + documental.Texto;
+        if (text.Length > maxCharacters) throw new AssistenteIaException(413, "AI_CONTEXT_TOO_LARGE", "Os materiais do Caso excedem o limite desta consulta. Faça um pedido mais específico ou envie somente os arquivos necessários na conversa.");
+        var ids = sourceIds.Distinct().ToArray();
+        var snapshots = await EligibleSources(conversation.Id, piece.CasoId).Where(d => ids.Contains(d.Id))
+            .Select(d => new AssistenteSourceSnapshot(d.Id, d.Sha256, d.StorageId)).ToArrayAsync(ct);
+        return new(text, JsonDocument.Parse(newManifest.ToJsonString()), documental.FontesRecuperacao ?? [], snapshots);
+    }
+    private async Task<(string Texto, Guid[] ContextosIds)> CaseDataAsync(Guid caseId, Guid[]? contextIds, int maxCharacters, CancellationToken ct)
+    {
+        var item = await db.Casos.AsNoTracking().SingleOrDefaultAsync(c => c.Id == caseId && c.OrganizationId == auth.OrganizationId, ct) ?? throw Missing();
+        var people = await db.EnvolvidosCaso.AsNoTracking().Where(p => p.CasoId == caseId).OrderBy(p => p.Id).ToArrayAsync(ct);
+        var contexts = await db.ContextosCaso.AsNoTracking().Where(c => c.CasoId == caseId && (contextIds == null || contextIds.Contains(c.Id))).OrderBy(c => c.Id).ToArrayAsync(ct);
+        if (contextIds is not null && contexts.Length != contextIds.Length) throw Missing();
+        var builder = new AssistenteContextBuilder(Options.Create(new AssistenteIaSettings { MaxTotalContextCharacters = maxCharacters }));
+        return (builder.Criar("", new(AssistenteEscopoDocumento.Nenhum), null, item, people, contexts), contexts.Select(c => c.Id).ToArray());
     }
 
     public async Task<bool> SnapshotValidAsync(IReadOnlyList<AssistenteSourceSnapshot> snapshot, Guid conversationId, Guid caseId, CancellationToken ct)
@@ -243,10 +295,29 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
     public async Task<bool> ManifestValidAsync(JsonDocument? manifest, Guid conversaId, Guid casoId, CancellationToken ct, bool lockSources = false)
     {
         if (manifest is null) return true;
-        if (!Settings.Enabled) return manifest.RootElement.GetArrayLength() == 0;
+
         var currentQuality = DocumentQuality.VersionFor(Settings);
         foreach (var item in manifest.RootElement.EnumerateArray())
         {
+            if (item.TryGetProperty("tipo", out var type) && type.GetString() == "DadosCaso")
+            {
+                if (item.GetProperty("casoId").GetGuid() != casoId) return false;
+                var contexts = item.GetProperty("contextosIds").EnumerateArray().Select(v => v.GetGuid()).ToArray();
+                if (lockSources)
+                {
+                    await db.Database.ExecuteSqlInterpolatedAsync($"SELECT id FROM casos WHERE id = {casoId} FOR SHARE", ct);
+                    await db.Database.ExecuteSqlInterpolatedAsync($"SELECT id FROM envolvidos_caso WHERE caso_id = {casoId} FOR SHARE", ct);
+                    await db.Database.ExecuteSqlInterpolatedAsync($"SELECT id FROM contextos_caso WHERE caso_id = {casoId} FOR SHARE", ct);
+                }
+                try
+                {
+                    var current = await CaseDataAsync(casoId, contexts, int.MaxValue, ct);
+                    if (AssistentePatchCompiler.Hash(current.Texto) != item.GetProperty("hash").GetString()) return false;
+                }
+                catch (AssistenteIaException) { return false; }
+                continue;
+            }
+            if (!Settings.Enabled) return false;
             var id = item.GetProperty("id").GetGuid();
             if (lockSources)
             {
@@ -280,10 +351,10 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
                 """, ct);
         }
     }
-    private async Task RequeueOutdatedAsync(Guid conversationId, Guid caseId, CancellationToken ct)
+    private async Task RequeueOutdatedAsync(Guid conversationId, Guid caseId, CancellationToken ct, bool incluirFontesCaso = false)
     {
         var version = DocumentQuality.VersionFor(Settings);
-        await EligibleSources(conversationId, caseId).Where(d => d.Estado != "Recebido" && d.Estado != "Processando" &&
+        await EligibleSources(conversationId, caseId).Where(d => (incluirFontesCaso || d.ConversaId == conversationId) && d.Estado != "Recebido" && d.Estado != "Processando" &&
             d.Estado != "Falhou" && d.QualidadeVersao != version).ExecuteUpdateAsync(s => s
                 .SetProperty(d => d.Estado, "Recebido").SetProperty(d => d.Tentativas, 0)
                 .SetProperty(d => d.LeaseToken, (Guid?)null).SetProperty(d => d.LeaseAte, (DateTime?)null), ct);
@@ -320,3 +391,5 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
 }
 
 public sealed record AssistenteSourceSnapshot(Guid Id, string? Sha256, string StorageId);
+
+public sealed record AssistenteCasoConsulta(string Texto, JsonDocument Manifesto, IReadOnlyList<AssistenteFonteRecuperacao> Fontes, IReadOnlyList<AssistenteSourceSnapshot> Snapshot);

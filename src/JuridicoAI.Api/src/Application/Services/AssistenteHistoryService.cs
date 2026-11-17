@@ -102,7 +102,7 @@ public sealed class AssistenteHistoryService(JuridicoAiDbContext db, IAssistente
 
     private async Task<(AssistenteConversa Conversation, Peca Piece)> AuthorizeAsync(Guid id, CancellationToken ct, bool block = false)
     {
-        if (!Enabled || !options.CurrentValue.AutomaticConversationEnabled || !options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled)
+        if (!Enabled || !options.CurrentValue.ConversationV2Enabled || !options.CurrentValue.ReviewV2Enabled)
             throw new AssistenteIaException(503, "AI_HISTORY_MEMORY_DISABLED", "A memória da conversa foi desabilitada.");
         await features.ExigirModoAsync(auth.OrganizationId, AssistenteModo.Perguntar, ct);
         await transparency.ExigirConfirmacaoAsync(ct);
@@ -147,11 +147,12 @@ public sealed class AssistenteHistoryService(JuridicoAiDbContext db, IAssistente
             documentTools is null ? settings.HistoryTotalTokens : Math.Min(settings.HistoryTotalTokens, documentTools.MaxTotalTokens), settings.MaxTotalContextCharacters)
         {
             RequireDurableUsage = documentTools?.RequireDurableUsage == true,
-            HasDocumentTools = documentTools is not null,
+            HasDocumentTools = documentTools?.HasDocumentTools == true,
             AdditionalInstructions = Instructions + (documentTools?.AdditionalInstructions ?? ""),
             AdditionalPolicyVersion = "/" + Version + (documentTools?.AdditionalPolicyVersion ?? ""),
             RequiredTool = () => context.Pendente ? "atualizar_memoria" : null,
             SetScope = documentTools?.SetScope,
+            CompleteAfterTool = documentTools?.CompleteAfterTool,
             OnLimit = documentTools?.OnLimit,
             BeforeCall = async ct => { await ValidateAsync(context, ct); if (documentTools?.BeforeCall is not null) await documentTools.BeforeCall(ct); }
         };

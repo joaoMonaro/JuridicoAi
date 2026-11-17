@@ -60,8 +60,8 @@ public sealed class AssistenteIaApplicationService(
             SuportaHistorico: settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
             snapshot.Features.Select(x => x.ToString()).ToArray(),
             SuportaRevisaoPersistida: settings.ReviewV2Enabled && snapshot.Modos.Contains(AssistenteModo.Redigir),
-            SuportaConversaLivre: settings.AutomaticConversationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
-            Documentos: documentOptions?.Value is { Enabled: true } doc && snapshot.Habilitado && settings.AutomaticConversationEnabled
+            SuportaConversaLivre: settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado,
+            Documentos: documentOptions?.Value is { Enabled: true } doc && snapshot.Habilitado && settings.ConversationV2Enabled && settings.ReviewV2Enabled
                 ? new(doc.MaxFileBytes, doc.MaxPages, doc.MaxPixels / 1_000_000, doc.MaxAttachments, doc.MaxConversationBytes, doc.OcrEnabled) : null,
             SuportaGeracaoDuravel: settings.DurableGenerationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado);
     }
@@ -74,7 +74,7 @@ public sealed class AssistenteIaApplicationService(
         bool conversaLivre = false, AssistenteDocumentTools? ferramentasDocumentais = null)
     {
         ValidateBaseRequest(pecaId, request);
-        if (request.InteracaoAutomatica != conversaLivre || conversaLivre && (!Settings.AutomaticConversationEnabled || contextoConversa is null))
+        if (request.InteracaoAutomatica != conversaLivre || conversaLivre && (!Settings.ConversationV2Enabled || !Settings.ReviewV2Enabled || contextoConversa is null))
             throw Invalid("O fluxo de conversa solicitado não está disponível.");
         await featureAccess.ExigirModoAsync(authContext.OrganizationId, request.Modo, cancellationToken);
         await transparencyService.ExigirConfirmacaoAsync(cancellationToken);
@@ -101,7 +101,7 @@ public sealed class AssistenteIaApplicationService(
 
         Caso? caso = null;
         IReadOnlyList<EnvolvidoCaso> envolvidos = [];
-        if (contextoRequest.IncluirDadosCaso)
+        if (!conversaLivre && contextoRequest.IncluirDadosCaso)
         {
             caso = await casoRepository.ObterCasoAsync(peca.CasoId, authContext.OrganizationId, cancellationToken)
                 ?? throw new AssistenteIaException(
@@ -116,7 +116,7 @@ public sealed class AssistenteIaApplicationService(
 
         var contextos = await LoadContextsAsync(
             peca.CasoId,
-            contextoRequest.ContextoCasoIds,
+            conversaLivre ? null : contextoRequest.ContextoCasoIds,
             cancellationToken);
         var input = contextBuilder.Criar(
             request.Instrucao!.Trim(),

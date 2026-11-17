@@ -37,7 +37,14 @@ internal static class AssistenteHistoryProjection
             var sourceDependent = source is null || source.VersaoPeca != peca.Versao ||
                 source.Contexto?.IncluirDadosCaso == true || source.Contexto?.ContextoCasoIds?.Count > 0;
             if (documents is not null && message.RespostaAId is { } sourceId && byId.TryGetValue(sourceId, out var sourceMessage))
+            {
                 sourceDependent |= !await documents.ManifestValidAsync(sourceMessage.FontesDocumentais, conversa.Id, peca.CasoId, ct, lockSources);
+                // Older automatic Case catalogs were not an express request.
+                // Preserve their visible history without reusing derived facts.
+                sourceDependent |= sourceMessage.FontesDocumentais?.RootElement.EnumerateArray().Any(e =>
+                    e.TryGetProperty("DocumentoCasoId", out var caseDocument) && caseDocument.ValueKind != JsonValueKind.Null &&
+                    (!e.TryGetProperty("consultaExplicitaCaso", out var explicitCase) || !explicitCase.GetBoolean())) == true;
+            }
             var result = Read<AssistenteSolicitacaoConcluidaDto>(message.Resultado);
             IReadOnlyList<AssistenteGrupoPersistido>? decisions = null;
             string? proposalState = null;

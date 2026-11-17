@@ -256,7 +256,7 @@ public sealed class OpenAiAssistenteIaProvider(
             if (turn.Result is { } result)
             {
                 if (requiredTool is not null) throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false);
-                tools.SetScope?.Invoke(result.CoberturaPretendida!);
+                if (tools.HasDocumentTools && result.CoberturaPretendida is { } coverage) tools.SetScope?.Invoke(coverage);
                 return Aggregate(result);
             }
             var pending = turn.Output.Where(x => x.GetProperty("type").GetString() == "function_call").ToArray();
@@ -272,7 +272,7 @@ public sealed class OpenAiAssistenteIaProvider(
             if (requiredTool is not null && functionName != requiredTool) throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false);
             input.AddRange(turn.Output);
             var resultText = await tools.ExecuteAsync(functionName, args.GetString()!, ct);
-            if (tools.CompleteAfterTool?.Invoke() is { } terminal) return Aggregate(terminal);
+            if (tools.CompleteAfterTool?.Invoke() is { } terminal) return Aggregate(terminal with { Modelo = model });
             input.Add(JsonSerializer.SerializeToElement(new { type = "function_call_output", call_id = id, output = resultText }));
         }
         return await LimitedAsync();
