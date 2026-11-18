@@ -45,6 +45,7 @@ As migrations do Entity Framework Core são aplicadas na inicialização quando
 
 ## Documentação
 
+- [Versionamento — produção, homologação e fluxo de mudanças](docs/versionamento.md)
 - [TODO geral do projeto](TODO.md)
 - [Índice da documentação atual](docs/README.md)
 - [Configuração e execução](docs/configuracao-e-execucao.md)

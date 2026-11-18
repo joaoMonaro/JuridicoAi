@@ -8,6 +8,7 @@ com status explícito. Outros planos e decisões em evolução permanecem em
 ## Visão geral
 
 - [Arquitetura e fluxos](arquitetura.md)
+- [Versionamento — produção, homologação e fluxo de mudanças](versionamento.md)
 - [Configuração e execução](configuracao-e-execucao.md)
 - [User Secrets no desenvolvimento](user-secrets.md)
 
