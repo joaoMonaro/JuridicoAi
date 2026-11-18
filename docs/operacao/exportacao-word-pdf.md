@@ -40,6 +40,29 @@ Em operação, as mesmas chaves podem ser informadas por variáveis de ambiente,
 por exemplo `PecaExport__LibreOfficePath` e `PecaExport__TempPath`.
 Reiniciar a API depois de alterar essas configurações.
 
+### LibreOffice instalado via Snap (desenvolvimento Linux)
+
+O pacote Snap disponibiliza `libreoffice`, mas pode não disponibilizar `soffice`
+no PATH. Nesse caso, o padrão da API retorna 503 com a mensagem de que o
+conversor está indisponível, mesmo com o LibreOffice instalado.
+
+Além do executável, configurar um temporário acessível ao Snap: o `/tmp` visto
+pelo processo confinado não é o mesmo usado pela API. Usar somente o caminho
+`/snap/bin/libreoffice` com o temporário padrão não resolve a conversão.
+
+Na raiz do backend, para desenvolvimento com o perfil `Development`:
+
+```bash
+mkdir -p "$HOME/snap/libreoffice/common/juridicoai-export"
+dotnet user-secrets set 'PecaExport:LibreOfficePath' '/snap/bin/libreoffice' --project src/JuridicoAI.Api
+dotnet user-secrets set 'PecaExport:TempPath' "$HOME/snap/libreoffice/common/juridicoai-export" --project src/JuridicoAI.Api
+/snap/bin/libreoffice --headless --version
+```
+
+Executar os comandos com o mesmo usuário que inicia a API e reiniciá-la.
+As configurações são locais e não devem ser copiadas para ambientes que usem
+outro usuário ou uma instalação convencional do LibreOffice.
+
 O limite de concorrência não é uma fila: se todas as vagas estiverem ocupadas,
 a API responde 503 e o usuário pode tentar novamente. O limite é local a cada
 instância, não compartilhado entre réplicas. Não envolve novas tabelas ou jobs.
