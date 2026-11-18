@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-17**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-18**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
 O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
@@ -29,25 +29,45 @@ incluindo PostgreSQL descartável e regressão das quatro rotas removidas. Nenhu
 banco ou volume existente foi apagado. Ver
 [registro da extração e validação](implementacoes/alreadyDone/extracao-scraper-2026-11-17.md).
 
-- [ ] **PROJ-003 — Adequar a jornada ao MVP sem cadastros manuais de dados. Prioridade: `high` (alta).**
+- [ ] **PROJ-003 — Validar e simplificar a entrada na redação pelo chat. Prioridade: `high` (alta).**
 
-Retirar da jornada os formulários de dados jurídicos e o cadastro separado de
-documentos do Caso. Fatos, dados de empresas/partes e arquivos entram no contexto
-pelo chatbot. Manter configurações e modelos de layout da Peça, edição manual
-do texto, salvamento, retomada e exportação.
+**Estado conferido no código em 2026-11-18:** já é possível criar um Caso e uma
+Peça vazia, fornecer fatos e anexos na conversa e pedir uma minuta para revisão
+e aprovação. O fluxo dispensa o cadastro prévio de empresas, partes, endereços,
+contextos e documentos separados do Caso. A conferência do código e dos testes
+existentes não equivale a uma nova execução com o modelo real ou à homologação
+pelo advogado.
 
-Simplificar a entrada no trabalho, hoje dependente dos formulários de criação
-de Caso e Peça, reaproveitando as entidades existentes sem exigir repetição dos
-dados fornecidos na conversa. Esta tarefa ajusta o fluxo existente; não inclui
-cadastros estruturados automáticos pela IA nem ampliação de funcionalidades.
-Validar a jornada com as tarefas do advogado empresarial definidas no escopo.
-Não apagar registros existentes como parte da retirada das telas.
+A entrada atual exige título e descrição do Caso no frontend e título da Peça;
+o modelo da Peça é opcional. A descrição do Caso já é opcional na API. Caso e
+Peça organizam o trabalho, enquanto os dados jurídicos e arquivos podem ser
+fornecidos pelo chat. O painel usa a Peça salva, a conversa e seus anexos;
+materiais antigos do Caso são consultados mediante pedido expresso. Ver
+[ajustes já entregues](implementacoes/features/assistente-conversacional/evidencias/painel-simplificado-2026-11-17.md).
 
-Recorte de 2026-11-17: painel do assistente simplificado para conversa e anexos,
-com contexto automático da Peça salva/conversa e consulta ao Caso somente por
-pedido expresso. Seleção de trechos pausada em PROJ-006. Este recorte não encerra
-a retirada dos formulários de Caso/Peça. Ver
-[ajustes e validação](implementacoes/features/assistente-conversacional/evidencias/painel-simplificado-2026-11-17.md).
+**Trabalho restante:** conferir com o advogado se o caminho de criar/abrir Caso,
+criar/retomar Peça e acessar o chat está claro; identificar campos, etapas ou
+atalhos que provoquem repetição de dados ou desviem para cadastros dispensáveis.
+Simplificar os pontos identificados e corrigir os impedimentos encontrados,
+reaproveitando o fluxo implementado. A necessidade de alterar a criação de Caso
+ou Peça deve resultar dessa validação, preservando os registros existentes.
+
+**Critérios de conclusão:**
+
+- [ ] Registrar uma execução representativa em que o advogado inicia o trabalho,
+  fornece fatos/anexos no chat e chega à primeira minuta revisada e aprovada sem
+  precisar cadastrar os dados jurídicos em outras telas.
+- [ ] Registrar os pontos de atrito da entrada e corrigir os que impedem ou
+  confundem essa jornada, verificando novamente o percurso após as mudanças.
+- [ ] Preservar o acesso aos trabalhos existentes, às configurações/modelos de
+  layout, à edição manual, ao salvamento, à retomada e à exportação.
+
+A tarefa permanece aberta para validação de uso e eventuais ajustes de jornada.
+A qualidade jurídica, a compatibilidade completa do editor e as condições
+financeiras e operacionais seguem no
+[TODO do assistente](implementacoes/features/assistente-conversacional/TODO.md).
+Cadastros estruturados automáticos pela IA e seleção de trechos continuam fora
+deste recorte, conforme o MVP e a PROJ-006.
 
 ## Pendências
 
