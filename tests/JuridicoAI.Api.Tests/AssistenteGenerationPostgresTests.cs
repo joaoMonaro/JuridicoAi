@@ -312,15 +312,16 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var identity = new AssistenteBackgroundIdentity(); var auth = new TestAuthContext(db.OrgId, db.UserId); var monitor = new Monitor(db.Settings); var correlation = new AnalysisCorrelation(); var config = Options.Create(AnalysisSettings());
         var documents = new AssistenteDocumentService(context, repository, pieces, storage, auth, db.Access, new Transparency(), config);
         var history = new AssistenteHistoryService(context, repository, pieces, auth, db.Access, new Transparency(), monitor, documents);
-        var generations = new AssistenteGenerationService(context, repository, pieces, cases, auth, db.Access, new Transparency(), documents, monitor, identity, correlation, history);
-        var analyses = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), documents, config, monitor, identity, correlation, generations);
-        var chat = new AssistenteChatService(repository, pieces, auth, db.Access, new Transparency(), monitor, documents, history, analysis: analyses, generations: generations);
+        var monthlyLimit = db.MonthlyLimit(context);
+        var generations = new AssistenteGenerationService(context, repository, pieces, cases, auth, db.Access, new Transparency(), monthlyLimit, documents, monitor, identity, correlation, history);
+        var analyses = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), monthlyLimit, documents, config, monitor, identity, correlation, generations);
+        var chat = new AssistenteChatService(repository, pieces, auth, db.Access, new Transparency(), monthlyLimit, monitor, documents, history, analysis: analyses, generations: generations);
         var provider = new OpenAiAssistenteIaProvider(new HttpClient(new MemoryHandler(model.Send)) { BaseAddress = new("https://synthetic.test/v1/") }, Options.Create(db.Settings));
         var limiter = capacity ?? new AnalysisLimiter(model.Analysis); var usage = new AssistenteUsageRecorder(new AiUsageLedgerRepository(context), monitor, NullLogger<AssistenteUsageRecorder>.Instance);
         var generator = new AssistenteIaApplicationService(pieces, cases, auth, provider, provider, new AssistenteContextBuilder(Options.Create(db.Settings)), new AssistentePromptPolicy(), new AssistenteRequestRegistry(), db.Access, new Transparency(), limiter, usage,
-            correlation, monitor, NullLogger<AssistenteIaApplicationService>.Instance, config);
-        return (chat, generations, new(context, generations, chat, generator, provider, provider, db.Access, usage, limiter, monitor),
-            new(context, analyses, documents, chat, generator, provider, provider, limiter, usage, config, monitor, generations), documents);
+            monthlyLimit, correlation, monitor, NullLogger<AssistenteIaApplicationService>.Instance, config);
+        return (chat, generations, new(context, generations, chat, generator, provider, provider, db.Access, usage, limiter, monthlyLimit, monitor),
+            new(context, analyses, documents, chat, generator, provider, provider, limiter, usage, monthlyLimit, config, monitor, generations), documents);
     }
     private sealed class GenerationModel
     {

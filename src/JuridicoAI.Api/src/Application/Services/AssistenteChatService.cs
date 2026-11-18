@@ -19,6 +19,7 @@ public sealed record AssistenteChatInicio(Guid PecaId, AssistenteMensagemPersist
 // generation is cancelled, not silently restarted or billed a second time.
 public sealed class AssistenteChatService(IAssistenteWorkspaceRepository repository, IPecaRepository pecas,
     IAuthContext auth, IAssistenteFeatureAccess features, IAssistenteTransparencyService transparency,
+    IAssistenteMonthlyLimitService monthlyLimit,
     IOptionsMonitor<AssistenteIaSettings> options, AssistenteDocumentService? documents = null, AssistenteHistoryService? history = null, AssistenteDocumentAnalysisService? analysis = null, AssistenteGenerationService? generations = null)
 {
     public async Task<AssistenteChatInicio> IniciarAsync(Guid conversaId, CriarSolicitacaoAssistenteRequest request, CancellationToken ct)
@@ -45,6 +46,7 @@ public sealed class AssistenteChatService(IAssistenteWorkspaceRepository reposit
                 return new AssistenteChatInicio(peca.Id, existing, answer, string.Empty, false);
             }
             if (peca.Versao != request.VersaoPeca) throw AssistentePatchCompiler.Stale();
+            await monthlyLimit.ValidarPreCondicaoSolicitacaoAsync(auth.OrganizationId, token);
             var active = await repository.ObterMensagemAtivaAsync(conversaId, token);
             if (active is not null)
             {

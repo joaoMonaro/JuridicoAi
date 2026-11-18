@@ -120,5 +120,5 @@ public sealed partial class AssistenteWorkspacePostgresTests
             db.Access, new Transparency(), Options.Create(new AssistenteDocumentSettings { Enabled = true, RetrievalEnabled = true }));
     private static AssistenteChatService RetrievalChat(Database db, JuridicoAiDbContext context, AssistenteDocumentService docs) =>
         new(new AssistenteWorkspaceRepository(context), new PecaRepository(context), new TestAuthContext(db.OrgId, db.UserId),
-            db.Access, new Transparency(), new Monitor(db.Settings), docs);
+            db.Access, new Transparency(), db.MonthlyLimit(context), new Monitor(db.Settings), docs);
 }

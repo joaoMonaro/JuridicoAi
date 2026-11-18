@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using JuridicoAI.Api.Application.DTOs;
 
 namespace JuridicoAI.Api.Application.Abstractions;
@@ -10,7 +11,9 @@ public sealed record AssistenteIaProviderRequest(
     int MaxOutputTokens,
     bool Conversacional = false,
     bool PodeGerarMinuta = false,
-    AssistenteDocumentTools? FerramentasDocumentais = null);
+    AssistenteDocumentTools? FerramentasDocumentais = null,
+    [property: JsonIgnore] AssistenteProviderTurnTracker? TurnTracker = null,
+    [property: JsonIgnore] string? ExpectedModel = null);
 
 public sealed record AssistenteIaProviderResult(
     string Titulo,
@@ -50,4 +53,10 @@ public sealed class AssistenteIaProviderException(
     public string Code { get; } = code;
     public bool Retryable { get; } = retryable;
     public int? ProviderStatusCode { get; } = providerStatusCode;
+    public bool Dispatched { get; init; } = true;
+    public bool SafeToRelease { get; init; }
+    public string? ResolvedModel { get; init; }
+    public int? InputTokens { get; init; }
+    public int? CachedInputTokens { get; init; }
+    public int? OutputTokens { get; init; }
 }

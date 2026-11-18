@@ -90,6 +90,12 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `AssistenteIa:ConcurrentRequestsPerUser` | `2` | concorrência por usuário |
 | `AssistenteIa:RequestsPerOrganizationPerMinute` | `30` | limite agregado por Organization |
 | `AssistenteIa:ConcurrentRequestsPerOrganization` | `6` | concorrência por Organization |
+| `AssistenteIa:DefaultMonthlyLimitUsd` | `5.0` | limite financeiro mensal inicial por organização; mês calendário UTC |
+| `AssistenteIa:InputCostPerMillionTokensUsd` | `0` | tarifa de entrada sem cache; informar preço real do modelo |
+| `AssistenteIa:CachedInputCostPerMillionTokensUsd` | `0` | tarifa de entrada em cache; informar preço real do modelo |
+| `AssistenteIa:OutputCostPerMillionTokensUsd` | `0` | tarifa de saída; informar preço real do modelo |
+| `AssistenteIa:PricingVersion` | `unconfigured` | identificação da tabela de preços usada nas reservas |
+| `AssistenteIa:AllowSimulatedWithoutFinancialControl` | `false` | opt-out explícito para testes simulados; proibido em produção |
 | `Auth:PersonalHistoryAllowedOrigins` | lista opcional | origens adicionais para autenticação pessoal; exige HTTPS e mesmo site para refresh Strict |
 
 Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
@@ -98,6 +104,14 @@ Manager do .NET quando o ambiente é `Development`.
 
 O guia completo, incluindo chave da OpenAI, flags por Organization e kill
 switch, está em [User Secrets no desenvolvimento](user-secrets.md).
+
+Chamadas reais à IA exigem tarifas válidas e versão de preços configuradas,
+além de modelo, chave e permissões. Os zeros versionados indicam configuração
+pendente e não habilitam chamadas gratuitas. O limite de US$ 5,00 é a configuração
+inicial do piloto; a interface apresenta somente percentuais. As migrations
+financeiras precisam ser aplicadas junto às demais migrations da aplicação.
+A alteração do limite por organização e a reconciliação de reservas usam
+[operações CLI auditadas](../implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md#operação-reconciliação-e-recuperação-de-reservas-órfãs).
 
 Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 

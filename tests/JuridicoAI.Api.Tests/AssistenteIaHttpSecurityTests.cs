@@ -692,6 +692,7 @@ public sealed class AssistenteIaHttpSecurityTests
             builder.Services.AddSingleton<AssistenteRequestRegistry>();
             builder.Services.AddSingleton<AssistentePromptPolicy>();
             builder.Services.AddSingleton<IAssistenteUsageLimiter, AssistenteUsageLimiter>();
+            builder.Services.AddSingleton<IAssistenteMonthlyLimitService, SimulatedMonthlyLimitStub>();
             builder.Services.AddSingleton<IAssistenteFeatureAccess, AllowAllFeatureAccess>();
             builder.Services.AddSingleton<IAssistenteUsageRecorder, TestUsageRecorder>();
             builder.Services.AddSingleton<IAiTransparencyAcknowledgementRepository>(transparency);

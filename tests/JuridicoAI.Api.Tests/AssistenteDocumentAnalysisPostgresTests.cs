@@ -253,7 +253,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var correlation = new JuridicoAI.Api.Infrastructure.Http.HttpCorrelationContext(accessor, identity);
         var repository = new AssistenteWorkspaceRepository(context); var pieces = new PecaRepository(context);
         var documents = new AssistenteDocumentService(context, repository, pieces, storage, auth, db.Access, new Transparency(), Options.Create(config));
-        var service = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), documents, Options.Create(config), new Monitor(db.Settings), identity, correlation);
+        var service = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), db.MonthlyLimit(context), documents, Options.Create(config), new Monitor(db.Settings), identity, correlation);
         await service.BindWorkerAsync(job, default); await service.ValidateAsync(job, default);
         Assert.Null(accessor.HttpContext); Assert.Equal(job.UserId, auth.UserId); Assert.Equal(job.OrganizationId, auth.OrganizationId);
         Assert.Equal(job.CorrelationId, correlation.CorrelationId); Assert.Equal(Guid.Empty, auth.SessionId);
@@ -333,15 +333,16 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var repository = new AssistenteWorkspaceRepository(context); var pieces = new PecaRepository(context);
         var auth = new TestAuthContext(db.OrgId, db.UserId); var monitor = new Monitor(db.Settings); var docOptions = Options.Create(config);
         var documents = new AssistenteDocumentService(context, repository, pieces, storage, auth, db.Access, new Transparency(), docOptions);
-        var analyses = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), documents, docOptions, monitor, new AssistenteBackgroundIdentity());
-        var chat = new AssistenteChatService(repository, pieces, auth, db.Access, new Transparency(), monitor, documents, analysis: analyses);
+        var monthlyLimit = db.MonthlyLimit(context);
+        var analyses = new AssistenteDocumentAnalysisService(context, repository, pieces, auth, db.Access, new Transparency(), monthlyLimit, documents, docOptions, monitor, new AssistenteBackgroundIdentity());
+        var chat = new AssistenteChatService(repository, pieces, auth, db.Access, new Transparency(), monthlyLimit, monitor, documents, analysis: analyses);
         var provider = new OpenAiAssistenteIaProvider(new HttpClient(new MemoryHandler(model.Send)) { BaseAddress = new("https://synthetic.test/v1/") }, Options.Create(db.Settings));
         var limiter = new AnalysisLimiter(model);
         var usage = new AssistenteUsageRecorder(new AiUsageLedgerRepository(context), monitor, NullLogger<AssistenteUsageRecorder>.Instance);
         var generator = new AssistenteIaApplicationService(pieces, new CasoRepository(context), auth, provider, provider,
             new AssistenteContextBuilder(Options.Create(db.Settings)), new AssistentePromptPolicy(), new AssistenteRequestRegistry(), db.Access, new Transparency(), limiter, usage,
-            new AnalysisCorrelation(), monitor, NullLogger<AssistenteIaApplicationService>.Instance, docOptions);
-        return (chat, documents, analyses, new(context, analyses, documents, chat, generator, provider, provider, limiter, usage, docOptions, monitor));
+            monthlyLimit, new AnalysisCorrelation(), monitor, NullLogger<AssistenteIaApplicationService>.Instance, docOptions);
+        return (chat, documents, analyses, new(context, analyses, documents, chat, generator, provider, provider, limiter, usage, monthlyLimit, docOptions, monitor));
     }
     private sealed class AnalysisCorrelation : ICorrelationContext { public Guid CorrelationId { get; } = Guid.NewGuid(); }
     private sealed class AnalysisLimiter(AnalysisModel model) : IAssistenteUsageLimiter

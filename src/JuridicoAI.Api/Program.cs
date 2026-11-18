@@ -65,8 +65,18 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
                    x.RequestsPerUserPerMinute > 0 && x.ConcurrentRequestsPerUser > 0 &&
                    x.RequestsPerOrganizationPerMinute > 0 && x.ConcurrentRequestsPerOrganization > 0 &&
                    x.InputCostPerMillionTokensUsd >= 0 && x.CachedInputCostPerMillionTokensUsd >= 0 &&
-                   x.OutputCostPerMillionTokensUsd >= 0 && !string.IsNullOrWhiteSpace(x.PricingVersion),
+                   x.OutputCostPerMillionTokensUsd >= 0 && x.DefaultMonthlyLimitUsd >= 0 && !string.IsNullOrWhiteSpace(x.PricingVersion),
         "Os limites de AssistenteIa devem ser maiores que zero.")
+    .Validate(x => !(builder.Environment.IsProduction() && x.AllowSimulatedWithoutFinancialControl),
+        "AssistenteIa:AllowSimulatedWithoutFinancialControl não pode ser habilitado em produção.")
+    .Validate(x => !builder.Environment.IsProduction() || !x.Enabled ||
+                   (x.DefaultMonthlyLimitUsd > 0 &&
+                    x.InputCostPerMillionTokensUsd > 0 &&
+                    x.CachedInputCostPerMillionTokensUsd > 0 &&
+                    x.OutputCostPerMillionTokensUsd > 0 &&
+                    !string.IsNullOrWhiteSpace(x.PricingVersion) &&
+                    !string.Equals(x.PricingVersion.Trim(), "unconfigured", StringComparison.OrdinalIgnoreCase)),
+        "Produção com IA habilitada exige preços válidos, versão de tarifação e limite mensal configurado.")
     .Validate(x => !x.Enabled || string.Equals(x.Provider, "OpenAI", StringComparison.OrdinalIgnoreCase),
         "AssistenteIa:Provider não é suportado.")
     .Validate(x => !x.Enabled || !string.IsNullOrWhiteSpace(x.Model),
@@ -221,6 +231,8 @@ builder.Services.AddSingleton<AssistentePromptPolicy>();
 builder.Services.AddSingleton<AssistenteRequestRegistry>();
 builder.Services.AddScoped<IAssistenteFeatureAccess, AssistenteFeatureAccessService>();
 builder.Services.AddSingleton<IAssistenteUsageLimiter, AssistenteUsageLimiter>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<IAssistenteMonthlyLimitService, AssistenteMonthlyLimitService>();
 builder.Services.AddScoped<IAssistenteUsageRecorder, AssistenteUsageRecorder>();
 builder.Services.AddScoped<ICasoRepository, CasoRepository>();
 builder.Services.AddScoped<IPecaRepository, PecaRepository>();
@@ -334,6 +346,96 @@ if (args.Contains("set-ai-enabled", StringComparer.OrdinalIgnoreCase))
             DateTime.UtcNow,
             default);
     Console.WriteLine($"Kill switch AI_ENABLED definido como {enabled}.");
+    return;
+}
+if (args.Contains("set-ai-monthly-limit", StringComparer.OrdinalIgnoreCase))
+{
+    var orgText = Environment.GetEnvironmentVariable("AI_LIMIT_ORGANIZATION_ID");
+    var limitText = Environment.GetEnvironmentVariable("AI_LIMIT_USD");
+    var updatedByText = Environment.GetEnvironmentVariable("AI_OPERATION_UPDATED_BY_ID");
+    var reason = Environment.GetEnvironmentVariable("AI_OPERATION_REASON");
+    if (!Guid.TryParse(orgText, out var organizationId) ||
+        !decimal.TryParse(limitText, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var limitUsd) ||
+        limitUsd < 0m ||
+        !Guid.TryParse(updatedByText, out var updatedById) ||
+        string.IsNullOrWhiteSpace(reason))
+        throw new InvalidOperationException(
+            "Informe AI_LIMIT_ORGANIZATION_ID, AI_LIMIT_USD (>= 0), AI_OPERATION_UPDATED_BY_ID e AI_OPERATION_REASON válidos.");
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    await scope.ServiceProvider.GetRequiredService<IAssistenteMonthlyLimitService>()
+        .DefinirLimiteOrganizacaoAsync(organizationId, limitUsd, updatedById, reason, default);
+    Console.WriteLine($"Limite mensal da organização {organizationId} atualizado com auditoria.");
+    return;
+}
+if (args.Contains("reconcile-ai-reservation", StringComparer.OrdinalIgnoreCase))
+{
+    var resText = Environment.GetEnvironmentVariable("AI_RESERVATION_ID");
+    var actionText = Environment.GetEnvironmentVariable("AI_RECONCILE_ACTION");
+    var updatedByText = Environment.GetEnvironmentVariable("AI_OPERATION_UPDATED_BY_ID");
+    var reason = Environment.GetEnvironmentVariable("AI_OPERATION_REASON");
+    if (!Guid.TryParse(resText, out var reservationId) ||
+        string.IsNullOrWhiteSpace(actionText) ||
+        !Guid.TryParse(updatedByText, out var operatorUserId) ||
+        string.IsNullOrWhiteSpace(reason))
+        throw new InvalidOperationException(
+            "Informe AI_RESERVATION_ID, AI_RECONCILE_ACTION (settle|release), AI_OPERATION_UPDATED_BY_ID e AI_OPERATION_REASON válidos.");
+
+    bool confirmarConsumo;
+    if (string.Equals(actionText, "settle", StringComparison.OrdinalIgnoreCase)) confirmarConsumo = true;
+    else if (string.Equals(actionText, "release", StringComparison.OrdinalIgnoreCase)) confirmarConsumo = false;
+    else throw new InvalidOperationException("AI_RECONCILE_ACTION deve ser 'settle' ou 'release'.");
+
+    int? inputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_INPUT_TOKENS"), out var inVal) ? inVal : null;
+    int? cachedTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_CACHED_INPUT_TOKENS"), out var cachedVal) ? cachedVal : null;
+    int? outputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_OUTPUT_TOKENS"), out var outVal) ? outVal : null;
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    var reconciled = await scope.ServiceProvider.GetRequiredService<IAssistenteMonthlyLimitService>()
+        .ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default);
+    Console.WriteLine($"Reserva {reconciled.ReservationId} reconciliada para {reconciled.Status}.");
+    return;
+}
+if (args.Contains("recover-orphan-ai-reservation", StringComparer.OrdinalIgnoreCase))
+{
+    var resText = Environment.GetEnvironmentVariable("AI_RESERVATION_ID");
+    var actionText = Environment.GetEnvironmentVariable("AI_ORPHAN_ACTION");
+    var drainedText = Environment.GetEnvironmentVariable("AI_CONFIRM_WORKERS_DRAINED");
+    var drainEvidence = Environment.GetEnvironmentVariable("AI_DRAIN_EVIDENCE");
+    var updatedByText = Environment.GetEnvironmentVariable("AI_OPERATION_UPDATED_BY_ID");
+    var reason = Environment.GetEnvironmentVariable("AI_OPERATION_REASON");
+    if (!Guid.TryParse(resText, out var reservationId) ||
+        string.IsNullOrWhiteSpace(actionText) ||
+        !bool.TryParse(drainedText, out var confirmWorkersDrained) ||
+        !confirmWorkersDrained ||
+        string.IsNullOrWhiteSpace(drainEvidence) ||
+        !Guid.TryParse(updatedByText, out var operatorUserId) ||
+        string.IsNullOrWhiteSpace(reason))
+        throw new InvalidOperationException(
+            "Informe AI_RESERVATION_ID, AI_ORPHAN_ACTION (mark-indeterminate|settle|release), AI_CONFIRM_WORKERS_DRAINED=true, AI_DRAIN_EVIDENCE, AI_OPERATION_UPDATED_BY_ID e AI_OPERATION_REASON válidos.");
+
+    var action = actionText.Trim().ToLowerInvariant() switch
+    {
+        "mark-indeterminate" => AssistenteOrphanRecoveryAction.MarkIndeterminate,
+        "settle" => AssistenteOrphanRecoveryAction.Settle,
+        "release" => AssistenteOrphanRecoveryAction.Release,
+        _ => throw new InvalidOperationException("AI_ORPHAN_ACTION deve ser 'mark-indeterminate', 'settle' ou 'release'.")
+    };
+
+    int? inputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_INPUT_TOKENS"), out var inVal) ? inVal : null;
+    int? cachedTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_CACHED_INPUT_TOKENS"), out var cachedVal) ? cachedVal : null;
+    int? outputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_OUTPUT_TOKENS"), out var outVal) ? outVal : null;
+
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    var recovered = await scope.ServiceProvider.GetRequiredService<IAssistenteMonthlyLimitService>()
+        .RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default);
+    Console.WriteLine($"Reserva órfã {recovered.ReservationId} recuperada para {recovered.Status}.");
     return;
 }
 

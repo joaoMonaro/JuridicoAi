@@ -18,7 +18,9 @@ até 2 s, passando novamente pela admissão, sem esperar outra janela inteira de
 60 s. A admissão local não desconta cota em tentativas negadas. Eventos técnicos
 6401–6403 permitem separar etapas; não alteram DTOs/rotas nem o tratamento de
 chamada externa incerta. Ver [M01](../evidencias/m01-latencia-local-2026-11-14.md).
-Coordenação distribuída e monitoramento operacional completo seguem pendentes.
+Coordenação distribuída das cotas de frequência/concorrência e monitoramento
+operacional completo seguem pendentes. A coordenação financeira distribuída
+foi implementada em P03, conforme a atualização de 2026-11-18 abaixo.
 
 - [Controllers](../../../../src/JuridicoAI.Api/src/Controllers/Assistente/).
 - [DTOs de conversa, propostas, recibos e geração](../../../../src/JuridicoAI.Api/src/Application/DTOs/AssistenteWorkspaceDtos.cs).
@@ -40,6 +42,7 @@ Peça/Caso e capacidades. Prefixo `/assistente/v2`, exceto onde indicado:
 | Método/rota | Contrato implementado |
 |---|---|
 | `GET /assistente/capacidades` | Capacidades e limites; não existe uma segunda rota `/assistente/v2/capacidades` |
+| `GET /assistente/limite-mensal` | Consumo e reservas em andamento do mês calendário UTC da organização autenticada (somente percentuais e estado, sem valores monetários) |
 | `GET /assistente/transparencia` | Aviso versionado e estado de aceite do titular |
 | `POST /assistente/transparencia/confirmacoes` | Confirma a versão informada |
 | `POST /pecas/{pecaId}/conversa` | Retorna 200 com a conversa própria, criada ou recuperada |
@@ -172,6 +175,8 @@ Os nomes e separações abaixo diferem da projeção inicial da especificação 
 | `ai_document_analyses`, `ai_document_analysis_batches` | Jobs de análise, lotes e checkpoints |
 | `ai_generations`, `ai_generation_steps` | Jobs gerais e checkpoints/chamadas de geração |
 | `ai_usage_ledger` | Consumo técnico por chamada, sem conteúdo jurídico |
+| `ai_organization_monthly_limits`, `ai_monthly_accounts` | Overrides persistidos de limite mensal e contas agregadas por organização e mês UTC |
+| `ai_usage_reservations`, `ai_financial_audit_logs` | Reservas por chamada física (com tarifas congeladas e estado indeterminado) e trilha de auditoria operacional |
 | `personal_history_sessions`, `ai_deletion_requests` | Sessões pessoais e protocolos/trabalho de exclusão |
 
 Não foram criadas as tabelas genéricas `ai_events`, `ai_jobs`, `ai_executions`,
@@ -208,13 +213,26 @@ sem configurar automaticamente o modelo do ambiente do produto.
 | `GenerationMaxDocumentCharacters` | 120.000 caracteres JSON para o corpo montado; não garante caber no contexto seguinte |
 | `MaxFileBytes` / `MaxPages` / `MaxPixels` | 20 MiB / 100 páginas / 25 milhões de pixels |
 | `MaxAttachments` / `MaxConversationBytes` | 50 anexos / 500 MiB |
+| `DefaultMonthlyLimitUsd` | `5.0` (configuração operacional inicial por organização/mês UTC; override via CLI `set-ai-monthly-limit`) |
+| `AllowSimulatedWithoutFinancialControl` | `false` (opt-out explícito apenas fora de produção para testes/fakes simulados; proibido em produção) |
 
 Opções de IA sem prefixo na tabela pertencem a `AssistenteIa`; limites de
 arquivo/páginas/pixels/anexos pertencem a `AssistenteDocumentos`. Preços para o
-ledger são configuráveis. Isso não implementa bloqueio financeiro agregado de
-produção. Defaults iniciais diferentes, como mensagem de 20 mil caracteres,
-HTTP de 1 MiB, lease de 60 s ou retry pago automático, não descrevem o código atual.
+ledger e controle mensal (`InputCostPerMillionTokensUsd`,
+`CachedInputCostPerMillionTokensUsd`, `OutputCostPerMillionTokensUsd`,
+`PricingVersion`) continuam configuráveis sem tarifas inventadas; quando ausentes
+ou inválidos em produção/controle ativo, bloqueiam chamadas ao provedor sem
+expor detalhes financeiros. Reservas `Indeterminate` permanecem retidas no
+período de origem até reconciliação operacional auditada via CLI
+`reconcile-ai-reservation`, e reservas órfãs em `Reserved` exigem recuperação
+explícita via CLI `recover-orphan-ai-reservation` com confirmação de workers
+drenados (`AI_CONFIRM_WORKERS_DRAINED=true`) e evidência operacional. Defaults
+iniciais diferentes, como mensagem de
+20 mil caracteres, HTTP de 1 MiB, lease de 60 s ou retry pago automático, não
+descrevem o código atual.
 
-P03–P08 do TODO continuam abertos. A revisão interna por seções e os checks da
+P04–P08 do TODO continuam abertos (em P03, implementação e validação em código/PostgreSQL
+foram concluídas; tarifas reais do modelo e limites do ambiente continuam como
+configuração operacional de deploy). A revisão interna por seções e os checks da
 rodada reduzida não certificam qualidade jurídica, acessibilidade, exportação ou
 preparação operacional completa do piloto.

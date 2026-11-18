@@ -21,6 +21,11 @@ public sealed class AssistenteController(
     public async Task<ActionResult<AssistenteCapacidadesDto>> ObterCapacidades(CancellationToken cancellationToken) =>
         Ok(await service.ObterCapacidadesAsync(cancellationToken));
 
+    [HttpGet("assistente/limite-mensal")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<AssistenteLimiteMensalDto>> ObterLimiteMensal(CancellationToken cancellationToken) =>
+        Ok(await service.ObterLimiteMensalAsync(cancellationToken));
+
     [HttpGet("assistente/transparencia")]
     public async Task<ActionResult<AssistenteTransparenciaDto>> ObterTransparencia(
         CancellationToken cancellationToken) =>

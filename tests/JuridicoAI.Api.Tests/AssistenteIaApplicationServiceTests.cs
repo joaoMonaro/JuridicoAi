@@ -463,6 +463,7 @@ public sealed class AssistenteIaApplicationServiceTests
             new AllowAllTransparencyService(),
             usageLimiter,
             usageRecorder,
+            new SimulatedMonthlyLimitStub(),
             new CorrelationContextStub(),
             new TestOptionsMonitor<AssistenteIaSettings>(settings),
             logger);

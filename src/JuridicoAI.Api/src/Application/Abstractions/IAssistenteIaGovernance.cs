@@ -101,7 +101,10 @@ public sealed record AssistenteUsageRecord(
     int? OutputTokens,
     string Status,
     string? ErrorCode,
-    long DurationMs, bool RequirePersistence = false);
+    long DurationMs,
+    bool RequirePersistence = false,
+    decimal? FrozenEstimatedCostUsd = null,
+    string? FrozenPricingVersion = null);
 
 public interface IAssistenteUsageRecorder
 {

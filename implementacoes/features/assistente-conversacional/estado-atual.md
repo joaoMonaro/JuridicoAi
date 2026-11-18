@@ -23,6 +23,20 @@ backend passou com **301 testes aprovados e 1 de OCR ignorado**; frontend mantev
 134 unitários, lint/build e seis E2Es focados aprovados. Chaves locais antigas
 da flag, inclusive em `false`, deixam de bloquear o fluxo conversacional.
 
+Atualização em **2026-11-18 (P03):** implementado o controle financeiro mensal
+por organização (mês calendário UTC, configuração inicial operacional de US$ 5,00
+em `AssistenteIa:DefaultMonthlyLimitUsd`, ainda não implantada em ambiente ativo),
+com reserva atômica serializada em PostgreSQL por chamada física, liquidação pelo
+`usage` retornado, retenção de estado `Indeterminate` até reconciliação auditada via
+CLI, recuperação explícita de reservas `Reserved` órfãs (`recover-orphan-ai-reservation`),
+bloqueio por divergência de modelo congelado, endpoint `GET /assistente/limite-mensal`
+(somente percentuais) e exibição reativa no painel do editor + contrato E2E. Backend
+validado com **321 testes aprovados e 1 de OCR ignorado** em PostgreSQL descartável
+(sem chamadas pagas ao provedor); frontend validado com **148 testes unitários**, lint,
+build e **58 testes E2E do assistente** aprovados (specs pré-existentes P07 fora do
+escopo mantêm pendência própria). Ver
+[evidência P03](evidencias/p03-limite-mensal-2026-11-18.md).
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com
@@ -70,6 +84,7 @@ resultados e limitações na data de cada etapa.
 | Geração durável | Pedido do chat v2 persistido antes da geração, worker com leases/fence, progresso, reconexão e retomada explícita. Desconectar o chat não cancela o trabalho. | [Geração durável](evidencias/e2-e3-geracao-duravel-2026-11-12.md) |
 | Minutas por seções | Planejamento, geração e revisão de seções com checkpoints. Uma proposta integral é publicada após as verificações, sem expor rascunho parcial como aprovável nem exigir “continue”. | [Geração por seções](evidencias/e2-e3-geracao-duravel-2026-11-12.md) |
 | Consumo técnico | Reserva/ledger por chamada física, somatório por execução e limites de tokens, chamadas e duração. Chamada de resultado indeterminado não é repetida automaticamente. | [Geração durável](evidencias/e2-e3-geracao-duravel-2026-11-12.md) |
+| Limite mensal (P03) | Conta mensal UTC por organização (configuração inicial US$ 5,00; override persistido opcional), reserva atômica por chamada física, liquidação pelo `usage`, retenção de indeterminadas, CLI auditado e percentuais no painel. Tarifas de deploy seguem sem valores presumidos. | [Controle financeiro P03](evidencias/p03-limite-mensal-2026-11-18.md) |
 | Histórico pessoal | Sessão separada, leitura do próprio histórico e download de anexos privados mesmo após perder vínculo organizacional, com conta ativa. Sem acesso ao Caso/Peça atuais, geração ou aplicação. | [Histórico pessoal](evidencias/e1-historico-pessoal-exclusao-2026-11-12.md), [frontend](../../../../JuridicoAi-frontend/docs/assistant-personal-history.md) |
 | Exclusão autorizada | Confirmação explícita, protocolo idempotente, bloqueio imediato da conversa, cancelamento/fence e worker de expurgo do ambiente ativo. Preserva texto aprovado na Peça e arquivos do Caso. Não há expiração automática do chat. | [Exclusão](evidencias/e1-historico-pessoal-exclusao-2026-11-12.md) |
 | Avaliação | Suíte conversacional com sete cenários/nove interações fictícias e runner com reserva de custo. Recorte de quatro cenários/seis interações executado com GPT-6.1 Terra: checks técnicos aprovados; avaliação ampla e revisão jurídica pendentes. | [Suíte](../../../avaliacoes/assistente-conversacional/README.md), [preflight](../../../avaliacoes/assistente-conversacional/preflight-2026-11-12.md) |
@@ -125,9 +140,11 @@ homologa o novo fluxo conversacional.
 - O pipeline OCR existe, mas permanece desativado e sem calibração aprovada.
   Imagens e regiões digitalizadas continuam sinalizadas como não lidas.
 - Há limites técnicos por execução, incluindo até 12 chamadas físicas/180 mil
-  tokens na geração durável. Isso não implementa teto financeiro distribuído de
-  produção nem garante geração de qualquer tamanho. Revisão interna da minuta
-  não certifica mérito jurídico ou veracidade de suas fontes.
+  tokens na geração durável. O controle financeiro mensal de P03 complementa
+  esses limites com reservas coordenadas no PostgreSQL; as tarifas do modelo
+  precisam ser configuradas para o ambiente. Os limites não garantem geração de
+  qualquer tamanho. Revisão interna da minuta não certifica mérito jurídico ou
+  veracidade de suas fontes.
 - Exclusão concluída informa `RemovidaDoAmbienteAtivo`. Não há comprovação de
   expurgo dos backups; `EliminadaDasCopias` permanece falso.
 
@@ -135,14 +152,15 @@ homologa o novo fluxo conversacional.
 
 Os identificadores abaixo são compartilhados com o TODO e o plano. Há trabalho
 de código, avaliação, configuração e operação; cada tipo tem conclusão própria.
-Valores de orçamento, retenção, alertas e critérios do piloto ainda precisam ser
+O limite mensal inicial foi definido em US$ 5,00 por organização. Tarifas do
+modelo, retenção, alertas operacionais e critérios do piloto ainda precisam ser
 fechados, sem tratar propostas do desenho como SLAs aprovados.
 
 | ID | Ponto restante | Natureza e condição de conclusão |
 |---|---|---|
 | P01 | Completar avaliação conversacional real | **Avaliação.** Recorte inicial concluído: quatro cenários/seis interações, GPT-6.1 Terra, US$ 0,04549805. Restam CONV-002/003/004. A comparação real de M01 foi concluída; política de espera restante está em M03. Definir orçamento adicional e credencial temporária para nova rodada; registrar/corrigir achados. |
 | P02 | Homologar qualidade jurídica e fidelidade às fontes | **Revisão humana.** Revisar os artefatos reais de P01 com a rubrica, conferir fatos/citações e aprovar ou registrar limitações. Aprovação de checks automáticos não encerra esta etapa. |
-| P03 | Completar controle financeiro de produção | **Implementação + configuração.** Definir preços e limites financeiros do piloto, reserva/coordenação de consumo agregado entre instâncias e tratamento visível ao atingir limites ou haver custo incerto. O proxy de orçamento da avaliação não substitui esse controle do produto. |
+| P03 | Completar controle financeiro de produção | **Código validado; configuração no deploy.** Controle mensal UTC implementado com configuração inicial de US$ 5,00 (ainda não implantada) e testes reais em PostgreSQL/frontend. Falta apenas definir as tarifas reais do modelo e overrides de produção no deploy. |
 | P04 | Preparar monitoramento operacional | **Instrumentação + operação.** Fechar métricas, alertas e rotina de resposta para custo, falhas, jobs sem progresso, leases e exclusões pendentes. Usar metadados técnicos, sem conteúdo jurídico ou credenciais nos logs. |
 | P05 | Proteger exclusões após restauração | **Implementação + infraestrutura + ensaio.** Provisionar registro mínimo externo de autorizações, definir retenção e automatizar reaplicação das exclusões. Ensaiar restauração de banco/arquivos isolada e comprovar ausência dos chats excluídos antes de liberar tráfego. [Procedimento](especificacoes/06-operacao-exclusao-restauracao.md). |
 | P06 | Preparar ativação controlada do v2 | **Implementação + validação.** Completar gate por organização separado das flags operacionais e conferir seleção v1/v2, permissões e jornadas multiusuário nas condições do piloto. Validar com modelo real a integração já exercitada por simulação. |
@@ -157,18 +175,22 @@ amplos de P07 não devem reaparecer como ausência dessas implementações.
 
 ## Próxima etapa
 
-O próximo desenvolvimento é **P03 — controle financeiro de produção**. O recorte
-local de M01 está implementado/testado: reagendamento e admissão corrigidos,
-medições por etapa disponíveis. A comparação real também foi concluída: 22,697 s
-na consulta, ante 63,941 s. A espera remanescente por cota está em M03; esse ganho
-observado não foi inferido da prova sintética nem configura SLA.
+O código e os testes de **P03 — controle financeiro de produção** foram
+implementados e validados (configuração inicial US$ 5,00; tarifas reais ainda
+pendentes de definição operacional no deploy). Os próximos desenvolvimentos na
+sequência são **P04–P08**. O recorte local de M01 está implementado/testado:
+reagendamento e admissão corrigidos, medições por etapa disponíveis. A comparação
+real também foi concluída: 22,697 s na consulta, ante 63,941 s. A espera
+remanescente por cota está em M03; esse ganho observado não foi inferido da
+prova sintética nem configura SLA.
 
 Revisar os resultados reais com a rubrica (**P02**). A primeira rodada de P01 já está
 concluída no [recorte reduzido](../../../avaliacoes/assistente-conversacional/rodada-1usd.md):
 quatro cenários/seis interações, abaixo do teto total de US$ 1,00. Os três cenários
 adiados permanecem pendentes e exigem orçamento adicional definido para execução.
 
-P03–P08 continuam como condições para liberar o piloto. M01 está concluído no
+Configuração operacional de P03 no deploy e frentes P04–P08 continuam como
+condições para liberar o piloto (não homologado). M01 está concluído no
 recorte de latência; M03 acompanha a política de cotas. M02 registra a correção concluída
 na preparação do teste de isolamento. P09 não bloqueia a
 continuidade do escopo ativo de documentos nativos. A chave foi temporária e não

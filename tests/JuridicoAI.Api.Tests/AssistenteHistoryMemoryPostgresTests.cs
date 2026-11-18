@@ -253,7 +253,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var repository = new AssistenteWorkspaceRepository(context); var pieces = new PecaRepository(context);
         var auth = new TestAuthContext(database.OrgId, user ?? database.UserId); var settings = new Monitor(database.Settings);
         var history = new AssistenteHistoryService(context, repository, pieces, auth, database.Access, new Transparency(), settings, docs);
-        return new(repository, pieces, auth, database.Access, new Transparency(), settings, docs, history);
+        return new(repository, pieces, auth, database.Access, new Transparency(), database.MonthlyLimit(context), settings, docs, history);
     }
     private static CriarSolicitacaoAssistenteRequest Free(string text) => ChatRequest(text) with { InteracaoAutomatica = true };
     private static string Summary(long sequence, string quote, string category = "FatoInformado") => JsonSerializer.Serialize(new

@@ -20,6 +20,7 @@ public sealed record AssistenteAnaliseRegistro(string Categoria, string Texto, I
 
 public sealed class AssistenteDocumentAnalysisService(JuridicoAiDbContext db, IAssistenteWorkspaceRepository repository,
     IPecaRepository pecas, IAuthContext auth, IAssistenteFeatureAccess features, IAssistenteTransparencyService transparency,
+    IAssistenteMonthlyLimitService monthlyLimit,
     AssistenteDocumentService documents, IOptions<AssistenteDocumentSettings> options, IOptionsMonitor<AssistenteIaSettings> ai,
     AssistenteBackgroundIdentity? background = null, ICorrelationContext? correlation = null, AssistenteGenerationService? generations = null)
 {
@@ -161,6 +162,7 @@ public sealed class AssistenteDocumentAnalysisService(JuridicoAiDbContext db, IA
             if (job.Estado != "Interrompida" || job.PrazoEm <= DateTime.UtcNow) throw Changed("AI_ANALYSIS_NOT_RESUMABLE");
             job.LeaseToken = null;
             await ValidateAsync(job, token, lockSources: true);
+            await monthlyLimit.ValidarPreCondicaoSolicitacaoAsync(auth.OrganizationId, token);
             var budget = await UsedBudgetAsync(job, token);
             if (budget.Calls >= options.Value.MaxAnalysisCalls || budget.Tokens >= options.Value.MaxAnalysisTotalTokens) throw Changed("AI_ANALYSIS_LIMIT");
             var response = await repository.ObterMensagemAsync(conversation, job.RespostaId, token) ?? throw Missing();

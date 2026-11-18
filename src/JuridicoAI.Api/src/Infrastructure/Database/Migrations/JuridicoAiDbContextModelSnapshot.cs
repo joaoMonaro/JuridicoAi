@@ -84,6 +84,138 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiFinancialAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("action");
+
+                    b.Property<Guid>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal?>("NewLimitUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("new_limit_usd");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal?>("PreviousLimitUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("previous_limit_usd");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<Guid?>("ReservationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reservation_id");
+
+                    b.Property<decimal?>("SettledUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("settled_usd");
+
+                    b.HasKey("Id")
+                        .HasName("ai_financial_audit_logs_pkey");
+
+                    b.HasIndex("ActorUserId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.HasIndex("OrganizationId", "CreatedAt")
+                        .HasDatabaseName("ix_ai_financial_audit_org_created_at");
+
+                    b.ToTable("ai_financial_audit_logs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_financial_audit_action", "action IN ('SetMonthlyLimit', 'ReconcileSettle', 'ReconcileRelease', 'MarkIndeterminate')");
+
+                            t.HasCheckConstraint("ck_ai_financial_audit_reason", "length(btrim(reason)) > 0");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiMonthlyAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("ConsumedUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("consumed_usd");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<decimal>("LimitUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("limit_usd");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<int>("PeriodMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_month");
+
+                    b.Property<int>("PeriodYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_year");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("reserved_usd");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("ai_monthly_accounts_pkey");
+
+                    b.HasAlternateKey("Id", "OrganizationId")
+                        .HasName("ak_ai_monthly_accounts_id_org");
+
+                    b.HasIndex("OrganizationId", "PeriodYear", "PeriodMonth")
+                        .IsUnique()
+                        .HasDatabaseName("uq_ai_monthly_accounts_org_period");
+
+                    b.ToTable("ai_monthly_accounts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_monthly_accounts_consumed", "consumed_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_monthly_accounts_limit", "limit_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_monthly_accounts_month", "period_month >= 1 AND period_month <= 12");
+
+                            t.HasCheckConstraint("ck_ai_monthly_accounts_reserved", "reserved_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_monthly_accounts_year", "period_year >= 2020 AND period_year <= 2100");
+                        });
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOperationalControl", b =>
                 {
                     b.Property<string>("Feature")
@@ -117,6 +249,44 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.ToTable("ai_operational_controls", null, t =>
                         {
                             t.HasCheckConstraint("ck_ai_operational_controls_feature", "feature IN ('AI_ENABLED')");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOrganizationMonthlyLimit", b =>
+                {
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal>("MonthlyLimitUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("monthly_limit_usd");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_id");
+
+                    b.HasKey("OrganizationId")
+                        .HasName("ai_organization_monthly_limits_pkey");
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ai_organization_monthly_limits", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_org_monthly_limits_amount", "monthly_limit_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_org_monthly_limits_reason", "length(btrim(reason)) > 0");
                         });
                 });
 
@@ -289,6 +459,187 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                             t.HasCheckConstraint("ck_ai_usage_cost", "estimated_cost_usd IS NULL OR estimated_cost_usd >= 0");
 
                             t.HasCheckConstraint("ck_ai_usage_duration", "duration_ms >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<int?>("ActualCachedInputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("actual_cached_input_tokens");
+
+                    b.Property<int?>("ActualInputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("actual_input_tokens");
+
+                    b.Property<int?>("ActualOutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("actual_output_tokens");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("attempt_count");
+
+                    b.Property<decimal>("CachedInputCostPerMillionUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("cached_input_cost_per_million_usd");
+
+                    b.Property<Guid>("ClientRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("client_request_id");
+
+                    b.Property<Guid>("CorrelationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("ErrorCode")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("error_code");
+
+                    b.Property<int>("EstimatedInputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_input_tokens");
+
+                    b.Property<decimal>("InputCostPerMillionUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("input_cost_per_million_usd");
+
+                    b.Property<int>("MaxOutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_output_tokens");
+
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("model");
+
+                    b.Property<string>("OperationType")
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("operation_type");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<decimal>("OutputCostPerMillionUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("output_cost_per_million_usd");
+
+                    b.Property<int>("PeriodMonth")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_month");
+
+                    b.Property<int>("PeriodYear")
+                        .HasColumnType("integer")
+                        .HasColumnName("period_year");
+
+                    b.Property<string>("PricingVersion")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("pricing_version");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("provider");
+
+                    b.Property<Guid?>("ReconciledById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("reconciled_by_id");
+
+                    b.Property<string>("ReconciliationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("reconciliation_reason");
+
+                    b.Property<decimal>("ReservedUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("reserved_usd");
+
+                    b.Property<DateTime?>("SettledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("settled_at");
+
+                    b.Property<decimal?>("SettledUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("settled_usd");
+
+                    b.Property<Guid>("SolicitacaoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitacao_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("ai_usage_reservations_pkey");
+
+                    b.HasIndex("ReconciledById");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("AccountId", "OrganizationId");
+
+                    b.HasIndex("SolicitacaoId", "AttemptCount")
+                        .IsUnique()
+                        .HasDatabaseName("uq_ai_usage_reservations_solicitacao_attempt");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_ai_usage_reservations_status_created_at");
+
+                    b.HasIndex("OrganizationId", "PeriodYear", "PeriodMonth", "Status")
+                        .HasDatabaseName("ix_ai_usage_reservations_org_period_status");
+
+                    b.ToTable("ai_usage_reservations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_usage_reservations_attempt", "attempt_count > 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_month", "period_month >= 1 AND period_month <= 12");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_prices", "input_cost_per_million_usd >= 0 AND cached_input_cost_per_million_usd >= 0 AND output_cost_per_million_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_reserved", "reserved_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_settled", "settled_usd IS NULL OR settled_usd >= 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_status", "status IN ('Reserved', 'Settled', 'Released', 'Indeterminate')");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_tokens", "estimated_input_tokens >= 0 AND max_output_tokens >= 0");
+
+                            t.HasCheckConstraint("ck_ai_usage_reservations_year", "period_year >= 2020 AND period_year <= 2100");
                         });
                 });
 
@@ -2220,8 +2571,52 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiFinancialAuditLog", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AiUsageReservation", null)
+                        .WithMany()
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiMonthlyAccount", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOperationalControl", b =>
                 {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiOrganizationMonthlyLimit", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UpdatedById")
@@ -2257,6 +2652,33 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AiUsageReservation", b =>
+                {
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.Organization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReconciledById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("JuridicoAI.Api.Domain.Entities.AiMonthlyAccount", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId", "OrganizationId")
+                        .HasPrincipalKey("Id", "OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

@@ -456,7 +456,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         public Guid OrgId { get; } = Guid.NewGuid();
         public Guid UserId { get; } = Guid.NewGuid();
         public Guid PecaId { get; } = Guid.NewGuid();
-        public AssistenteIaSettings Settings { get; } = new() { ReviewV2Enabled = true, ConversationV2Enabled = true };
+        public AssistenteIaSettings Settings { get; } = new() { ReviewV2Enabled = true, ConversationV2Enabled = true, AllowSimulatedWithoutFinancialControl = true };
         public Features Access { get; } = new();
         public JuridicoAiDbContext Context(IInterceptor? interceptor = null)
         {
@@ -464,12 +464,14 @@ public sealed partial class AssistenteWorkspacePostgresTests
             if (interceptor is not null) options.AddInterceptors(interceptor);
             return new(options.Options);
         }
+        public IAssistenteMonthlyLimitService MonthlyLimit(JuridicoAiDbContext context, AssistenteIaSettings? overrideSettings = null, TimeProvider? timeProvider = null, string environment = "Testing") =>
+            new AssistenteMonthlyLimitService(context, new Monitor(overrideSettings ?? Settings), new TestHostEnvironment(environment), Microsoft.Extensions.Logging.Abstractions.NullLogger<AssistenteMonthlyLimitService>.Instance, timeProvider);
         public AssistenteWorkspaceService Service(JuridicoAiDbContext context, Guid? user = null) =>
             new(new AssistenteWorkspaceRepository(context), new PecaRepository(context), new TestAuthContext(OrgId, user ?? UserId),
                 Access, new Transparency(), new Monitor(Settings), new AssistentePatchCompiler());
         public AssistenteChatService Chat(JuridicoAiDbContext context, Guid? user = null) =>
             new(new AssistenteWorkspaceRepository(context), new PecaRepository(context), new TestAuthContext(OrgId, user ?? UserId),
-                Access, new Transparency(), new Monitor(Settings));
+                Access, new Transparency(), MonthlyLimit(context), new Monitor(Settings));
         public async Task<AssistentePropostaDto> Prepare()
         {
             await using var ctx = Context();

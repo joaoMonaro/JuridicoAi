@@ -36,7 +36,7 @@ public sealed class AssistenteGenerationWorker(IServiceScopeFactory scopes, IOpt
 }
 public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, AssistenteGenerationService service, AssistenteChatService chat,
     AssistenteIaApplicationService generator, IAssistenteIaProvider provider, IAssistenteTokenCounter counter, IAssistenteFeatureAccess features,
-    IAssistenteUsageRecorder usage, IAssistenteUsageLimiter limiter, IOptionsMonitor<AssistenteIaSettings> options,
+    IAssistenteUsageRecorder usage, IAssistenteUsageLimiter limiter, IAssistenteMonthlyLimitService monthlyLimit, IOptionsMonitor<AssistenteIaSettings> options,
     ILogger<AssistenteGenerationProcessor>? logger = null)
 {
     private AssistenteIaSettings Settings => options.CurrentValue;
@@ -307,11 +307,14 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct); timeout.CancelAfter(TimeSpan.FromSeconds(Settings.TimeoutSeconds));
         await using var slot = await limiter.AdquirirAsync(job.OrganizationId, job.UserId, timeout.Token);
         await service.ValidateAsync(job, timeout.Token);
-        var request = new AssistenteIaProviderRequest(instructions, input, AssistenteModo.Perguntar, [AssistenteOperacao.ResponderNoPainel], Settings.MaxOutputTokens, true, false, tools);
+        var expectedModel = Settings.Model;
+        var request = new AssistenteIaProviderRequest(instructions, input, AssistenteModo.Perguntar, [AssistenteOperacao.ResponderNoPainel], Settings.MaxOutputTokens, true, false, tools, ExpectedModel: expectedModel);
         if (input.Length > Settings.MaxTotalContextCharacters) throw Changed("AI_GENERATION_LIMIT");
         tools.InitialInputTokens = await counter.ContarTokensEntradaAsync(request, timeout.Token); tools.MaxInputTokens = Settings.MaxInputTokens;
-        tools.RecordCall = call => usage.RegistrarAsync(new(job.OrganizationId, job.UserId, job.PecaId, solicitation, job.ClientRequestId, job.CorrelationId, AssistenteModo.Perguntar, null,
-            Settings.Provider, call.Model, AssistenteGenerationService.Version, call.Ordinal, call.InputTokens, call.CachedInputTokens, call.OutputTokens, call.Status, call.ErrorCode, call.DurationMs, true), CancellationToken.None);
+        if (tools.InitialInputTokens.Value > Settings.MaxInputTokens) throw Changed("AI_GENERATION_LIMIT");
+        await monthlyLimit.ValidarDisponibilidadeAsync(job.OrganizationId, tools.InitialInputTokens.Value, Settings.MaxOutputTokens, timeout.Token);
+        AssistenteFinancialMeter.Attach(tools, monthlyLimit, usage, job.OrganizationId, job.UserId, job.PecaId, solicitation, job.ClientRequestId, job.CorrelationId,
+            AssistenteModo.Perguntar, Settings.Provider, expectedModel, AssistenteGenerationService.Version, type, requireDurablePersistence: true);
         AttachMeter(job, tools, solicitation, type);
         await provider.GerarAsync(request, timeout.Token);
         if (!done()) throw Changed("AI_GENERATION_LIMIT");
@@ -349,8 +352,17 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
         db.ChangeTracker.Clear(); await using var tx = await db.Database.BeginTransactionAsync(ct);
         var changed = await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id && j.LeaseToken == job.LeaseToken && j.Estado != "Cancelada" && j.Estado != "Concluida")
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, state).SetProperty(j => j.CodigoErro, code).SetProperty(j => j.LeaseAte, (DateTime?)null), ct);
-        if (changed == 1) await db.AssistenteMensagens.Where(m => m.Id == job.RespostaId && m.Estado != "Concluida").ExecuteUpdateAsync(s => s.SetProperty(m => m.Estado, state == "Interrompida" ? "Interrompida" : "Falhou")
-            .SetProperty(m => m.CodigoErro, code).SetProperty(m => m.Texto, "O processamento foi interrompido. O pedido e as partes concluídas permanecem salvos; nenhuma alteração foi aplicada."), ct);
+        if (changed == 1)
+        {
+            var messageText = code switch
+            {
+                "AI_MONTHLY_LIMIT_REACHED" => "Limite mensal atingido. O pedido e as partes concluídas permanecem salvos; nenhuma alteração foi aplicada.",
+                "AI_MONTHLY_LIMIT_INSUFFICIENT" => "Limite disponível insuficiente para esta operação. O pedido e as partes concluídas permanecem salvos; nenhuma alteração foi aplicada.",
+                _ => "O processamento foi interrompido. O pedido e as partes concluídas permanecem salvos; nenhuma alteração foi aplicada."
+            };
+            await db.AssistenteMensagens.Where(m => m.Id == job.RespostaId && m.Estado != "Concluida").ExecuteUpdateAsync(s => s.SetProperty(m => m.Estado, state == "Interrompida" ? "Interrompida" : "Falhou")
+                .SetProperty(m => m.CodigoErro, code).SetProperty(m => m.Texto, messageText), ct);
+        }
         await tx.CommitAsync(ct);
     }
     private static bool HasText(JsonElement node) =>

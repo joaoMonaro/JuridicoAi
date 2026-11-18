@@ -19,6 +19,7 @@ public sealed class AssistenteGenerationPlannedException : Exception;
 
 public sealed class AssistenteGenerationService(JuridicoAiDbContext db, IAssistenteWorkspaceRepository repository, IPecaRepository pieces,
     ICasoRepository cases, IAuthContext auth, IAssistenteFeatureAccess features, IAssistenteTransparencyService transparency,
+    IAssistenteMonthlyLimitService monthlyLimit,
     AssistenteDocumentService documents, IOptionsMonitor<AssistenteIaSettings> options, AssistenteBackgroundIdentity background,
     ICorrelationContext correlation, AssistenteHistoryService? history = null)
 {
@@ -174,6 +175,7 @@ public sealed class AssistenteGenerationService(JuridicoAiDbContext db, IAssiste
             {
                 if (job.Estado != "Interrompida") throw Changed("AI_GENERATION_NOT_RESUMABLE");
                 job.LeaseToken = null; await ValidateAsync(job, token);
+                await monthlyLimit.ValidarPreCondicaoSolicitacaoAsync(auth.OrganizationId, token);
                 if (await repository.ObterMensagemAtivaAsync(conversation, token) is not null) throw Changed("AI_CONVERSATION_BUSY");
                 var used = await BudgetAsync(job, token);
                 if (used.Calls >= options.CurrentValue.GenerationMaxCalls || used.Tokens >= options.CurrentValue.GenerationMaxTotalTokens) throw Changed("AI_GENERATION_LIMIT");

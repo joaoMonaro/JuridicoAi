@@ -28,6 +28,10 @@ public sealed class JuridicoAiDbContext(DbContextOptions<JuridicoAiDbContext> op
     public DbSet<AiFeatureChangeAudit> AiFeatureChangeAudit => Set<AiFeatureChangeAudit>();
     public DbSet<AiUsageLedgerEntry> AiUsageLedger => Set<AiUsageLedgerEntry>();
     public DbSet<AiTransparencyAcknowledgement> AiTransparencyAcknowledgements => Set<AiTransparencyAcknowledgement>();
+    public DbSet<AiOrganizationMonthlyLimit> AiOrganizationMonthlyLimits => Set<AiOrganizationMonthlyLimit>();
+    public DbSet<AiMonthlyAccount> AiMonthlyAccounts => Set<AiMonthlyAccount>();
+    public DbSet<AiUsageReservation> AiUsageReservations => Set<AiUsageReservation>();
+    public DbSet<AiFinancialAuditLog> AiFinancialAuditLogs => Set<AiFinancialAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JuridicoAiDbContext).Assembly);

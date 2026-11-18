@@ -38,6 +38,7 @@ public sealed class AssistenteIaApplicationService(
     IAssistenteTransparencyService transparencyService,
     IAssistenteUsageLimiter usageLimiter,
     IAssistenteUsageRecorder usageRecorder,
+    IAssistenteMonthlyLimitService monthlyLimit,
     ICorrelationContext correlationContext,
     IOptionsMonitor<AssistenteIaSettings> options,
     ILogger<AssistenteIaApplicationService> logger,
@@ -66,6 +67,9 @@ public sealed class AssistenteIaApplicationService(
             SuportaGeracaoDuravel: settings.DurableGenerationEnabled && settings.ConversationV2Enabled && settings.ReviewV2Enabled && snapshot.Habilitado);
     }
 
+    public Task<AssistenteLimiteMensalDto> ObterLimiteMensalAsync(CancellationToken cancellationToken) =>
+        monthlyLimit.ObterResumoAsync(authContext.OrganizationId, cancellationToken);
+
     public async Task<AssistenteIaExecucao> PrepararAsync(
         Guid pecaId,
         CriarSolicitacaoAssistenteRequest request,
@@ -78,6 +82,7 @@ public sealed class AssistenteIaApplicationService(
             throw Invalid("O fluxo de conversa solicitado não está disponível.");
         await featureAccess.ExigirModoAsync(authContext.OrganizationId, request.Modo, cancellationToken);
         await transparencyService.ExigirConfirmacaoAsync(cancellationToken);
+        await monthlyLimit.ValidarPreCondicaoSolicitacaoAsync(authContext.OrganizationId, cancellationToken);
 
         var peca = await pecaRepository.ObterPecaAsync(pecaId, authContext.OrganizationId, cancellationToken)
             ?? throw new AssistenteIaException(
@@ -161,7 +166,7 @@ public sealed class AssistenteIaApplicationService(
             input,
             request.Modo,
             operacoesPermitidas,
-            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta && ferramentasDocumentais?.OnlyPlanFullDraft != true, FerramentasDocumentais: ferramentasDocumentais);
+            Settings.MaxOutputTokens, Conversacional: conversaLivre, PodeGerarMinuta: podeGerarMinuta && ferramentasDocumentais?.OnlyPlanFullDraft != true, FerramentasDocumentais: ferramentasDocumentais, ExpectedModel: Settings.Model);
         var solicitationId = Guid.NewGuid();
         var startedAt = TimeProvider.System.GetTimestamp();
         var execution = new AssistenteIaExecucao(
@@ -192,11 +197,30 @@ public sealed class AssistenteIaApplicationService(
             {
                 ferramentasDocumentais.InitialInputTokens = inputTokens;
                 ferramentasDocumentais.MaxInputTokens = Settings.MaxInputTokens;
-                var currentExecution = execution;
-                ferramentasDocumentais.RecordCall = call => RecordProviderCallAsync(currentExecution, call);
+                AssistenteFinancialMeter.Attach(
+                    ferramentasDocumentais,
+                    monthlyLimit,
+                    usageRecorder,
+                    authContext.OrganizationId,
+                    authContext.UserId,
+                    pecaId,
+                    execution.SolicitacaoId,
+                    request.ClientRequestId,
+                    correlationId,
+                    request.Modo,
+                    Settings.Provider,
+                    Settings.Model,
+                    execution.PromptVersion,
+                    conversaLivre ? "Conversa" : request.Modo.ToString(),
+                    ferramentasDocumentais.RequireDurableUsage);
             }
             if (inputTokens > Settings.MaxInputTokens)
                 throw InputTooLarge("O contexto selecionado ultrapassa o limite de tokens permitido.");
+            await monthlyLimit.ValidarDisponibilidadeAsync(
+                authContext.OrganizationId,
+                inputTokens,
+                Settings.MaxOutputTokens,
+                timeout.Token);
 
             logger.LogInformation(
                 "Solicitação de IA preparada. SolicitacaoId={SolicitacaoId} ClientRequestId={ClientRequestId} OrganizationId={OrganizationId} UserId={UserId} PecaId={PecaId} Modo={Modo} Escopo={Escopo} VersaoCliente={VersaoCliente} VersaoServidor={VersaoServidor} PromptVersion={PromptVersion} EntradaTokens={EntradaTokens}",
@@ -216,8 +240,7 @@ public sealed class AssistenteIaApplicationService(
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
-                "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
+            await RecordPreGenerationFailureUsageAsync(execution, "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
             await FinalizarAsync(execution);
             throw;
         }
@@ -228,8 +251,7 @@ public sealed class AssistenteIaApplicationService(
                 execution.SolicitacaoId,
                 execution.OrganizationId,
                 execution.PecaId);
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
-                "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
+            await RecordPreGenerationFailureUsageAsync(execution, "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
             await FinalizarAsync(execution);
             throw new AssistenteIaException(
                 StatusCodes.Status504GatewayTimeout,
@@ -246,15 +268,19 @@ public sealed class AssistenteIaApplicationService(
                 execution.PecaId,
                 ex.Code,
                 ex.ProviderStatusCode);
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
-                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+            await RecordPreGenerationFailureUsageAsync(execution, "failed", ex.Code, ElapsedMilliseconds(startedAt));
             await FinalizarAsync(execution);
             throw MapProviderException(ex);
         }
         catch (AssistenteIaException ex)
         {
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
-                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+            logger.LogWarning(
+                "Solicitação de IA rejeitada na preparação. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} Code={Code}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId,
+                ex.Code);
+            await RecordPreGenerationFailureUsageAsync(execution, "failed", ex.Code, ElapsedMilliseconds(startedAt));
             await FinalizarAsync(execution);
             throw;
         }
@@ -266,8 +292,7 @@ public sealed class AssistenteIaApplicationService(
                 execution.OrganizationId,
                 execution.PecaId,
                 ex.GetType().Name);
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
-                "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
+            await RecordPreGenerationFailureUsageAsync(execution, "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
             await FinalizarAsync(execution);
             throw new AssistenteIaException(
                 StatusCodes.Status502BadGateway,
@@ -283,10 +308,83 @@ public sealed class AssistenteIaApplicationService(
     {
         var startedAt = execution.StartedAtTimestamp;
         AssistenteIaProviderResult? providerResult = null;
+        AssistenteFinancialReservation? singleReservation = null;
+        AssistenteCallSettlementOutcome? settlementOutcome = null;
+        var tracker = new AssistenteProviderTurnTracker();
+        var isSingleCall = execution.ProviderRequest.FerramentasDocumentais is null;
         try
         {
             using var timeout = CreateTimeout(cancellationToken, startedAt);
-            var result = providerResult = await provider.GerarAsync(execution.ProviderRequest, timeout.Token);
+            var providerRequest = execution.ProviderRequest;
+            if (isSingleCall)
+            {
+                singleReservation = await monthlyLimit.ReservarAsync(
+                    new AssistenteFinancialReserveRequest(
+                        execution.OrganizationId,
+                        execution.UserId,
+                        execution.SolicitacaoId,
+                        1,
+                        execution.ClientRequestId,
+                        execution.CorrelationId,
+                        execution.Modo.ToString(),
+                        execution.InputTokensContados ?? 0,
+                        execution.ProviderRequest.MaxOutputTokens),
+                    timeout.Token);
+                if (!singleReservation.IsBypassedSimulation &&
+                    !string.IsNullOrWhiteSpace(providerRequest.ExpectedModel) &&
+                    !string.Equals(singleReservation.Model, providerRequest.ExpectedModel, StringComparison.Ordinal))
+                {
+                    await monthlyLimit.LiberarAntesDoEnvioAsync(singleReservation, "AI_CONFIGURATION_DIVERGED", CancellationToken.None);
+                    settlementOutcome = new("Released", 0m, singleReservation.PricingVersion);
+                    throw new AssistenteIaException(
+                        StatusCodes.Status503ServiceUnavailable,
+                        "AI_CONFIGURATION_DIVERGED",
+                        "O assistente de IA está temporariamente indisponível.");
+                }
+                providerRequest = providerRequest with { TurnTracker = tracker };
+            }
+
+            var result = providerResult = await provider.GerarAsync(providerRequest, timeout.Token);
+
+            if (isSingleCall && singleReservation is not null)
+            {
+                if (result.EntradaTokens.HasValue && result.SaidaTokens.HasValue)
+                {
+                    settlementOutcome = await monthlyLimit.LiquidarAsync(
+                        singleReservation,
+                        result.EntradaTokens.Value,
+                        result.EntradaTokensEmCache,
+                        result.SaidaTokens.Value,
+                        null,
+                        CancellationToken.None);
+                }
+                else if (tracker.HasKnownUsage)
+                {
+                    settlementOutcome = await monthlyLimit.LiquidarAsync(
+                        singleReservation,
+                        tracker.InputTokens!.Value,
+                        tracker.CachedInputTokens,
+                        tracker.OutputTokens!.Value,
+                        null,
+                        CancellationToken.None);
+                }
+                else if (!singleReservation.IsBypassedSimulation)
+                {
+                    await monthlyLimit.MarcarIndeterminadaAsync(singleReservation, "AI_USAGE_MISSING", CancellationToken.None);
+                    settlementOutcome = new("Indeterminate", null, singleReservation.PricingVersion);
+                    throw ProviderOutputInvalid("O provedor de IA não informou o consumo desta chamada.");
+                }
+            }
+            else if (!isSingleCall &&
+                     execution.ProviderRequest.FerramentasDocumentais is { AttemptedCalls: 0, StoppedBeforeProviderCall: false } &&
+                     monthlyLimit.ControleFinanceiroAtivo)
+            {
+                throw new AssistenteIaException(
+                    StatusCodes.Status502BadGateway,
+                    "AI_FINANCIAL_CONTRACT_VIOLATION",
+                    "Não foi possível validar o controle de consumo desta operação.");
+            }
+
             ValidateProviderResult(result, execution.Modo, execution.ProviderRequest.OperacoesPermitidas);
             AssistenteCoberturaDocumentalDto? coverage = null;
             if (execution.ProviderRequest.FerramentasDocumentais is { HasDocumentTools: true } tools)
@@ -345,7 +443,10 @@ public sealed class AssistenteIaApplicationService(
                 result.SaidaTokens,
                 "succeeded",
                 null,
-                ElapsedMilliseconds(startedAt));
+                ElapsedMilliseconds(startedAt),
+                monthlyLimit.ControleFinanceiroAtivo,
+                settlementOutcome?.SettledUsd,
+                settlementOutcome?.PricingVersion);
 
             return new AssistenteSolicitacaoConcluidaDto(
                 suggestion,
@@ -357,7 +458,17 @@ public sealed class AssistenteIaApplicationService(
         catch (AssistenteAnalysisQueuedException) { throw; }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+            logger.LogInformation(
+                "Geração de IA cancelada. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId);
+            if (singleReservation is not null && settlementOutcome is null)
+                settlementOutcome = await FinalizeFailedSingleCallAsync(singleReservation, tracker, null, "AI_CANCELLED");
+            await RecordGerarFailureUsageAsync(execution, isSingleCall, singleReservation, settlementOutcome,
+                null, tracker.Model ?? Settings.Model,
+                tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
+                tracker.CachedInputTokens, tracker.OutputTokens,
                 "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
             throw;
         }
@@ -368,7 +479,12 @@ public sealed class AssistenteIaApplicationService(
                 execution.SolicitacaoId,
                 execution.OrganizationId,
                 execution.PecaId);
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+            if (singleReservation is not null && settlementOutcome is null)
+                settlementOutcome = await FinalizeFailedSingleCallAsync(singleReservation, tracker, null, "AI_PROVIDER_TIMEOUT");
+            await RecordGerarFailureUsageAsync(execution, isSingleCall, singleReservation, settlementOutcome,
+                null, tracker.Model ?? Settings.Model,
+                tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
+                tracker.CachedInputTokens, tracker.OutputTokens,
                 "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
             throw new AssistenteIaException(
                 StatusCodes.Status504GatewayTimeout,
@@ -385,28 +501,78 @@ public sealed class AssistenteIaApplicationService(
                 execution.PecaId,
                 ex.Code,
                 ex.ProviderStatusCode);
-            await RecordUsageAsync(execution, null, Settings.Model, execution.InputTokensContados, null, null,
+            if (singleReservation is not null && settlementOutcome is null)
+                settlementOutcome = await FinalizeFailedSingleCallAsync(singleReservation, tracker, ex, ex.Code);
+            await RecordGerarFailureUsageAsync(execution, isSingleCall, singleReservation, settlementOutcome,
+                null, ex.ResolvedModel ?? tracker.Model ?? Settings.Model,
+                ex.InputTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
+                ex.CachedInputTokens ?? tracker.CachedInputTokens,
+                ex.OutputTokens ?? tracker.OutputTokens,
                 "failed", ex.Code, ElapsedMilliseconds(startedAt));
             throw MapProviderException(ex);
         }
         catch (AssistenteIaException ex)
         {
-            await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
-                providerResult?.EntradaTokens ?? execution.InputTokensContados,
-                providerResult?.EntradaTokensEmCache,
-                providerResult?.SaidaTokens,
+            if (ex.Code is "AI_USAGE_PERSISTENCE_FAILED" or "AI_FINANCIAL_CONTRACT_VIOLATION")
+                throw;
+            logger.LogWarning(
+                "Falha controlada na geração de IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} Code={Code}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId,
+                ex.Code);
+            if (singleReservation is not null && settlementOutcome is null)
+                settlementOutcome = await FinalizeFailedSingleCallAsync(singleReservation, tracker, null, ex.Code);
+            await RecordGerarFailureUsageAsync(execution, isSingleCall, singleReservation, settlementOutcome,
+                providerResult?.OperacaoSugerida, providerResult?.Modelo ?? tracker.Model ?? Settings.Model,
+                providerResult?.EntradaTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
+                providerResult?.EntradaTokensEmCache ?? tracker.CachedInputTokens,
+                providerResult?.SaidaTokens ?? tracker.OutputTokens,
                 "failed", ex.Code, ElapsedMilliseconds(startedAt));
             throw;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            await RecordUsageAsync(execution, providerResult?.OperacaoSugerida, providerResult?.Modelo ?? Settings.Model,
-                providerResult?.EntradaTokens ?? execution.InputTokensContados,
-                providerResult?.EntradaTokensEmCache,
-                providerResult?.SaidaTokens,
+            logger.LogError(
+                "Falha inesperada na geração de IA. SolicitacaoId={SolicitacaoId} OrganizationId={OrganizationId} PecaId={PecaId} ErrorType={ErrorType}",
+                execution.SolicitacaoId,
+                execution.OrganizationId,
+                execution.PecaId,
+                ex.GetType().Name);
+            if (singleReservation is not null && settlementOutcome is null)
+                settlementOutcome = await FinalizeFailedSingleCallAsync(singleReservation, tracker, null, "AI_PROVIDER_ERROR");
+            await RecordGerarFailureUsageAsync(execution, isSingleCall, singleReservation, settlementOutcome,
+                providerResult?.OperacaoSugerida, providerResult?.Modelo ?? tracker.Model ?? Settings.Model,
+                providerResult?.EntradaTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
+                providerResult?.EntradaTokensEmCache ?? tracker.CachedInputTokens,
+                providerResult?.SaidaTokens ?? tracker.OutputTokens,
                 "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
             throw;
         }
+    }
+
+    private async Task<AssistenteCallSettlementOutcome> FinalizeFailedSingleCallAsync(
+        AssistenteFinancialReservation reservation,
+        AssistenteProviderTurnTracker tracker,
+        AssistenteIaProviderException? providerException,
+        string errorCode)
+    {
+        var input = providerException?.InputTokens ?? tracker.InputTokens;
+        var cached = providerException?.CachedInputTokens ?? tracker.CachedInputTokens;
+        var output = providerException?.OutputTokens ?? tracker.OutputTokens;
+        if (input.HasValue && output.HasValue)
+            return await monthlyLimit.LiquidarAsync(reservation, input.Value, cached, output.Value, errorCode, CancellationToken.None);
+
+        var safePreSend = tracker.ProvenBeforeSend || tracker.SafeToRelease ||
+                          providerException is { Dispatched: false } or { SafeToRelease: true };
+        if (safePreSend)
+        {
+            await monthlyLimit.LiberarAntesDoEnvioAsync(reservation, errorCode, CancellationToken.None);
+            return new("Released", 0m, reservation.PricingVersion);
+        }
+
+        await monthlyLimit.MarcarIndeterminadaAsync(reservation, errorCode, CancellationToken.None);
+        return new("Indeterminate", null, reservation.PricingVersion);
     }
 
     public async ValueTask FinalizarAsync(AssistenteIaExecucao execution)
@@ -546,6 +712,7 @@ public sealed class AssistenteIaApplicationService(
         "AI_RATE_LIMITED" => new(StatusCodes.Status429TooManyRequests, ex.Code, "O limite de uso da IA foi atingido. Tente novamente mais tarde.", true),
         "AI_PROVIDER_TIMEOUT" => new(StatusCodes.Status504GatewayTimeout, ex.Code, "A IA demorou mais que o esperado. Tente novamente.", true),
         "AI_UNAVAILABLE" => new(StatusCodes.Status503ServiceUnavailable, ex.Code, "O provedor de IA está indisponível.", true),
+        "AI_CONFIGURATION_DIVERGED" => new(StatusCodes.Status503ServiceUnavailable, ex.Code, "O assistente de IA está temporariamente indisponível.", false),
         _ => new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", "Não foi possível gerar uma resposta válida.", ex.Retryable)
     };
 
@@ -564,7 +731,72 @@ public sealed class AssistenteIaApplicationService(
     private static AssistenteIaException ProviderOutputInvalid(string message) =>
         new(StatusCodes.Status502BadGateway, "AI_PROVIDER_ERROR", message);
 
-    private Task RecordUsageAsync(
+    private int? SimulatedInputFallback(AssistenteFinancialReservation? singleReservation, AssistenteIaExecucao execution) =>
+        !monthlyLimit.ControleFinanceiroAtivo || singleReservation?.IsBypassedSimulation == true
+            ? execution.InputTokensContados
+            : null;
+
+    private async Task RecordPreGenerationFailureUsageAsync(
+        AssistenteIaExecucao execution,
+        string status,
+        string errorCode,
+        long durationMs)
+    {
+        if (monthlyLimit.ControleFinanceiroAtivo)
+            return;
+
+        await RecordUsageAsync(
+            execution,
+            null,
+            Settings.Model,
+            execution.InputTokensContados,
+            null,
+            null,
+            status,
+            errorCode,
+            durationMs);
+    }
+
+    private async Task RecordGerarFailureUsageAsync(
+        AssistenteIaExecucao execution,
+        bool isSingleCall,
+        AssistenteFinancialReservation? singleReservation,
+        AssistenteCallSettlementOutcome? settlementOutcome,
+        AssistenteOperacao? operation,
+        string model,
+        int? inputTokens,
+        int? cachedInputTokens,
+        int? outputTokens,
+        string status,
+        string errorCode,
+        long durationMs)
+    {
+        if (isSingleCall)
+        {
+            if (singleReservation is null)
+                return;
+
+            if (!singleReservation.IsBypassedSimulation &&
+                string.Equals(settlementOutcome?.Status, "Released", StringComparison.Ordinal))
+                return;
+        }
+
+        await RecordUsageAsync(
+            execution,
+            operation,
+            model,
+            inputTokens,
+            cachedInputTokens,
+            outputTokens,
+            status,
+            errorCode,
+            durationMs,
+            monthlyLimit.ControleFinanceiroAtivo,
+            settlementOutcome?.SettledUsd,
+            settlementOutcome?.PricingVersion);
+    }
+
+    private async Task RecordUsageAsync(
         AssistenteIaExecucao execution,
         AssistenteOperacao? operation,
         string model,
@@ -573,32 +805,51 @@ public sealed class AssistenteIaApplicationService(
         int? outputTokens,
         string status,
         string? errorCode,
-        long durationMs) => execution.ProviderRequest.FerramentasDocumentais?.RecordedCalls > 0 ? Task.CompletedTask : usageRecorder.RegistrarAsync(new AssistenteUsageRecord(
-            execution.OrganizationId,
-            execution.UserId,
-            execution.PecaId,
-            execution.SolicitacaoId,
-            execution.ClientRequestId,
-            execution.CorrelationId,
-            execution.Modo,
-            operation,
-            Settings.Provider,
-            model,
-            execution.PromptVersion,
-            AttemptCount: 1,
-            inputTokens,
-            cachedInputTokens,
-            outputTokens,
-            status,
-            errorCode,
-            durationMs),
-        CancellationToken.None);
+        long durationMs,
+        bool requirePersistence = false,
+        decimal? frozenCostUsd = null,
+        string? frozenPricingVersion = null)
+    {
+        if (execution.ProviderRequest.FerramentasDocumentais is { } tools &&
+            (monthlyLimit.ControleFinanceiroAtivo || tools.AttemptedCalls > 0 || tools.StoppedBeforeProviderCall))
+            return;
 
-    private Task RecordProviderCallAsync(AssistenteIaExecucao execution, AssistenteProviderCall call) =>
-        usageRecorder.RegistrarAsync(new AssistenteUsageRecord(execution.OrganizationId, execution.UserId, execution.PecaId,
-            execution.SolicitacaoId, execution.ClientRequestId, execution.CorrelationId, execution.Modo, null,
-            Settings.Provider, call.Model, execution.PromptVersion, call.Ordinal, call.InputTokens, call.CachedInputTokens,
-            call.OutputTokens, call.Status, call.ErrorCode, call.DurationMs, execution.ProviderRequest.FerramentasDocumentais?.RequireDurableUsage == true), CancellationToken.None);
+        try
+        {
+            await usageRecorder.RegistrarAsync(new AssistenteUsageRecord(
+                    execution.OrganizationId,
+                    execution.UserId,
+                    execution.PecaId,
+                    execution.SolicitacaoId,
+                    execution.ClientRequestId,
+                    execution.CorrelationId,
+                    execution.Modo,
+                    operation,
+                    Settings.Provider,
+                    model,
+                    execution.PromptVersion,
+                    AttemptCount: 1,
+                    inputTokens,
+                    cachedInputTokens,
+                    outputTokens,
+                    status,
+                    errorCode,
+                    durationMs,
+                    requirePersistence,
+                    frozenCostUsd,
+                    frozenPricingVersion),
+                CancellationToken.None);
+        }
+        catch (Exception ex) when (requirePersistence && ex is not OperationCanceledException and not AssistenteIaException)
+        {
+            throw new AssistenteIaException(
+                StatusCodes.Status503ServiceUnavailable,
+                "AI_USAGE_PERSISTENCE_FAILED",
+                "Não foi possível registrar o consumo da solicitação. Novas chamadas foram bloqueadas por segurança.",
+                retryable: true,
+                innerException: ex);
+        }
+    }
 
     private static long ElapsedMilliseconds(long startedAt) =>
         (long)TimeProvider.System.GetElapsedTime(startedAt).TotalMilliseconds;

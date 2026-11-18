@@ -7,8 +7,11 @@
 
 Leitura nativa OpenXml/Poppler, recuperação por ferramentas, memória versionada,
 análise documental durável e geração geral/minutas por seções estão implementadas.
-Pipeline Tesseract existe, mas OCR está **desativado e em espera**. Orçamento
-financeiro distribuído de produção continua pendente.
+Pipeline Tesseract existe, mas OCR está **desativado e em espera**. O controle
+financeiro mensal por organização (P03, mês calendário UTC, reserva atômica por
+chamada física e liquidação pelo uso retornado) foi implementado com configuração
+operacional inicial de US$ 5,00 para o piloto (ainda não implantada nem com
+tarifas de produção preenchidas).
 
 A [avaliação real reduzida](../evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md)
 com GPT-6.1 Terra executou quatro cenários/seis interações e passou nos checks
@@ -216,11 +219,22 @@ reservados no banco antes da chamada e liquidados depois; preços não configura
 não podem ser tratados como custo zero.
 
 O teto financeiro por organização é configuração operacional obrigatória para
-piloto, sem valor em USD presumido. Até configurar tarifas válidas e orçamento,
-v2 externo fica indisponível; desenvolvimento usa limite explícito de tokens.
-Reserva pessimista deve incluir uso indeterminado após queda de conexão e ser
-reconciliada sem permitir excedente por liberações antecipadas. O ledger soma
-chamadas de OCR externo se houver evolução futura, resumo, leitura e geração.
+piloto (mês calendário UTC; configuração inicial de US$ 5,00 por organização
+em `AssistenteIa:DefaultMonthlyLimitUsd`, com override persistido opcional por
+organização em `ai_organization_monthly_limits`, sem limite já implantado em
+produção). Até configurar tarifas válidas (`InputCostPerMillionTokensUsd`,
+`CachedInputCostPerMillionTokensUsd`, `OutputCostPerMillionTokensUsd` e
+`PricingVersion` diferente de `unconfigured`), chamadas reais permanecem
+bloqueadas sem detalhes financeiros ao usuário; apenas desenvolvimento/testes
+simulados fora de produção podem optar explicitamente por
+`AllowSimulatedWithoutFinancialControl=true` (proibido em produção). Reserva
+conservadora inclui máximo de output e trata cache não comprovado como input
+sem desconto (ou pior tarifa aplicável), congelando modelo, tarifas, versão e
+período de origem. Queda/timeout/cancelamento após despacho sem usage mantém a
+reserva como `Indeterminate` no período de origem até reconciliação operacional
+auditada (`reconcile-ai-reservation`), sem expiração automática nem endpoint
+público inseguro. O ledger e o controle mensal somam chamadas de resumo/memória,
+ferramentas, análise por lotes e geração geral/por seções.
 
 Não elevar automaticamente limites para completar um pedido. Informar o limite,
 as fontes/partes não cobertas e o rascunho preservado. Medições do corpus e do

@@ -149,3 +149,22 @@ public sealed record AssistenteSolicitacaoFalhouDto(
     string Message,
     bool Retryable,
     string? RequestId);
+
+public enum AssistenteLimiteMensalEstado
+{
+    Disponivel,
+    Atencao70,
+    Critico90,
+    Atingido,
+    Indisponivel
+}
+
+public sealed record AssistenteLimiteMensalDto(
+    string PeriodoReferencia,
+    AssistenteLimiteMensalEstado Estado,
+    decimal? PercentualUtilizado,
+    decimal? PercentualReservado,
+    decimal? PercentualDisponivel,
+    bool PossuiReservasEmAndamento,
+    bool BloqueadoParaNovasChamadas,
+    string? MensagemStatus = null);

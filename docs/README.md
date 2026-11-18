@@ -72,5 +72,5 @@ O projeto contém:
 
 Ainda não há observabilidade distribuída nem contêiner da aplicação. O
 `docker-compose.yml` provisiona PostgreSQL. Rollout comercial,
-proteção das exclusões após restauração, orçamento operacional completo e validações jurídicas
+proteção das exclusões após restauração, configuração das tarifas do piloto e validações jurídicas
 continuam acompanhados na documentação de implementação.

@@ -13,7 +13,13 @@ public sealed class AssistenteUsageRecorder(
     public async Task RegistrarAsync(AssistenteUsageRecord record, CancellationToken cancellationToken)
     {
         var settings = options.CurrentValue;
-        var estimatedCost = CalculateCost(record, settings);
+        var hasFrozenSnapshot = !string.IsNullOrWhiteSpace(record.FrozenPricingVersion);
+        var estimatedCost = hasFrozenSnapshot
+            ? record.FrozenEstimatedCostUsd
+            : CalculateCost(record, settings);
+        var pricingVersion = hasFrozenSnapshot
+            ? record.FrozenPricingVersion!
+            : settings.PricingVersion;
         var entry = new AiUsageLedgerEntry
         {
             Id = Guid.NewGuid(),
@@ -33,7 +39,7 @@ public sealed class AssistenteUsageRecorder(
             CachedInputTokens = record.CachedInputTokens,
             OutputTokens = record.OutputTokens,
             EstimatedCostUsd = estimatedCost,
-            PricingVersion = settings.PricingVersion,
+            PricingVersion = pricingVersion,
             Status = record.Status,
             ErrorCode = record.ErrorCode,
             DurationMs = record.DurationMs,

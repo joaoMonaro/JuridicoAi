@@ -42,6 +42,8 @@ public sealed class AssistenteIaSettings
     public decimal CachedInputCostPerMillionTokensUsd { get; set; }
     public decimal OutputCostPerMillionTokensUsd { get; set; }
     public string PricingVersion { get; set; } = "unconfigured";
+    public decimal DefaultMonthlyLimitUsd { get; set; } = 5.00m;
+    public bool AllowSimulatedWithoutFinancialControl { get; set; }
     public string TransparencyNoticeVersion { get; set; } = "ai-transparency-v1";
     public string? PrivacyPolicyUrl { get; set; }
 }

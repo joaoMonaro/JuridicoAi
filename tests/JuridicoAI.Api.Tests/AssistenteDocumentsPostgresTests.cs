@@ -43,7 +43,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var source = await Upload(docs, conversation.Id, "fatos.txt", "Beatriz pagou R$ 123,45.\n\nO prazo venceu.");
         var request = new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Considere o documento.", 1, AnexoIds: [source.Id]).Solicitar();
         var chat = new AssistenteChatService(new AssistenteWorkspaceRepository(context), new PecaRepository(context),
-            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), new Monitor(db.Settings), docs);
+            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), db.MonthlyLimit(context), new Monitor(db.Settings), docs);
         var pending = await Assert.ThrowsAsync<AssistenteIaException>(() => chat.IniciarAsync(conversation.Id, request, default));
         Assert.Equal("AI_DOCUMENTS_PROCESSING", pending.Code); Assert.Empty(await context.AssistenteMensagens.ToArrayAsync());
         await using (var processing = db.Context()) Assert.True(await Processor(processing, storage).ProcessNextAsync(default));
@@ -184,7 +184,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         await using (var processing = db.Context()) await Processor(processing, storage).ProcessNextAsync(default);
         context.ChangeTracker.Clear();
         var chat = new AssistenteChatService(new AssistenteWorkspaceRepository(context), new PecaRepository(context),
-            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), new Monitor(db.Settings), docs);
+            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), db.MonthlyLimit(context), new Monitor(db.Settings), docs);
         var start = await chat.IniciarAsync(conversation.Id, new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Explique a fonte", 1, AnexoIds: [source.Id]).Solicitar(), default);
         await docs.RetryAsync(conversation.Id, source.Id, default);
         var output = new AssistenteSolicitacaoConcluidaDto(new(Guid.NewGuid(), AssistenteModo.Perguntar,
@@ -225,7 +225,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         context.Add(new DocumentoCaso { Id = Guid.NewGuid(), CasoId = piece.CasoId, NomeOriginal = "auto.txt", NomeArmazenado = "auto.txt",
             StorageId = "case/auto.txt", TamanhoBytes = storage.Files["case/auto.txt"].Length, MimeType = "text/plain", Tipo = "Outro", DataUpload = DateTime.UtcNow }); await context.SaveChangesAsync();
         var chat = new AssistenteChatService(new AssistenteWorkspaceRepository(context), new PecaRepository(context),
-            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), new Monitor(db.Settings), docs);
+            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), db.MonthlyLimit(context), new Monitor(db.Settings), docs);
         var request = new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Leia a fonte do Caso.", 1).Solicitar();
         var start = await chat.IniciarAsync(conversation.Id, request, default);
         Assert.Empty(await context.AssistenteDocumentos.ToArrayAsync());
@@ -254,7 +254,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         var source = await Upload(docs, conversation.Id, "base.txt", "Fonte da proposta.");
         await using (var processing = db.Context()) await Processor(processing, storage).ProcessNextAsync(default);
         var chat = new AssistenteChatService(new AssistenteWorkspaceRepository(context), new PecaRepository(context),
-            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), new Monitor(db.Settings), docs);
+            new TestAuthContext(db.OrgId, db.UserId), db.Access, new Transparency(), db.MonthlyLimit(context), new Monitor(db.Settings), docs);
         var start = await chat.IniciarAsync(conversation.Id, new EnviarInteracaoLivreRequest(Guid.NewGuid(), "Melhore a redação", 1, AnexoIds: [source.Id]).Solicitar(), default);
         var result = await chat.ConcluirLivreAsync(start, AutomaticResult(start.Pedido.Id, Request().Grupos), default);
         await docs.RetryAsync(conversation.Id, source.Id, default);

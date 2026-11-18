@@ -120,6 +120,7 @@ Aplicação e reconciliação continuam sujeitas a acesso, versão, grupos e has
 | Método | Rota | Função |
 |---|---|---|
 | `GET` | `/assistente/capacidades` | informa disponibilidade, modos e limites visíveis ao usuário |
+| `GET` | `/assistente/limite-mensal` | retorna período UTC e percentuais utilizado, reservado e disponível da organização autenticada |
 | `GET` | `/assistente/transparencia` | retorna o aviso atual e se o usuário já o confirmou |
 | `POST` | `/assistente/transparencia/confirmacoes` | registra a confirmação da versão atual do aviso |
 | `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera uma resposta ou sugestão em stream SSE |
@@ -160,15 +161,29 @@ Os valores são configuráveis em `AssistenteIa` e possuem defaults para:
 - timeout do provider de 90 segundos.
 
 Rate limit e concorrência são mantidos em memória por instância. A coordenação
-distribuída permanece pendente antes de operar múltiplas instâncias. A saída usa
+distribuída dessas cotas permanece pendente antes de operar múltiplas instâncias. A saída usa
 um único teto configurável, de 6.000 tokens por padrão; perfis por operação e
 retry automático ainda não estão implementados.
 
-O sistema registra metadados técnicos de execução e consumo sem usar o
-conteúdo jurídico como telemetria. Orçamento mensal com bloqueio financeiro,
-retenção/reaplicação de exclusões em backups e dashboards completos ainda são
-pendências do escopo ativo, registradas em P03–P08 do TODO. Não há expiração
-automática de chats nem eliminação de backup entregue.
+O limite financeiro mensal é compartilhado pela organização e coordenado no
+PostgreSQL entre instâncias. A configuração inicial do piloto é US$ 5,00 por
+mês calendário UTC, com ajuste persistido por organização via operação auditada.
+Cada chamada física reserva saldo antes do envio; o consumo informado pelo
+provedor liquida a reserva, inclusive quando a resposta gerada é inválida.
+Consumo desconhecido mantém a reserva até reconciliação operacional. A virada
+de mês preserva o histórico e as reservas vinculadas ao período anterior.
+
+O endpoint de consulta e a interface mostram somente percentuais, usando o
+termo **limite mensal**. A insuficiência de saldo impede novas chamadas de IA e
+preserva histórico, propostas, edição manual e exportação. Tarifas reais e sua
+versão precisam ser configuradas; ausência de preço válido bloqueia o provedor.
+Configurações de simulação sem controle financeiro são proibidas em produção.
+Veja [configuração, reconciliação e evidências de P03](../../implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md).
+
+O sistema registra metadados técnicos de execução e consumo sem usar conteúdo
+jurídico como telemetria. Monitoramento completo, retenção/reaplicação de
+exclusões em backups e preparação do piloto continuam em P04–P08 do TODO.
+Não há expiração automática de chats nem eliminação de backup entregue.
 
 No transporte ligado à requisição, a resposta estruturada é acumulada/validada
 antes de emitir `conteudo.delta`. No modo durável, SSE confirma o enfileiramento

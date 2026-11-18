@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-17**. Referência completa:
+Atualizado em **2026-11-18**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -43,15 +43,17 @@ utilizada foi temporária; não ficou configurada para novas chamadas.
 
 Sequência para o trabalho de implementação e preparação restante. O diagnóstico,
 a correção, a instrumentação e a comparação real de M01 foram concluídos. A
-espera remanescente pela política de cotas está em M03. O próximo desenvolvimento é P03. A revisão dos
-resultados disponíveis (P02) continua aberta. Esta lista não libera o piloto sem
-as validações e condições operacionais.
+espera remanescente pela política de cotas está em M03. O desenvolvimento de
+código de P03 foi implementado e validado em PostgreSQL descartável e frontend
+(sem tarifas reais preenchidas no ambiente nem homologação do piloto). A revisão
+dos resultados disponíveis (P02) continua aberta. Esta lista não libera o piloto
+sem as validações e condições operacionais.
 Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento próprio.
 
 | Ordem | Frente | Próxima entrega concreta |
 |---|---|---|
 | 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
-| 2 | P03 — Controle financeiro | Reserva e liquidação financeiras persistidas, com limite agregado entre instâncias e bloqueio antes da próxima chamada |
+| 2 | P03 — Controle financeiro | Implementado em código (configuração inicial US$ 5,00); falta apenas configurar tarifas/limites reais no ambiente de deploy |
 | 3 | P04 — Monitoramento | Instrumentação, métricas e alertas de consumo, falhas, jobs sem progresso e exclusões pendentes |
 | 4 | P05 — Backup/exclusão | Registro externo mínimo, reaplicação automatizada e ensaio de restauração sem reativar conteúdo excluído |
 | 5 | P06 — Rollout | Gate v2 por organização, separado das flags operacionais, aplicado nas capacidades e operações autorizadas |
@@ -60,13 +62,19 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
 
 ### Entregas ainda abertas do escopo
 
-- [ ] **P03 — Desenvolver controle financeiro de produção.** Definir preços e
-  orçamento do piloto; implementar reserva antes da chamada e liquidação pelo
-  uso conhecido, coordenadas no banco entre instâncias. Contabilizar resumo,
-  ferramentas, análise e geração; manter reserva de consumo indeterminado.
-  Bloquear chamadas que excedam o saldo e apresentar o motivo no produto.
-  Verificar concorrência e ausência de cobrança duplicada. Limites técnicos por
-  execução e o proxy da avaliação já existem, mas não concluem esta entrega.
+- [x] **P03 — Desenvolver controle financeiro de produção (código e testes concluídos; configuração operacional pendente no deploy).**
+  Implementadas tabelas e migrations (`ai_monthly_accounts`, `ai_usage_reservations`,
+  `ai_organization_monthly_limits`, `ai_financial_audit_logs`), reserva atômica em
+  PostgreSQL por chamada física com serialização consistente por organização,
+  liquidação pelo `usage` retornado (com cache e congelamento de modelo/tarifas/período UTC
+  sem fallback após congelamento e bloqueio em divergência de modelo), retenção de
+  reservas `Indeterminate`, recuperação auditada de reservas órfãs `Reserved` e
+  reconciliação via CLI (`set-ai-monthly-limit`, `reconcile-ai-reservation`,
+  `recover-orphan-ai-reservation`), endpoint `GET /assistente/limite-mensal` (somente
+  percentuais) e integração no painel do editor + fake API E2E. Configuração inicial
+  definida em US$ 5,00/organização/mês (não implantada); tarifas do modelo continuam
+  vazias até configuração real de deploy.
+  Ver [evidência P03](evidencias/p03-limite-mensal-2026-11-18.md).
 - [ ] **P04 — Completar instrumentação e monitoramento.** Registrar tempos por
   etapa e métricas de chamadas/tokens/custo, falhas, leases, filas sem progresso e
   exclusões abertas. Configurar alertas e procedimento de resposta, sem conteúdo
@@ -91,9 +99,10 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   antigos e conferir temporários legados. Ensaiar deploy/rollback sem downgrade
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
 
-P03/P05/P06 exigem desenvolvimento adicional; P04 combina instrumentação e
-operação; P07 exige validação e eventuais correções; P08 exige configuração e
-ensaio. Permanecem condições para o piloto, não apenas melhorias opcionais.
+P03 exige configuração das tarifas e do ambiente; P05/P06 exigem desenvolvimento
+adicional; P04 combina instrumentação e operação; P07 exige validação e eventuais
+correções; P08 exige configuração e ensaio. Permanecem condições para o piloto,
+não apenas melhorias opcionais.
 
 ## Melhorias evidenciadas na avaliação reduzida
 
