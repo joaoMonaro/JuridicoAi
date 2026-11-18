@@ -28,6 +28,7 @@ public sealed class PecaRepository(JuridicoAiDbContext context) : IPecaRepositor
                 .SetProperty(x => x.Titulo, peca.Titulo).SetProperty(x => x.ConteudoJson, peca.ConteudoJson)
                 .SetProperty(x => x.PageConfig, peca.PageConfig).SetProperty(x => x.HeaderJson, peca.HeaderJson)
                 .SetProperty(x => x.FooterJson, peca.FooterJson).SetProperty(x => x.Styles, peca.Styles)
+                .SetProperty(x => x.TemplateId, peca.TemplateId)
                 .SetProperty(x => x.Status, peca.Status).SetProperty(x => x.Versao, x => x.Versao + 1)
                 .SetProperty(x => x.UpdatedById, peca.UpdatedById)
                 .SetProperty(x => x.DataAtualizacao, peca.DataAtualizacao), ct) == 1;

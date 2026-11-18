@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "assistente-v2",
+  "requestId": "00000000-0000-4000-8000-000000000005",
+  "propostaId": "00000000-0000-4000-8000-000000000003",
+  "versaoAnterior": 7,
+  "versaoResultante": 8,
+  "versaoPecaAtual": 8,
+  "resultadoAindaAtual": true,
+  "gruposAplicados": [
+    "00000000-0000-4000-8000-000000000011"
+  ],
+  "conteudoJson": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "heading",
+        "attrs": {
+          "level": 2
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "DOS FATOS"
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {
+            "type": "text",
+            "text": "O autor contatou a empresa e não recebeu resposta."
+          }
+        ]
+      },
+      {
+        "type": "paragraph",
+        "content": [
+          {
+            "type": "text",
+            "text": "O pagamento ocorreu em 10/10/2026, no valor de R$ 850,00."
+          }
+        ]
+      }
+    ]
+  },
+  "documentSha256": "875c9826c41c3fccdef71bf7834e930ef20c9588f85c9e3d6516bea760b06a5a",
+  "dataAtualizacao": "2026-11-11T13:00:00Z",
+  "propostaRestante": {
+    "schemaVersion": "assistente-v2",
+    "id": "00000000-0000-4000-8000-000000000003",
+    "conversaId": "00000000-0000-4000-8000-000000000001",
+    "snapshotId": "00000000-0000-4000-8000-000000000008",
+    "revisao": 1,
+    "versaoDecisoes": 2,
+    "versaoPecaAplicavel": 8,
+    "estado": "ParcialmenteResolvida",
+    "grupos": [
+      {
+        "id": "00000000-0000-4000-8000-000000000011",
+        "estado": "Aplicado",
+        "explicacao": "Torna o relato mais objetivo, preservando os fatos.",
+        "alvosOriginais": [
+          "00000000-0000-4000-8000-000000000004:bloco-1"
+        ],
+        "original": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "O autor entrou em contato com a empresa, porém não recebeu resposta."
+              }
+            ]
+          }
+        ],
+        "proposto": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "O autor contatou a empresa e não recebeu resposta."
+              }
+            ]
+          }
+        ],
+        "operacoes": [
+          {
+            "tipo": "SpliceBlocos",
+            "startIndex": 1,
+            "deleteCount": 1,
+            "expectedBlocksSha256": "1d13f76de004f176fb0b2109c3437307a953db37d04d3cc78168ef1f8b03c89a",
+            "novosBlocos": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "O autor contatou a empresa e não recebeu resposta."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "previewSha256": "c117d6e0c436ef0e18139243a470db9c7d2b9c8782d4eb221bc6738b261f35c7"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000012",
+        "estado": "Pendente",
+        "explicacao": "Torna o relato mais objetivo, preservando os fatos.",
+        "alvosOriginais": [
+          "00000000-0000-4000-8000-000000000004:bloco-2"
+        ],
+        "original": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "O pagamento ocorreu em 10/10/2026, no valor de R$ 850,00."
+              }
+            ]
+          }
+        ],
+        "proposto": [
+          {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": "Em 10/10/2026, o autor pagou R$ 850,00."
+              }
+            ]
+          }
+        ],
+        "operacoes": [
+          {
+            "tipo": "SpliceBlocos",
+            "startIndex": 2,
+            "deleteCount": 1,
+            "expectedBlocksSha256": "6a29d186c9330d685ee477d3fb65c3517b68219e22c4605de4286201c3add08b",
+            "novosBlocos": [
+              {
+                "type": "paragraph",
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Em 10/10/2026, o autor pagou R$ 850,00."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "previewSha256": "1cd0cb1bea3b784756f7edc7354d1dbd1a94ee2b5de6de54020853edb50c5f0a"
+      }
+    ],
+    "documentoBase": {
+      "type": "doc",
+      "content": [
+        {
+          "type": "heading",
+          "attrs": {
+            "level": 2
+          },
+          "content": [
+            {
+              "type": "text",
+              "text": "DOS FATOS"
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "O autor contatou a empresa e não recebeu resposta."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "content": [
+            {
+              "type": "text",
+              "text": "O pagamento ocorreu em 10/10/2026, no valor de R$ 850,00."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "suiteVersion": "1.0.0",
+  "expectedCaseCount": 6,
+  "expectedCategoryCounts": {
+    "Fontes": 6
+  },
+  "caseFiles": [
+    "casos/prompt-injection.json"
+  ]
+}

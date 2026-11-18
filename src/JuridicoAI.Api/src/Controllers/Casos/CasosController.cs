@@ -32,23 +32,54 @@ public sealed class CasosController(CasoApplicationService service) : Controller
     public async Task<IActionResult> ArquivarCaso(Guid id, CancellationToken ct) { await service.ArquivarCasoAsync(id, ct); return NoContent(); }
 
     [HttpPost("{casoId:guid}/envolvidos")]
-    public async Task<ActionResult<EnvolvidoCaso>> CriarEnvolvido(Guid casoId, [FromBody] CriarEnvolvidoCasoRequest request, CancellationToken ct)
+    public async Task<ActionResult<EnvolvidoDetalheDto>> CriarEnvolvido(Guid casoId, [FromBody] CriarEnvolvidoCasoRequest request, CancellationToken ct)
     {
         var item = await service.CriarEnvolvidoAsync(casoId, request, ct);
         return CreatedAtAction(nameof(ObterEnvolvido), new { casoId, id = item.Id }, item);
     }
 
     [HttpGet("{casoId:guid}/envolvidos")]
-    public async Task<ActionResult<IReadOnlyList<EnvolvidoCaso>>> ListarEnvolvidos(Guid casoId, CancellationToken ct) => Ok(await service.ListarEnvolvidosAsync(casoId, ct));
+    public async Task<ActionResult<IReadOnlyList<EnvolvidoResumoDto>>> ListarEnvolvidos(Guid casoId, CancellationToken ct) => Ok(await service.ListarEnvolvidosAsync(casoId, ct));
 
     [HttpGet("{casoId:guid}/envolvidos/{id:guid}")]
-    public async Task<ActionResult<EnvolvidoCaso>> ObterEnvolvido(Guid casoId, Guid id, CancellationToken ct) => Ok(await service.ObterEnvolvidoAsync(casoId, id, ct));
+    public async Task<ActionResult<EnvolvidoDetalheDto>> ObterEnvolvido(Guid casoId, Guid id, CancellationToken ct) => Ok(await service.ObterEnvolvidoAsync(casoId, id, ct));
 
     [HttpPut("{casoId:guid}/envolvidos/{id:guid}")]
-    public async Task<ActionResult<EnvolvidoCaso>> AtualizarEnvolvido(Guid casoId, Guid id, [FromBody] AtualizarEnvolvidoCasoRequest request, CancellationToken ct) => Ok(await service.AtualizarEnvolvidoAsync(casoId, id, request, ct));
+    public async Task<ActionResult<EnvolvidoDetalheDto>> AtualizarEnvolvido(Guid casoId, Guid id, [FromBody] AtualizarEnvolvidoCasoRequest request, CancellationToken ct) => Ok(await service.AtualizarEnvolvidoAsync(casoId, id, request, ct));
 
     [HttpDelete("{casoId:guid}/envolvidos/{id:guid}")]
     public async Task<IActionResult> RemoverEnvolvido(Guid casoId, Guid id, CancellationToken ct) { await service.RemoverEnvolvidoAsync(casoId, id, ct); return NoContent(); }
+
+    [HttpPost("{casoId:guid}/envolvidos/{envolvidoId:guid}/enderecos")]
+    public async Task<ActionResult<EnderecoEnvolvidoDto>> CriarEndereco(
+        Guid casoId, Guid envolvidoId, [FromBody] CriarEnderecoEnvolvidoRequest request, CancellationToken ct)
+    {
+        var item = await service.CriarEnderecoAsync(casoId, envolvidoId, request, ct);
+        return CreatedAtAction(nameof(ObterEndereco), new { casoId, envolvidoId, id = item.Id }, item);
+    }
+
+    [HttpGet("{casoId:guid}/envolvidos/{envolvidoId:guid}/enderecos")]
+    public async Task<ActionResult<IReadOnlyList<EnderecoEnvolvidoDto>>> ListarEnderecos(
+        Guid casoId, Guid envolvidoId, CancellationToken ct) =>
+        Ok(await service.ListarEnderecosAsync(casoId, envolvidoId, ct));
+
+    [HttpGet("{casoId:guid}/envolvidos/{envolvidoId:guid}/enderecos/{id:guid}")]
+    public async Task<ActionResult<EnderecoEnvolvidoDto>> ObterEndereco(
+        Guid casoId, Guid envolvidoId, Guid id, CancellationToken ct) =>
+        Ok(await service.ObterEnderecoAsync(casoId, envolvidoId, id, ct));
+
+    [HttpPatch("{casoId:guid}/envolvidos/{envolvidoId:guid}/enderecos/{id:guid}")]
+    public async Task<ActionResult<EnderecoEnvolvidoDto>> AtualizarEndereco(
+        Guid casoId, Guid envolvidoId, Guid id, [FromBody] AtualizarEnderecoEnvolvidoRequest request, CancellationToken ct) =>
+        Ok(await service.AtualizarEnderecoAsync(casoId, envolvidoId, id, request, ct));
+
+    [HttpDelete("{casoId:guid}/envolvidos/{envolvidoId:guid}/enderecos/{id:guid}")]
+    public async Task<IActionResult> RemoverEndereco(
+        Guid casoId, Guid envolvidoId, Guid id, CancellationToken ct)
+    {
+        await service.RemoverEnderecoAsync(casoId, envolvidoId, id, ct);
+        return NoContent();
+    }
 
     [HttpPost("{casoId:guid}/contextos")]
     public async Task<ActionResult<ContextoCaso>> CriarContexto(Guid casoId, [FromBody] CriarContextoCasoRequest request, CancellationToken ct)

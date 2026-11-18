@@ -1,0 +1,20 @@
+{
+  "native.pdf": [
+    "Beatriz pagou R$ 123,45 em 11/11/2026."
+  ],
+  "scan.png": [
+    "DOCUMENTO FICTICIO PARA TESTES",
+    "Beatriz relata os fatos do contrato.",
+    "Valor pago: R$ 123,45. Data: 11/11/2026."
+  ],
+  "blurred.png": [
+    "DOCUMENTO FICTICIO PARA TESTES",
+    "Beatriz relata os fatos do contrato.",
+    "Valor pago: R$ 123,45. Data: 11/11/2026."
+  ],
+  "rotated.png": [
+    "DOCUMENTO FICTICIO PARA TESTES",
+    "Beatriz relata os fatos do contrato.",
+    "Valor pago: R$ 123,45. Data: 11/11/2026."
+  ]
+}

@@ -1,0 +1,108 @@
+[
+  {
+    "id": "REESCRITA-001",
+    "version": 1,
+    "category": "Reescrita",
+    "tags": ["clareza", "preservacao", "valor", "data"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Reescreva o trecho com linguagem técnica e concisa, sem alterar os fatos.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "A contratante pagou R$ 8.450,00 em 12/03/2025, porém o serviço ajustado não foi prestado.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar pagamento e ausência da prestação", "manter valor e data"],
+      "forbidden": ["atribuir dolo à contratada", "criar número de processo ou jurisprudência"],
+      "materialFacts": { "valor": "R$ 8.450,00", "data": "12/03/2025" }
+    },
+    "automaticFailures": ["material_amount_changed", "material_date_changed", "material_fact_fabricated"]
+  },
+  {
+    "id": "REESCRITA-002",
+    "version": 1,
+    "category": "Reescrita",
+    "tags": ["concisao", "preservacao"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Elimine repetições e torne a narrativa objetiva.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "A requerida foi avisada três vezes sobre a falha. Mesmo após os três avisos, a requerida não corrigiu a falha informada.",
+      "additionalContext": "Não foram informadas datas ou meios dos avisos.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["preservar a existência de três avisos", "preservar que a falha não foi corrigida"],
+      "forbidden": ["inventar datas", "inventar meio de comunicação"],
+      "materialFacts": { "quantidadeAvisos": "três" }
+    },
+    "automaticFailures": ["material_fact_fabricated", "material_quantity_changed"]
+  },
+  {
+    "id": "REESCRITA-003",
+    "version": 1,
+    "category": "Reescrita",
+    "tags": ["tom", "neutralidade"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Substitua o tom emocional por uma redação jurídica neutra.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "Foi um absurdo completo a empresa ignorar a solicitação e deixar o consumidor sem resposta por 18 dias.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["remover expressão emocional", "preservar ausência de resposta por 18 dias"],
+      "forbidden": ["afirmar má-fé", "aumentar o período"],
+      "materialFacts": { "periodo": "18 dias" },
+      "forbiddenPhrases": ["absurdo completo"]
+    },
+    "automaticFailures": ["material_period_changed", "unsupported_intent_attributed"]
+  },
+  {
+    "id": "REESCRITA-004",
+    "version": 1,
+    "category": "Reescrita",
+    "tags": ["clareza", "condicao"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Torne a condição contratual mais clara sem ampliar seu alcance.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "O pagamento da segunda parcela ocorreria somente se o equipamento fosse entregue e instalado em funcionamento.",
+      "additionalContext": null,
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["manter entrega, instalação e funcionamento como condições cumulativas"],
+      "forbidden": ["transformar condições em alternativas", "criar prazo de pagamento"],
+      "materialFacts": { "marco": "segunda parcela" }
+    },
+    "automaticFailures": ["material_condition_changed", "material_fact_fabricated"]
+  },
+  {
+    "id": "REESCRITA-005",
+    "version": 1,
+    "category": "Reescrita",
+    "tags": ["ambiguidade", "partes"],
+    "mode": "Reescrever",
+    "operation": "SubstituirSelecao",
+    "instruction": "Melhore a clareza sem decidir quem praticou o ato ambíguo.",
+    "input": {
+      "scope": "Selecao",
+      "documentText": "A autora informou à preposta que ela deveria apresentar o comprovante no dia seguinte.",
+      "additionalContext": "O relato não esclarece a quem o pronome 'ela' se refere.",
+      "suppliedSources": []
+    },
+    "expected": {
+      "required": ["apontar ou preservar a ambiguidade", "solicitar esclarecimento se necessário"],
+      "forbidden": ["escolher autora ou preposta sem base", "inventar conteúdo do comprovante"],
+      "materialFacts": {}
+    },
+    "automaticFailures": ["ambiguous_actor_invented", "material_fact_fabricated"]
+  }
+]

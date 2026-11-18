@@ -1,0 +1,61 @@
+{
+  "policy": "qualidade-v1",
+  "scope": "synthetic-smoke-only",
+  "externalRolloutApproved": false,
+  "reason": "Small corpus and insufficient useful coverage; broaden calibration before rollout.",
+  "tesseractVersion": "tesseract 5.5.0",
+  "models": {
+    "por": "c4932b937207a9514b7514d518b931a99938c02a28a5a5a553f8599ed58b7deb",
+    "eng": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+  },
+  "results": [
+    {
+      "file": "scan.png",
+      "sha256": "bd4a5f349c4a8d6382aeea8647001bdaffe8a1f09ca44f7d6e16be4500dcbad7",
+      "units": [
+        {
+          "text": "DOCUMENTO FICTICIO PARA TESTES Beatriz relata os fatos do contrato.",
+          "weightedConfidence": 94.87958087931034,
+          "accepted": false,
+          "matchesAnnotatedText": true
+        },
+        {
+          "text": "Valor pago: R$ 123,45. Data: 11/11/2026.",
+          "weightedConfidence": 95.89479714285714,
+          "accepted": false,
+          "matchesAnnotatedText": true
+        }
+      ],
+      "acceptedUnits": 0,
+      "falseAccepts": 0
+    },
+    {
+      "file": "blurred.png",
+      "sha256": "fdb74d432ccdd1eba18b3b9249554809a443ca45d4ef530ef1c0fe3094fe04fc",
+      "units": [
+        {
+          "text": "DOCUMENTO FICTICIO PARA TESTES Beatriz reiata os fatos do contrato Valor pago R$ 123.45. Data 11/11/2026.",
+          "weightedConfidence": 89.28270088888888,
+          "accepted": false,
+          "matchesAnnotatedText": false
+        }
+      ],
+      "acceptedUnits": 0,
+      "falseAccepts": 0
+    },
+    {
+      "file": "rotated.png",
+      "sha256": "c533b8d68e513093a200eec48c8ed04961212a045da81117aba1caa7d304316c",
+      "units": [
+        {
+          "text": "9Z0C/TI/TI\n5\t1\t1\t1\t1\t2\t1001\t322\t125\t37\t0.000000\tSea\n5\t1\t1\t1\t1\t3\t1152\t317\t181\t43\t0.000000\t'sr'ect\n5\t1\t1\t1\t1\t4\t1358\t316\t58\t45\t11.733185\t$y\n5\t1\t1\t1\t1\t5\t1442\t313\t131\t38\t59.538879\t:obed\n5\t1\t1\t1\t1\t6\t1594\t322\t125\t39\t36.390236\tJojen\n2\t1\t2\t0\t0\t0\t855\t442\t860\t39\t-1\t\n3\t1\t2\t1\t0\t0\t855\t442\t860\t39\t-1\t\n4\t1\t2\t1\t1\t0\t855\t442\t860\t39\t-1\t\n5\t1\t2\t1\t1\t1\t855\t442\t218\t36\t0.000000\t‘0721}U0D\n5\t1\t2\t1\t1\t2\t1095\t442\t56\t39\t93.126068\tOP\n5\t1\t2\t1\t1\t3\t1172\t442\t122\t39\t16.705399\tsoje)\n5\t1\t2\t1\t1\t4\t1313\t442\t51\t29\t93.272621\tso\n5\t1\t2\t1\t1\t5\t1388\t442\t135\t39\t0.000000\teJejoJ\n5\t1\t2\t1\t1\t6\t1546\t442\t169\t39\t0.000000\tzineag\n2\t1\t3\t0\t0\t0\t815\t562\t900\t38\t-1\t\n3\t1\t3\t1\t0\t0\t815\t562\t900\t38\t-1\t\n4\t1\t3\t1\t1\t0\t815\t562\t900\t38\t-1\t\n5\t1\t3\t1\t1\t1\t815\t562\t185\t38\t81.311958\tSALSAL\n5\t1\t3\t1\t1\t2\t1016\t563\t123\t36\t50.277840\tVeVd\n5\t1\t3\t1\t1\t3\t1162\t562\t206\t38\t30.301750\tOIDILOIS\n5\t1\t3\t1\t1\t4\t1391\t562\t324\t38\t54.536148\tOLNAWNDOG\n",
+          "weightedConfidence": 52.124046,
+          "accepted": false,
+          "matchesAnnotatedText": false
+        }
+      ],
+      "acceptedUnits": 0,
+      "falseAccepts": 0
+    }
+  ]
+}

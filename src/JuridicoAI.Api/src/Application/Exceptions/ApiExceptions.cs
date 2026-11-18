@@ -1,6 +1,6 @@
 namespace JuridicoAI.Api.Application.Exceptions;
 
-public abstract class ApiException(string message) : Exception(message)
+public abstract class ApiException(string message, Exception? innerException = null) : Exception(message, innerException)
 {
     public abstract int StatusCode { get; }
 }

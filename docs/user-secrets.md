@@ -59,11 +59,73 @@ Chaves hierárquicas usam `:` no comando do Secret Manager:
 dotnet user-secrets --project src/JuridicoAI.Api set \
   "Postgres:ConnectionString" \
   "Host=localhost;Port=5432;Database=juridicoai;Username=juridico;Password=senha-local"
+```
+
+### Assistente de IA
+
+O assistente permanece desabilitado por padrão. Para usar o provider OpenAI no
+ambiente de desenvolvimento, configure a chave fora do repositório, escolha um
+modelo compatível com Responses e Structured Outputs e só então habilite a
+feature:
+
+```bash
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "AssistenteIa:ApiKey" \
+  "sua-chave-da-api"
 
 dotnet user-secrets --project src/JuridicoAI.Api set \
-  "Mongo:ConnectionString" \
-  "mongodb://juridico:senha-local@localhost:27017/?authSource=admin"
+  "AssistenteIa:Model" \
+  "modelo-escolhido"
+
+dotnet user-secrets --project src/JuridicoAI.Api set \
+  "AssistenteIa:Enabled" \
+  "true"
 ```
+
+A inicialização falha de forma explícita se o assistente estiver habilitado sem
+chave, modelo ou com limites inválidos. A chave nunca deve ser colocada em
+`appsettings*.json`, `.env`, commits, logs ou exemplos compartilhados.
+
+O kill switch global não libera um tenant sozinho. Para habilitar uma flag em
+uma Organization, execute o comando operacional com acesso à mesma configuração
+de PostgreSQL da API:
+
+```bash
+AI_FEATURE_ORGANIZATION_ID="uuid-da-organizacao" \
+AI_FEATURE_NAME="AI_ASSISTANT" \
+AI_FEATURE_ENABLED="true" \
+AI_OPERATION_UPDATED_BY_ID="uuid-do-owner" \
+AI_OPERATION_REASON="Liberação para tenant interno" \
+dotnet run --project src/JuridicoAI.Api -- set-ai-feature
+```
+
+Repita explicitamente para `AI_EDIT`, `AI_REVIEW` ou
+`AI_DOCUMENT_GENERATION`, conforme o estágio do rollout. Ausência de registro
+equivale a desabilitado. Esse comando é administrativo e não recebe conteúdo
+jurídico; até existir uma interface autenticada, sua execução deve ficar
+restrita ao ambiente operacional controlado. O operador informado precisa ser
+um `Owner` ativo da Organization e a justificativa deve ter entre 1 e 500 caracteres.
+Cada alteração gera um registro imutável em `ai_feature_change_audit`.
+
+Com `AssistenteIa:Enabled=true`, o kill switch persistido pode bloquear e
+restaurar novas operações sem reiniciar a API:
+
+```bash
+AI_ENABLED="false" \
+AI_OPERATION_UPDATED_BY_ID="uuid-do-operador" \
+AI_OPERATION_REASON="Interrupção preventiva durante investigação" \
+dotnet run --project src/JuridicoAI.Api -- set-ai-enabled
+```
+
+Para o rollback, execute o mesmo comando com `AI_ENABLED="true"` e uma nova
+justificativa. O operador global precisa ser um usuário ativo. A justificativa
+é dado técnico de auditoria: não inclua nomes de partes, conteúdo de Peças ou
+outros dados do Caso.
+
+`AssistenteIa:Enabled=false` continua sendo a trava superior de configuração e
+não pode ser revertida pelo banco. Para que o comando operacional possa
+habilitar a IA, essa configuração de bootstrap precisa estar em `true`, com
+provider, modelo e chave válidos.
 
 ## Consultar, remover e limpar
 
@@ -96,6 +158,7 @@ dos user-secrets. Em variáveis de ambiente, substitua `:` por `__`:
 ```text
 Auth:JwtSecret             -> Auth__JwtSecret
 Postgres:ConnectionString  -> Postgres__ConnectionString
+AssistenteIa:ApiKey        -> AssistenteIa__ApiKey
 ```
 
 Por exemplo:

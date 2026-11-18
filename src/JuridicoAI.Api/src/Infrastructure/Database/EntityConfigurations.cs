@@ -1,5 +1,6 @@
 using System.Text.Json;
 using JuridicoAI.Api.Domain.Entities;
+using JuridicoAI.Api.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -44,12 +45,28 @@ internal sealed class EnvolvidoCasoConfiguration : IEntityTypeConfiguration<Envo
         {
             table.HasCheckConstraint("ck_envolvidos_caso_nome", "length(btrim(nome)) > 0");
             table.HasCheckConstraint("ck_envolvidos_caso_tipo", "tipo IN ('Cliente', 'ParteContraria', 'Advogado', 'Testemunha', 'TerceiroInteressado', 'Outro')");
+            table.HasCheckConstraint("ck_envolvidos_caso_natureza", "natureza IN ('NaoInformada', 'PessoaFisica', 'PessoaJuridica', 'OrgaoPublico')");
+            table.HasCheckConstraint("ck_envolvidos_caso_estado_civil", "estado_civil IS NULL OR estado_civil IN ('NaoInformado', 'Solteiro', 'Casado', 'UniaoEstavel', 'Separado', 'Divorciado', 'Viuvo')");
         });
         builder.HasKey(x => x.Id).HasName("envolvidos_caso_pkey");
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
         builder.Property(x => x.CasoId).HasColumnName("caso_id");
         builder.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Natureza).HasColumnName("natureza").HasMaxLength(30).HasConversion<string>()
+            .HasDefaultValue(NaturezaPessoaEnum.NaoInformada);
+        builder.Property(x => x.NomeFantasia).HasColumnName("nome_fantasia").HasMaxLength(200);
+        builder.Property(x => x.CpfCnpj).HasColumnName("cpf_cnpj").HasMaxLength(14);
+        builder.Property(x => x.Rg).HasColumnName("rg").HasMaxLength(30);
+        builder.Property(x => x.RgOrgaoEmissor).HasColumnName("rg_orgao_emissor").HasMaxLength(30);
+        builder.Property(x => x.RgUf).HasColumnName("rg_uf").HasMaxLength(2);
+        builder.Property(x => x.Nacionalidade).HasColumnName("nacionalidade").HasMaxLength(100);
+        builder.Property(x => x.EstadoCivil).HasColumnName("estado_civil").HasMaxLength(30).HasConversion<string>();
+        builder.Property(x => x.Profissao).HasColumnName("profissao").HasMaxLength(150);
+        builder.Property(x => x.DataNascimento).HasColumnName("data_nascimento").HasColumnType("date");
+        builder.Property(x => x.InscricaoEstadual).HasColumnName("inscricao_estadual").HasMaxLength(30);
+        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(254);
+        builder.Property(x => x.Telefone).HasColumnName("telefone").HasMaxLength(20);
         builder.Property(x => x.Documento).HasColumnName("documento").HasMaxLength(50);
 
         var converter = new ValueConverter<IReadOnlyDictionary<string, string?>?, string?>(
@@ -75,6 +92,42 @@ internal sealed class EnvolvidoCasoConfiguration : IEntityTypeConfiguration<Envo
 
     private static string Json(IReadOnlyDictionary<string, string?>? value) =>
         value == null ? string.Empty : JsonSerializer.Serialize(value, JsonOptions);
+}
+
+internal sealed class EnderecoEnvolvidoCasoConfiguration : IEntityTypeConfiguration<EnderecoEnvolvidoCaso>
+{
+    public void Configure(EntityTypeBuilder<EnderecoEnvolvidoCaso> builder)
+    {
+        builder.ToTable("enderecos_envolvidos_caso", table =>
+        {
+            table.HasCheckConstraint("ck_enderecos_envolvidos_tipo", "tipo IN ('Residencial', 'Comercial', 'Sede', 'Correspondencia', 'Citacao', 'Outro')");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_logradouro", "length(btrim(logradouro)) > 0");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_cidade", "length(btrim(cidade)) > 0");
+            table.HasCheckConstraint("ck_enderecos_envolvidos_pais", "length(pais) = 2");
+        });
+        builder.HasKey(x => x.Id).HasName("enderecos_envolvidos_caso_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.EnvolvidoCasoId).HasColumnName("envolvido_caso_id");
+        builder.Property(x => x.Tipo).HasColumnName("tipo").HasMaxLength(30).HasConversion<string>();
+        builder.Property(x => x.Principal).HasColumnName("principal");
+        builder.Property(x => x.Cep).HasColumnName("cep").HasMaxLength(20);
+        builder.Property(x => x.Logradouro).HasColumnName("logradouro").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Numero).HasColumnName("numero").HasMaxLength(30);
+        builder.Property(x => x.Complemento).HasColumnName("complemento").HasMaxLength(100);
+        builder.Property(x => x.Bairro).HasColumnName("bairro").HasMaxLength(100);
+        builder.Property(x => x.Cidade).HasColumnName("cidade").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Uf).HasColumnName("uf").HasMaxLength(2);
+        builder.Property(x => x.EstadoProvincia).HasColumnName("estado_provincia").HasMaxLength(100);
+        builder.Property(x => x.Pais).HasColumnName("pais").HasMaxLength(2).IsRequired();
+        builder.Property(x => x.DataCriacao).HasColumnName("data_criacao");
+        builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
+        builder.HasOne<EnvolvidoCaso>().WithMany().HasForeignKey(x => x.EnvolvidoCasoId)
+            .OnDelete(DeleteBehavior.Cascade).HasConstraintName("enderecos_envolvidos_caso_envolvido_id_fkey");
+        builder.HasIndex(x => x.EnvolvidoCasoId).HasDatabaseName("ix_enderecos_envolvidos_envolvido_id");
+        builder.HasIndex(x => new { x.EnvolvidoCasoId, x.Tipo })
+            .IsUnique().HasFilter("principal = TRUE")
+            .HasDatabaseName("uq_enderecos_envolvidos_principal_tipo");
+    }
 }
 
 internal sealed class ContextoCasoConfiguration : IEntityTypeConfiguration<ContextoCaso>
@@ -248,5 +301,145 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => x.RefreshTokenHash).IsUnique().HasDatabaseName("uq_sessions_refresh_token_hash");
         builder.HasIndex(x => new { x.UserId, x.OrganizationId }).HasDatabaseName("ix_sessions_user_organization");
+    }
+}
+
+internal sealed class OrganizationFeatureConfiguration : IEntityTypeConfiguration<OrganizationFeature>
+{
+    public void Configure(EntityTypeBuilder<OrganizationFeature> builder)
+    {
+        builder.ToTable("organization_features", table =>
+            table.HasCheckConstraint(
+                "ck_organization_features_feature",
+                "feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION')"));
+        builder.HasKey(x => new { x.OrganizationId, x.Feature }).HasName("organization_features_pkey");
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.Enabled }).HasDatabaseName("ix_organization_features_enabled");
+    }
+}
+
+internal sealed class AiOperationalControlConfiguration : IEntityTypeConfiguration<AiOperationalControl>
+{
+    public void Configure(EntityTypeBuilder<AiOperationalControl> builder)
+    {
+        builder.ToTable("ai_operational_controls", table =>
+            table.HasCheckConstraint(
+                "ck_ai_operational_controls_feature",
+                "feature IN ('AI_ENABLED')"));
+        builder.HasKey(x => x.Feature).HasName("ai_operational_controls_pkey");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).HasConversion<string>();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.UpdatedById).HasColumnName("updated_by_id");
+        builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500).IsRequired();
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UpdatedById).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AiFeatureChangeAuditConfiguration : IEntityTypeConfiguration<AiFeatureChangeAudit>
+{
+    public void Configure(EntityTypeBuilder<AiFeatureChangeAudit> builder)
+    {
+        builder.ToTable("ai_feature_change_audit", table =>
+        {
+            table.HasCheckConstraint(
+                "ck_ai_feature_change_audit_scope",
+                "scope IN ('Global', 'Organization')");
+            table.HasCheckConstraint(
+                "ck_ai_feature_change_audit_target",
+                "(scope = 'Global' AND organization_id IS NULL AND feature = 'AI_ENABLED') OR " +
+                "(scope = 'Organization' AND organization_id IS NOT NULL AND " +
+                "feature IN ('AI_ASSISTANT', 'AI_EDIT', 'AI_REVIEW', 'AI_DOCUMENT_GENERATION'))");
+        });
+        builder.HasKey(x => x.Id).HasName("ai_feature_change_audit_pkey");
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.Scope).HasColumnName("scope").HasMaxLength(20).HasConversion<string>();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.Feature).HasColumnName("feature").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Enabled).HasColumnName("enabled");
+        builder.Property(x => x.ChangedAt).HasColumnName("changed_at");
+        builder.Property(x => x.ChangedById).HasColumnName("changed_by_id");
+        builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(500).IsRequired();
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.ChangedById).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => x.ChangedAt).HasDatabaseName("ix_ai_feature_change_audit_changed_at");
+        builder.HasIndex(x => new { x.OrganizationId, x.ChangedAt })
+            .HasDatabaseName("ix_ai_feature_change_audit_organization_changed_at");
+    }
+}
+
+internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration<AiUsageLedgerEntry>
+{
+    public void Configure(EntityTypeBuilder<AiUsageLedgerEntry> builder)
+    {
+        builder.ToTable("ai_usage_ledger", table =>
+        {
+            table.HasCheckConstraint("ck_ai_usage_attempt_count", "attempt_count > 0");
+            table.HasCheckConstraint("ck_ai_usage_duration", "duration_ms >= 0");
+            table.HasCheckConstraint("ck_ai_usage_cost", "estimated_cost_usd IS NULL OR estimated_cost_usd >= 0");
+        });
+        builder.HasKey(x => x.Id).HasName("ai_usage_ledger_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.PecaId).HasColumnName("peca_id");
+        builder.Property(x => x.SolicitacaoId).HasColumnName("solicitacao_id");
+        builder.Property(x => x.ClientRequestId).HasColumnName("client_request_id");
+        builder.Property(x => x.CorrelationId).HasColumnName("correlation_id");
+        builder.Property(x => x.Mode).HasColumnName("mode").HasMaxLength(30).IsRequired();
+        builder.Property(x => x.Operation).HasColumnName("operation").HasMaxLength(40);
+        builder.Property(x => x.Provider).HasColumnName("provider").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Model).HasColumnName("model").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.PromptVersion).HasColumnName("prompt_version").HasMaxLength(256).IsRequired();
+        builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
+        builder.Property(x => x.InputTokens).HasColumnName("input_tokens");
+        builder.Property(x => x.CachedInputTokens).HasColumnName("cached_input_tokens");
+        builder.Property(x => x.OutputTokens).HasColumnName("output_tokens");
+        builder.Property(x => x.EstimatedCostUsd).HasColumnName("estimated_cost_usd").HasPrecision(18, 8);
+        builder.Property(x => x.PricingVersion).HasColumnName("pricing_version").HasMaxLength(40).IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+        builder.Property(x => x.ErrorCode).HasColumnName("error_code").HasMaxLength(80);
+        builder.Property(x => x.DurationMs).HasColumnName("duration_ms");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(x => new { x.OrganizationId, x.CreatedAt }).HasDatabaseName("ix_ai_usage_organization_created_at");
+        builder.HasIndex(x => new { x.SolicitacaoId, x.AttemptCount }).IsUnique().HasDatabaseName("uq_ai_usage_solicitacao_attempt");
+        builder.HasIndex(x => x.CorrelationId).HasDatabaseName("ix_ai_usage_correlation_id");
+    }
+}
+
+internal sealed class AiTransparencyAcknowledgementConfiguration
+    : IEntityTypeConfiguration<AiTransparencyAcknowledgement>
+{
+    public void Configure(EntityTypeBuilder<AiTransparencyAcknowledgement> builder)
+    {
+        builder.ToTable("ai_transparency_acknowledgements", table =>
+            table.HasCheckConstraint(
+                "ck_ai_transparency_notice_version",
+                "length(btrim(notice_version)) > 0"));
+        builder.HasKey(x => x.Id).HasName("ai_transparency_acknowledgements_pkey");
+        builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever();
+        builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
+        builder.Property(x => x.UserId).HasColumnName("user_id");
+        builder.Property(x => x.NoticeVersion).HasColumnName("notice_version").HasMaxLength(80).IsRequired();
+        builder.Property(x => x.AcknowledgedAt).HasColumnName("acknowledged_at");
+        builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("ai_transparency_ack_organization_id_fkey");
+        builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade)
+            .HasConstraintName("ai_transparency_ack_user_id_fkey");
+        builder.HasIndex(x => new { x.OrganizationId, x.UserId, x.NoticeVersion })
+            .IsUnique()
+            .HasDatabaseName("uq_ai_transparency_organization_user_version");
+        builder.HasIndex(x => new { x.OrganizationId, x.AcknowledgedAt })
+            .HasDatabaseName("ix_ai_transparency_organization_acknowledged_at");
     }
 }

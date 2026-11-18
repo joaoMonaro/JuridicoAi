@@ -14,6 +14,27 @@ public sealed class PecaApplicationServiceTests
     private const string Page = """{"format":"A4","marginTop":10,"marginBottom":11,"marginLeft":12,"marginRight":13}""";
 
     [Fact]
+    public async Task RodapeConfiguravel_CopiaAoCriarETrocarModeloEValidaTodasAsGravacoes()
+    {
+        var (service, templates, _, casoId) = Create();
+        var footer = Json("""{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Escritório"}]},{"type":"paragraph","content":[{"type":"text","text":"Endereço"}]}],"presentation":{"fontSize":10,"color":"#163255","align":"right","separator":true,"offsetBottomMm":8}}""");
+        var model = await templates.CriarAsync(new("Com rodapé", FooterJson: footer), default);
+        var created = await service.CriarAsync(casoId, new("Criada com modelo", model.Id), default);
+        Assert.Equal(footer.GetRawText(), created.FooterJson!.RootElement.GetRawText());
+        var existing = await service.CriarAsync(casoId, new("Existente"), default);
+        var originalBody = existing.ConteudoJson.RootElement.GetRawText();
+        var result = await service.AtualizarAsync(existing.Id, new(1, TemplateId: Json($"\"{model.Id}\"")), default);
+        Assert.Equal(footer.GetRawText(), result.Apresentacao!.FooterJson!.Value.GetRawText());
+        Assert.Equal(originalBody, existing.ConteudoJson.RootElement.GetRawText());
+        await templates.AtualizarAsync(model.Id, new(FooterJson: Json(Doc)), default);
+        Assert.Equal(footer.GetRawText(), existing.FooterJson!.RootElement.GetRawText());
+        var invalid = Json("""{"type":"doc","presentation":{"fontSize":100}}""");
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => templates.CriarAsync(new("Inválido", FooterJson: invalid), default));
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => templates.AtualizarAsync(model.Id, new(FooterJson: invalid), default));
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => service.AtualizarAsync(existing.Id, new(2, FooterJson: invalid), default));
+    }
+
+    [Fact]
     public async Task CriarSemTemplate_UsaDefaultsRascunhoEVersaoUm()
     {
         var (service, _, repository, casoId) = Create();
@@ -72,6 +93,63 @@ public sealed class PecaApplicationServiceTests
     }
 
     [Fact]
+    public async Task TrocarModelo_PreservaConteudoEAtualizaApresentacaoComUmSalvamento()
+    {
+        var (service, templates, _, casoId) = Create();
+        var texto = Json("""{"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"Texto da peça","marks":[{"type":"bold"}]}]}]}""");
+        var primeiro = await templates.CriarAsync(new("Primeiro", HeaderJson: Json(Doc), FooterJson: Json(Doc)), default);
+        var segundo = await templates.CriarAsync(new("Segundo", Json(Doc), Json(Page), Styles: Json("""{"fontFamily":"Arial","fontSize":14,"lineHeight":2,"textAlign":"left"}""")), default);
+        var peca = await service.CriarAsync(casoId, new("Peça", primeiro.Id), default);
+        var result = await service.AtualizarAsync(peca.Id, new(1, ConteudoJson: texto, TemplateId: Json($"\"{segundo.Id}\"")), default);
+        var updated = await service.ObterAsync(peca.Id, default);
+        Assert.Equal(segundo.Id, updated.TemplateId);
+        Assert.Equal(texto.GetRawText(), updated.ConteudoJson.RootElement.GetRawText());
+        Assert.Equal(10, updated.PageConfig.RootElement.GetProperty("marginTop").GetInt32());
+        Assert.Equal("Arial", updated.Styles.RootElement.GetProperty("fontFamily").GetString());
+        Assert.Null(updated.HeaderJson); Assert.Null(updated.FooterJson);
+        Assert.Equal(segundo.Id, result.Apresentacao!.TemplateId); Assert.Equal(2, result.Versao);
+        await templates.AtualizarAsync(segundo.Id, new(PageConfig: Json("""{"format":"A4","marginTop":99,"marginBottom":1,"marginLeft":1,"marginRight":1}""")), default);
+        Assert.Equal(10, updated.PageConfig.RootElement.GetProperty("marginTop").GetInt32());
+    }
+
+    [Fact]
+    public async Task RemoverModelo_RestauraDefaultsSemAlterarTexto()
+    {
+        var (service, templates, _, casoId) = Create();
+        var template = await templates.CriarAsync(new("Modelo", Json(Doc), Json(Page), Json(Doc), Json(Doc)), default);
+        var peca = await service.CriarAsync(casoId, new("Peça", template.Id), default);
+        var original = peca.ConteudoJson.RootElement.GetRawText();
+        await service.AtualizarAsync(peca.Id, new(1, TemplateId: Json("null")), default);
+        Assert.Null(peca.TemplateId); Assert.Null(peca.HeaderJson); Assert.Null(peca.FooterJson);
+        Assert.Equal(30, peca.PageConfig.RootElement.GetProperty("marginTop").GetInt32());
+        Assert.Equal(original, peca.ConteudoJson.RootElement.GetRawText());
+    }
+
+    [Fact]
+    public async Task TrocarModelo_RejeitaModeloDeOutraEmpresaEConflitoSemModificarPeca()
+    {
+        var repository = new FakeRepository(); var auth = new TestAuthContext(); var caso = Guid.NewGuid();
+        repository.Casos.Add(caso); repository.CasoOrganizations[caso] = auth.OrganizationId;
+        var service = new PecaApplicationService(repository, auth);
+        var foreign = await new TemplatePecaApplicationService(repository, new TestAuthContext()).CriarAsync(new("Outra empresa"), default);
+        var peca = await service.CriarAsync(caso, new("Peça"), default);
+        await Assert.ThrowsAsync<RecursoNaoEncontradoException>(() => service.AtualizarAsync(peca.Id, new(1, TemplateId: Json($"\"{foreign.Id}\"")), default));
+        await Assert.ThrowsAsync<ConflitoDeVersaoException>(() => service.AtualizarAsync(peca.Id, new(9, TemplateId: Json("null")), default));
+        Assert.Null(peca.TemplateId); Assert.Equal(1, peca.Versao);
+    }
+
+    [Fact]
+    public async Task Atualizar_OutrosCamposNaoTrocaModeloEIdInvalidoRetornaValidacao()
+    {
+        var (service, templates, _, casoId) = Create();
+        var template = await templates.CriarAsync(new("Modelo", PageConfig: Json(Page)), default);
+        var peca = await service.CriarAsync(casoId, new("Peça", template.Id), default);
+        var result = await service.AtualizarAsync(peca.Id, new(1, Titulo: "Outro título"), default);
+        Assert.Equal(template.Id, peca.TemplateId); Assert.Null(result.Apresentacao);
+        await Assert.ThrowsAsync<RequisicaoInvalidaException>(() => service.AtualizarAsync(peca.Id, new(2, TemplateId: Json("123")), default));
+    }
+
+    [Fact]
     public async Task Organizations_NaoAcessamCasosPecasOuTemplatesEntreSi()
     {
         var repository = new FakeRepository();
@@ -95,6 +173,25 @@ public sealed class PecaApplicationServiceTests
     }
 
     private static JsonElement Json(string json) => JsonDocument.Parse(json).RootElement.Clone();
+
+    [Fact]
+    public async Task ModeloComImagem_CopiaCabecalhoNaCriacaoENaTrocaEPreservaTexto()
+    {
+        var (service, templates, _, casoId) = Create();
+        var header = JsonSerializer.SerializeToElement(new { type = "doc", content = Array.Empty<object>(), presentation = new { mode = "banner", imageDataUrl = DocumentHeaderValidatorTests.Image, widthMm = 150, align = "center" } });
+        var model = await templates.CriarAsync(new("Marca completa", HeaderJson: header), default);
+        var fromModel = await service.CriarAsync(casoId, new("Com imagem", model.Id), default);
+        Assert.Equal(header.GetRawText(), fromModel.HeaderJson!.RootElement.GetRawText());
+        var peca = await service.CriarAsync(casoId, new("Peça existente"), default);
+        var original = peca.ConteudoJson.RootElement.GetRawText();
+        var applied = await service.AtualizarAsync(peca.Id, new(1, TemplateId: Json($"\"{model.Id}\"")), default);
+        Assert.Equal(header.GetRawText(), applied.Apresentacao!.HeaderJson!.Value.GetRawText());
+        Assert.Equal(original, peca.ConteudoJson.RootElement.GetRawText());
+        await templates.AtualizarAsync(model.Id, new(HeaderJson: Json(Doc)), default);
+        Assert.Equal(header.GetRawText(), peca.HeaderJson!.RootElement.GetRawText());
+        await service.AtualizarAsync(peca.Id, new(2, TemplateId: Json("null")), default);
+        Assert.Null(peca.HeaderJson);
+    }
 
     private static (PecaApplicationService, TemplatePecaApplicationService, FakeRepository, Guid) Create()
     {
@@ -120,6 +217,7 @@ public sealed class PecaApplicationServiceTests
             if (!_pecas.TryGetValue(x.Id, out var atual) || atual.DataExclusao is not null || atual.Versao != versao) return Task.FromResult(false);
             atual.Titulo = x.Titulo; atual.ConteudoJson = x.ConteudoJson; atual.PageConfig = x.PageConfig;
             atual.HeaderJson = x.HeaderJson; atual.FooterJson = x.FooterJson; atual.Styles = x.Styles;
+            atual.TemplateId = x.TemplateId;
             atual.Status = x.Status; atual.Versao = versao + 1; atual.DataAtualizacao = x.DataAtualizacao;
             return Task.FromResult(true);
         }

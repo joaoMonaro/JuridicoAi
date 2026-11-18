@@ -1,16 +1,4 @@
 services:
-  mongo:
-    image: mongo:7
-    container_name: JuridicoDB
-    restart: unless-stopped
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?configure MONGO_ROOT_USERNAME}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?configure MONGO_ROOT_PASSWORD}
-    volumes:
-      - mongo_data:/data/db
-
   postgres:
     image: postgres:17
     container_name: JuridicoPostgres
@@ -30,5 +18,4 @@ services:
       retries: 5
 
 volumes:
-  mongo_data:
   postgres_data:

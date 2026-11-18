@@ -1,9 +1,9 @@
 # Peças e templates
 
 Uma Peça é um documento jurídico pertencente obrigatoriamente a um Caso. O
-backend armazena o documento contínuo e suas configurações, mas não renderiza
-páginas, HTML, PDF ou DOCX. O JSON TipTap/ProseMirror é a fonte canônica para o
-futuro editor.
+backend armazena o documento contínuo e suas configurações e permite exportá-lo
+para DOCX e PDF. O JSON TipTap/ProseMirror permanece como fonte canônica usada
+pelo editor do frontend; os arquivos são gerados sob demanda.
 
 Todos os endpoints de Peças e Templates exigem `Authorization: Bearer` e usam a
 Organization do token como fonte de autoridade.
@@ -40,6 +40,7 @@ como `Rascunho`, com `versao` igual a 1.
 | `GET` | `/pecas/{pecaId}` | obtém o documento completo |
 | `PATCH` | `/pecas/{pecaId}` | atualiza parcialmente com controle de versão |
 | `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente com controle de versão |
+| `POST` | `/pecas/{pecaId}/exportar` | baixa DOCX ou PDF da versão solicitada |
 
 ### Criação sem template
 
@@ -65,7 +66,7 @@ papel A4, margens em milímetros e estilos jurídicos básicos com Times New Rom
 ```
 
 Na criação, `conteudoJson`, `pageConfig`, `headerJson`, `footerJson` e `styles`
-são copiados do template. A Peça conserva o `templateId` como rastreabilidade,
+são copiados do template. A Peça conserva o `templateId` como referência ao modelo selecionado,
 mas os JSONs passam a pertencer à Peça. Alterar ou excluir logicamente o
 template posteriormente não modifica Peças existentes.
 
@@ -113,6 +114,15 @@ Content-Type: application/json
 Também podem ser atualizados `pageConfig`, `headerJson`, `footerJson`, `styles`
 e `status`. Ao menos um campo além de `versao` precisa ser enviado.
 
+Durante a edição, o seletor **Modelo** também usa esse endpoint:
+`{"versao":4,"templateId":"id-do-modelo"}` copia margens, estilos, cabeçalho e
+rodapé do modelo da mesma Organization, preservando o texto da Peça.
+`templateId:null` remove o vínculo e restaura a apresentação padrão; omitir o
+campo mantém o modelo atual. Vínculo e apresentação são gravados juntos, sob
+o mesmo controle de versão. A resposta inclui `apresentacao` com os valores
+aplicados quando há troca de modelo. Na interface, a apresentação muda de
+imediato e a troca é salva junto de eventuais edições de texto pendentes.
+
 O repositório executa um update condicional por `id`, `versao` e ausência de
 exclusão lógica. O incremento ocorre na mesma instrução SQL. Se a versão 4 for
 aceita, a resposta contém a versão 5:
@@ -147,6 +157,31 @@ versões. Ele existe exclusivamente para impedir sobrescrita concorrente.
 - `pageConfig.format` precisa ser `A4`;
 - as quatro margens precisam ser números não negativos em milímetros;
 - o backend não valida profundamente todos os nós TipTap.
+
+### Exportação Word e PDF
+
+`POST /pecas/{pecaId}/exportar` recebe `{"formato":"docx","versao":7}` ou
+`{"formato":"pdf","versao":7}` e retorna um arquivo binário com nome derivado
+do título, MIME correspondente, `Content-Disposition: attachment` e
+`Cache-Control: no-store, private`. A configuração de CORS expõe o nome do arquivo.
+
+O frontend aguarda os salvamentos em andamento e as alterações pendentes antes
+de enviar a versão confirmada. O backend lê a peça completa uma vez, verifica
+a versão e usa sua apresentação armazenada, sem consultar o modelo original.
+Exportar não altera conteúdo, versão ou status. Rascunhos e finalizadas são aceitos.
+
+O DOCX tem conteúdo editável, cabeçalho/rodapé próprios e listas nativas. O PDF
+é convertido desse DOCX pelo LibreOffice e mantém texto selecionável. Ambos
+repetem a identidade visual em todas as páginas. A paginação da tela continua
+independente, e o Word pode repaginar conforme suas fontes e aplicativo.
+
+Formato/documento/configuração não suportados retornam 400; versão diferente,
+409; peça inexistente, excluída ou de outra Organization, 404. Conversão
+indisponível/ocupada retorna 503; timeout, 504. Erros seguem `application/problem+json`.
+Arquivos temporários são privados e removidos após a execução.
+
+Detalhes: [escopo e aceite](../features/exportacao-word-pdf.md) e
+[configuração do conversor e fontes](../operacao/exportacao-word-pdf.md).
 
 ## Endpoints de templates
 
@@ -187,6 +222,47 @@ Campos JSON omitidos recebem os mesmos defaults usados na criação de Peças.
 Templates também usam soft delete. A chave estrangeira permanece preservada
 para que uma Peça continue indicando seu template de origem.
 
+### Imagem de cabeçalho ou logotipo
+
+O gerenciador oferece **Apenas texto**, **Imagem de cabeçalho** (composição
+completa da marca) e **Logotipo**. Os dois modos de imagem permitem largura e
+alinhamento; altura máxima, distância do topo e distância do texto ficam em
+ajustes recolhidos. A prévia usa a mesma apresentação do editor, mantém a
+proporção da imagem e reserva espaço antes do corpo.
+
+O texto continua em `headerJson.content`. A propriedade opcional
+`headerJson.presentation` contém `mode` (`banner` ou `logo`), `imageDataUrl`,
+`widthMm`, `maxHeightMm`, `align`, `offsetTopMm` e `gapMm`. Modelos textuais
+anteriores continuam válidos. A imagem fica incorporada nesse JSON e acompanha
+a cópia para a Peça, sem tabela ou migração adicional.
+
+São aceitos PNG/JPEG de até 1 MB, 16 megapixels e 8.192 pixels por dimensão.
+A API verifica assinatura, dimensões e limites, recusa URLs externas e SVG.
+O navegador também confere se consegue abrir a imagem antes de permitir salvar.
+Editar o modelo não modifica Peças existentes; criar uma Peça ou escolher esse
+modelo no seletor aplica seu cabeçalho. O editor atual apresenta um cabeçalho
+no topo; os arquivos Word/PDF exportados repetem o cabeçalho por página.
+
+### Rodapé textual configurável
+
+O gerenciador permite texto com múltiplas linhas, tamanho de 7 a 16 pt, cor
+`#RRGGBB`, alinhamento à esquerda/centro/direita, linha divisória opcional e
+distância de 0 a 30 mm da borda inferior. A fonte acompanha a fonte do modelo.
+A prévia e o editor usam o mesmo componente; o rodapé ocupa espaço próprio,
+com separação do corpo, expandindo a área inferior quando necessário.
+
+O texto permanece em parágrafos de `footerJson.content`, incluindo linhas
+vazias. `footerJson.presentation` armazena `fontSize`, `color`, `align`,
+`separator` e `offsetBottomMm`. A API valida esses valores ao criar/editar
+modelos e ao editar Peças. Rodapés antigos sem `presentation` continuam aceitos,
+com fonte equivalente aos 10 px anteriores e alinhamento centralizado.
+Não há migração de banco.
+
+Criar uma Peça ou trocar seu modelo copia o rodapé e sua apresentação sem
+substituir o corpo da Peça. Alterar o modelo não atualiza Peças existentes.
+No editor, o rodapé aparece no final do documento contínuo; nos arquivos Word/PDF
+exportados ele se repete por página. Notas e imagem de rodapé não estão disponíveis.
+
 ## Exclusão lógica e consultas
 
 `DELETE` define `dataExclusao`; os registros não aparecem em listagens nem em
@@ -203,6 +279,10 @@ Consultas e updates incluem a Organization autenticada; Caso e Template de
 outra Organization não podem ser usados para criar uma Peça. O locking
 otimista inclui `organizationId` além de identificador e versão.
 
-Não fazem parte desta implementação editor visual, paginação, autosave no
-cliente, imagens, uploads, PDF, DOCX, histórico, colaboração em tempo real ou
-geração de conteúdo por IA.
+Editor visual e autosave existem no frontend, mas não são responsabilidades dos
+endpoints de Peças. A paginação final ocorre na exportação, sem criar entidades
+de página ou mudar a representação do editor. Imagens no corpo, importação de
+arquivos, histórico de versões e colaboração em tempo real continuam fora deste contrato. A geração
+de sugestões por IA usa endpoints separados, consulta a Peça para autorização
+e contexto e **não** atualiza `conteudoJson`. Veja o
+[Assistente de IA](assistente-ia.md).

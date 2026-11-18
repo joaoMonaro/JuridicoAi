@@ -1,0 +1,38 @@
+[
+  {
+    "arquivo": "peca-base.json",
+    "tipo": "Node"
+  },
+  {
+    "arquivo": "enviar-mensagem.json",
+    "tipo": "EnviarMensagem"
+  },
+  {
+    "arquivo": "mensagem-aceita.json",
+    "tipo": "MensagemAceita"
+  },
+  {
+    "arquivo": "proposta.json",
+    "tipo": "Proposta"
+  },
+  {
+    "arquivo": "aplicar-grupos.json",
+    "tipo": "AplicarGrupos"
+  },
+  {
+    "arquivo": "recibo.json",
+    "tipo": "Recibo"
+  },
+  {
+    "arquivo": "evento-proposta.json",
+    "tipo": "Evento"
+  },
+  {
+    "arquivo": "excluir-conversa.json",
+    "tipo": "ExcluirConversa"
+  },
+  {
+    "arquivo": "conflito-versao.json",
+    "tipo": "Problema"
+  }
+]

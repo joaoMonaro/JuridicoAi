@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:juridicoai:assistente:v2",
+  "title": "Contratos de fronteira propostos para assistente-v2",
+  "$defs": {
+    "Uuid": { "type": "string", "format": "uuid" },
+    "Sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "Node": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["doc", "paragraph", "heading", "text", "hardBreak", "bulletList", "orderedList", "listItem", "blockquote", "codeBlock", "horizontalRule"] },
+        "text": { "type": "string" },
+        "attrs": {
+          "type": "object", "additionalProperties": false,
+          "properties": {
+            "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+            "start": { "type": "integer", "minimum": 1, "maximum": 100000 },
+            "textAlign": { "enum": ["left", "center", "right", "justify", null] },
+            "language": { "type": ["string", "null"], "maxLength": 40 }
+          }
+        },
+        "marks": {
+          "type": "array", "maxItems": 8,
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["type"],
+            "properties": {
+              "type": { "enum": ["bold", "italic", "underline", "strike", "code", "link"] },
+              "attrs": {
+                "type": "object", "additionalProperties": false,
+                "properties": {
+                  "href": { "type": "string", "pattern": "^(https?://|mailto:)", "maxLength": 2048 },
+                  "target": { "enum": ["_blank", "_self", null] },
+                  "rel": { "type": ["string", "null"], "maxLength": 120 },
+                  "class": { "type": "null" }
+                }
+              }
+            }
+          }
+        },
+        "content": { "type": "array", "items": { "$ref": "#/$defs/Node" }, "maxItems": 30000 }
+      },
+      "allOf": [
+        { "if": { "properties": { "type": { "const": "text" } } }, "then": { "required": ["text"], "properties": { "text": { "minLength": 1 }, "content": false } }, "else": { "properties": { "text": false } } },
+        { "if": { "properties": { "type": { "const": "heading" } } }, "then": { "required": ["attrs"], "properties": { "attrs": { "required": ["level"] } } } },
+        { "if": { "properties": { "type": { "enum": ["hardBreak", "horizontalRule"] } } }, "then": { "properties": { "content": false } } }
+      ]
+    },
+    "EnviarMensagem": {
+      "type": "object", "additionalProperties": false,
+      "required": ["clientRequestId", "texto", "anexoIds", "versaoPecaEsperada", "propostaReferenciada", "selecao"],
+      "properties": {
+        "clientRequestId": { "$ref": "#/$defs/Uuid" },
+        "texto": { "type": "string", "minLength": 1, "maxLength": 20000 },
+        "anexoIds": { "type": "array", "uniqueItems": true, "maxItems": 50, "items": { "$ref": "#/$defs/Uuid" } },
+        "versaoPecaEsperada": { "type": "integer", "minimum": 1 },
+        "propostaReferenciada": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "object", "additionalProperties": false, "required": ["id", "revisao", "grupoId"], "properties": {
+              "id": { "$ref": "#/$defs/Uuid" }, "revisao": { "type": "integer", "minimum": 1 },
+              "grupoId": { "oneOf": [{ "$ref": "#/$defs/Uuid" }, { "type": "null" }] }
+            } }
+          ]
+        },
+        "selecao": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "object", "additionalProperties": false, "required": ["from", "to", "textoOriginal"], "properties": {
+              "from": { "type": "integer", "minimum": 0 }, "to": { "type": "integer", "minimum": 1 },
+              "textoOriginal": { "type": "string", "minLength": 1, "maxLength": 60000 }
+            } }
+          ]
+        }
+      }
+    },
+    "MensagemAceita": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "conversaId", "mensagemId", "execucaoId", "sequencia", "eventosUrl"],
+      "properties": {
+        "schemaVersion": { "const": "assistente-v2" }, "conversaId": { "$ref": "#/$defs/Uuid" },
+        "mensagemId": { "$ref": "#/$defs/Uuid" }, "execucaoId": { "$ref": "#/$defs/Uuid" },
+        "sequencia": { "type": "integer", "minimum": 1 }, "eventosUrl": { "type": "string", "pattern": "^/assistente/v2/" }
+      }
+    },
+    "Operacao": {
+      "type": "object", "additionalProperties": false,
+      "required": ["tipo", "startIndex", "deleteCount", "expectedBlocksSha256", "novosBlocos"],
+      "properties": {
+        "tipo": { "const": "SpliceBlocos" }, "startIndex": { "type": "integer", "minimum": 0 },
+        "deleteCount": { "type": "integer", "minimum": 0 }, "expectedBlocksSha256": { "$ref": "#/$defs/Sha256" },
+        "novosBlocos": { "type": "array", "maxItems": 30000, "items": { "$ref": "#/$defs/Node" } }
+      }
+    },
+    "Grupo": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "estado", "explicacao", "previewSha256", "alvosOriginais", "original", "proposto", "operacoes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Uuid" }, "estado": { "enum": ["Pendente", "Aplicado", "Rejeitado", "Desatualizado"] },
+        "explicacao": { "type": "string", "maxLength": 2000 }, "previewSha256": { "$ref": "#/$defs/Sha256" },
+        "alvosOriginais": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 100 } },
+        "original": { "type": "array", "items": { "$ref": "#/$defs/Node" } },
+        "proposto": { "type": "array", "items": { "$ref": "#/$defs/Node" } },
+        "operacoes": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/Operacao" } }
+      }
+    },
+    "Proposta": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "id", "conversaId", "snapshotId", "revisao", "versaoDecisoes", "versaoPecaAplicavel", "estado", "documentoBase", "grupos"],
+      "properties": {
+        "schemaVersion": { "const": "assistente-v2" }, "id": { "$ref": "#/$defs/Uuid" },
+        "conversaId": { "$ref": "#/$defs/Uuid" }, "snapshotId": { "$ref": "#/$defs/Uuid" },
+        "revisao": { "type": "integer", "minimum": 1 }, "versaoDecisoes": { "type": "integer", "minimum": 1 },
+        "versaoPecaAplicavel": { "type": "integer", "minimum": 1 },
+        "estado": { "enum": ["Pendente", "ParcialmenteResolvida", "Resolvida", "Desatualizada", "Substituida", "Incompleta"] },
+        "documentoBase": { "$ref": "#/$defs/Node" },
+        "substituidaPorId": { "oneOf": [{ "$ref": "#/$defs/Uuid" }, { "type": "null" }] },
+        "grupos": { "type": "array", "maxItems": 100, "items": { "$ref": "#/$defs/Grupo" } }
+      }
+    },
+    "AplicarGrupos": {
+      "type": "object", "additionalProperties": false,
+      "required": ["requestId", "revisaoProposta", "versaoDecisoes", "versaoPecaEsperada", "grupos"],
+      "properties": {
+        "requestId": { "$ref": "#/$defs/Uuid" }, "revisaoProposta": { "type": "integer", "minimum": 1 },
+        "versaoDecisoes": { "type": "integer", "minimum": 1 }, "versaoPecaEsperada": { "type": "integer", "minimum": 1 },
+        "grupos": { "type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": true, "items": {
+          "type": "object", "additionalProperties": false, "required": ["id", "previewSha256"],
+          "properties": { "id": { "$ref": "#/$defs/Uuid" }, "previewSha256": { "$ref": "#/$defs/Sha256" } }
+        } }
+      }
+    },
+    "Recibo": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "requestId", "propostaId", "versaoAnterior", "versaoResultante", "versaoPecaAtual", "resultadoAindaAtual", "gruposAplicados", "conteudoJson", "documentSha256", "dataAtualizacao", "propostaRestante"],
+      "properties": {
+        "schemaVersion": { "const": "assistente-v2" }, "requestId": { "$ref": "#/$defs/Uuid" },
+        "propostaId": { "$ref": "#/$defs/Uuid" }, "versaoAnterior": { "type": "integer", "minimum": 1 },
+        "versaoResultante": { "type": "integer", "minimum": 2 }, "versaoPecaAtual": { "type": "integer", "minimum": 1 },
+        "resultadoAindaAtual": { "type": "boolean" },
+        "gruposAplicados": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/Uuid" } },
+        "conteudoJson": { "$ref": "#/$defs/Node" }, "documentSha256": { "$ref": "#/$defs/Sha256" },
+        "dataAtualizacao": { "type": "string", "format": "date-time" },
+        "propostaRestante": { "oneOf": [{ "$ref": "#/$defs/Proposta" }, { "type": "null" }] }
+      }
+    },
+    "Evento": {
+      "type": "object", "additionalProperties": false,
+      "required": ["schemaVersion", "conversaId", "sequencia", "tipo", "execucaoId", "data", "payload"],
+      "properties": {
+        "schemaVersion": { "const": "assistente-v2" }, "conversaId": { "$ref": "#/$defs/Uuid" },
+        "sequencia": { "type": "integer", "minimum": 1 },
+        "tipo": { "enum": ["mensagem.aceita", "anexo.progresso", "execucao.progresso", "resposta.delta", "resposta.concluida", "proposta.disponivel", "proposta.atualizada", "execucao.falhou", "execucao.cancelada"] },
+        "execucaoId": { "oneOf": [{ "$ref": "#/$defs/Uuid" }, { "type": "null" }] },
+        "data": { "type": "string", "format": "date-time" }, "payload": { "type": "object" }
+      },
+      "allOf": [
+        { "if": { "properties": { "tipo": { "const": "resposta.delta" } } }, "then": { "properties": { "payload": {
+          "type": "object", "additionalProperties": false, "required": ["mensagemId", "delta"],
+          "properties": { "mensagemId": { "$ref": "#/$defs/Uuid" }, "delta": { "type": "string", "minLength": 1 } }
+        } } } },
+        { "if": { "properties": { "tipo": { "const": "proposta.disponivel" } } }, "then": { "properties": { "payload": {
+          "type": "object", "additionalProperties": false, "required": ["propostaId", "revisao"],
+          "properties": { "propostaId": { "$ref": "#/$defs/Uuid" }, "revisao": { "type": "integer", "minimum": 1 } }
+        } } } }
+      ]
+    },
+    "ExcluirConversa": {
+      "type": "object", "additionalProperties": false, "required": ["requestId", "confirmarExclusao"],
+      "properties": { "requestId": { "$ref": "#/$defs/Uuid" }, "confirmarExclusao": { "const": true } }
+    },
+    "Problema": {
+      "type": "object", "additionalProperties": false,
+      "required": ["status", "title", "detail", "code", "retryable", "correlationId"],
+      "properties": {
+        "status": { "type": "integer", "minimum": 400, "maximum": 599 }, "title": { "type": "string" },
+        "detail": { "type": "string" }, "code": { "type": "string" }, "retryable": { "type": "boolean" },
+        "correlationId": { "$ref": "#/$defs/Uuid" }, "instance": { "type": "string" },
+        "versaoPecaAtual": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
