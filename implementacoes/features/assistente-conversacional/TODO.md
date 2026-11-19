@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-18**. Referência completa:
+Atualizado em **2026-11-19**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -60,7 +60,7 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
 |---|---|---|
 | 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
 | 2 | P03 — Controle financeiro | Implementado em código (configuração inicial US$ 5,00); falta apenas configurar tarifas/limites reais no ambiente de deploy |
-| 3 | P04 — Monitoramento | Instrumentação, métricas e alertas de consumo, falhas, jobs sem progresso e exclusões pendentes |
+| 3 | P04 — Monitoramento | Código, painel e regras locais implementados; confirmar limiares, responsável, canal e operação no deploy |
 | 4 | P05 — Backup/exclusão | Registro externo mínimo, reaplicação automatizada e ensaio de restauração sem reativar conteúdo excluído |
 | 5 | P06 — Rollout | Gate v2 por organização, separado das flags operacionais, aplicado nas capacidades e operações autorizadas |
 | 6 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
@@ -85,6 +85,14 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   etapa e métricas de chamadas/tokens/custo, falhas, leases, filas sem progresso e
   exclusões abertas. Configurar alertas e procedimento de resposta, sem conteúdo
   jurídico ou credenciais nos logs. Os limiares operacionais precisam ser definidos.
+  **Implementação local em 2026-11-19:** Meter/OpenTelemetry OTLP, histogramas de
+  etapas/chamadas físicas, tokens conhecidos, coleta agregada PostgreSQL, progresso
+  persistido independente de claim/cota, console JSON e Compose privado com Collector,
+  Prometheus, Grafana e Alertmanager. Regras e procedimentos com limiares iniciais
+  de ensaio; canal padrão somente na interface local. Configuração de responsável,
+  notificação real, retenção de logs e validação no ambiente de deploy continuam
+  pendentes. Ver [operação](../../../docs/operacao/monitoramento-assistente.md) e
+  [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
 - [ ] **P05 — Desenvolver proteção das exclusões após restauração.** Exportar
   autorizações aceitas para registro mínimo independente do backup; implementar
   importação/reaplicação idempotente antes de abrir tráfego. Definir retenção e
@@ -106,7 +114,7 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
 
 P03 exige configuração das tarifas e do ambiente; P05/P06 exigem desenvolvimento
-adicional; P04 combina instrumentação e operação; P07 exige validação e eventuais
+adicional; P04 tem implementação local e operação de deploy pendente; P07 exige validação e eventuais
 correções; P08 exige configuração e ensaio. Permanecem condições para o piloto,
 não apenas melhorias opcionais.
 

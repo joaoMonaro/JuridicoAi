@@ -848,11 +848,17 @@ public sealed class AssistenteMonthlyLimitService(
     private static bool IsUniqueConstraintViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
-    private static AssistenteIaException LimitReached() =>
-        new(StatusCodes.Status429TooManyRequests, "AI_MONTHLY_LIMIT_REACHED", "Limite mensal atingido.");
+    private static AssistenteIaException LimitReached()
+    {
+        AssistenteTelemetry.Shared.OperationalEvent("AI_MONTHLY_LIMIT_REACHED");
+        return new(StatusCodes.Status429TooManyRequests, "AI_MONTHLY_LIMIT_REACHED", "Limite mensal atingido.");
+    }
 
-    private static AssistenteIaException LimitInsufficient() =>
-        new(StatusCodes.Status429TooManyRequests, "AI_MONTHLY_LIMIT_INSUFFICIENT", "Limite disponível insuficiente para esta operação.");
+    private static AssistenteIaException LimitInsufficient()
+    {
+        AssistenteTelemetry.Shared.OperationalEvent("AI_MONTHLY_LIMIT_INSUFFICIENT");
+        return new(StatusCodes.Status429TooManyRequests, "AI_MONTHLY_LIMIT_INSUFFICIENT", "Limite disponível insuficiente para esta operação.");
+    }
 
     private static AssistenteIaException PersistenceFailed(Exception inner) =>
         new(StatusCodes.Status503ServiceUnavailable, "AI_USAGE_PERSISTENCE_FAILED",

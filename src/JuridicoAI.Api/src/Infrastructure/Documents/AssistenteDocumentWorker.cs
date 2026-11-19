@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Application.Services;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -26,7 +27,7 @@ public sealed class AssistenteDocumentWorker(IServiceScopeFactory scopes,
                 if (await processor.ProcessNextAsync(stoppingToken)) continue;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
-            catch (Exception) { logger.LogError("Falha operacional na fila documental; nova consulta será realizada."); }
+            catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Document); logger.LogError("Falha operacional na fila documental; nova consulta será realizada."); }
             try { await Task.Delay(1500, stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
         }
@@ -93,9 +94,11 @@ public sealed class AssistenteDocumentProcessor(JuridicoAiDbContext db, IFileSto
                     Qualidade = part.Quality, Motivo = part.Reason, Metricas = JsonDocument.Parse(part.Metrics) });
                 rejected |= part.Quality != "Confiavel"; trusted |= part.Quality == "Confiavel";
                 source.LeaseAte = DateTime.UtcNow.AddSeconds(settings.LeaseSeconds);
+                source.UltimoProgressoEm = DateTime.UtcNow;
                 await SaveFencedAsync(source, fence, ct);
             }
             if (!await OwnLeaseAsync(source.Id, fence, ct)) return true;
+            source.UltimoProgressoEm = DateTime.UtcNow;
             source.Estado = !trusted ? "Inutilizavel" : rejected ? "Parcial" : "Concluido";
             source.PaginasConcluidas = lastPage;
             source.CodigoErro = ordinal == 0 ? "NO_READABLE_TEXT" : null;

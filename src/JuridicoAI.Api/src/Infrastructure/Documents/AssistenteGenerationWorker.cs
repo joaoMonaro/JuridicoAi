@@ -29,7 +29,7 @@ public sealed class AssistenteGenerationWorker(IServiceScopeFactory scopes, IOpt
                 }
             }
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }
-            catch (Exception) { logger.LogError("Falha operacional na fila de geração; os checkpoints foram preservados."); }
+            catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Generation); logger.LogError("Falha operacional na fila de geração; os checkpoints foram preservados."); }
             try { await Task.Delay(1000, stop); } catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }
         }
     }
@@ -109,13 +109,15 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
             {
                 await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, ex.Code == "AI_DOCUMENTS_PROCESSING" ? "AguardandoDocumentos" : job.Plano == null ? "NaFila" : "Redigindo")
                     .SetProperty(j => j.LeaseAte, DateTime.UtcNow.Add(delay)), token);
-            }, CancellationToken.None); return true;
+            }, CancellationToken.None, progressed: false); return true;
         }
         catch (Exception ex)
         {
             var code = ex is AssistenteIaException known ? known.Code : ex is AssistenteIaProviderException providerError ? providerError.Code : "AI_GENERATION_FAILED";
             var state = code is "AI_GENERATION_LIMIT" or "AI_GENERATION_DEADLINE" or "AI_GENERATION_INCOMPLETE" ? "Incompleta" :
                 code is "AI_DOCUMENT_SOURCE_CHANGED" or "AI_CONTEXT_SOURCE_CHANGED" or "AI_PROPOSAL_STALE" or "AI_PROPOSAL_REVISION_CONFLICT" ? "Desatualizada" : "Interrompida";
+            if (code is not ("AI_MONTHLY_LIMIT_REACHED" or "AI_MONTHLY_LIMIT_INSUFFICIENT")) AssistenteTelemetry.Shared.OperationalEvent(code);
+            if (code == "AI_GENERATION_LEASE_LOST") AssistenteTelemetry.Shared.WorkerLeaseLost(AssistenteWorkerKind.Generation);
             await FailAsync(job, code, state, CancellationToken.None); return true;
         }
     }
@@ -340,12 +342,14 @@ public sealed class AssistenteGenerationProcessor(JuridicoAiDbContext db, Assist
         else await chat.ConcluirAsync(start, result, ct);
     }
     private Task SetStateAsync(AssistenteGeracao job, string state, CancellationToken ct) => SaveAsync(job, async token =>
-    { await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, state), token); }, ct);
-    private async Task SaveAsync(AssistenteGeracao job, Func<CancellationToken, Task> action, CancellationToken ct)
+    { await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, state), token); }, ct, progressed: false);
+    private async Task SaveAsync(AssistenteGeracao job, Func<CancellationToken, Task> action, CancellationToken ct, bool progressed = true)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct); var live = await service.LockedAsync(job.Id, ct);
         if (live.LeaseToken != job.LeaseToken || live.LeaseAte <= DateTime.UtcNow || !Active(live.Estado)) throw Changed("AI_GENERATION_LEASE_LOST");
-        await action(ct); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); db.ChangeTracker.Clear();
+        await action(ct);
+        if (progressed) await db.Set<AssistenteGeracao>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.UltimoProgressoEm, DateTime.UtcNow), ct);
+        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); db.ChangeTracker.Clear();
     }
     private async Task FailAsync(AssistenteGeracao job, string code, string state, CancellationToken ct)
     {

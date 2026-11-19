@@ -61,6 +61,7 @@ public sealed class AssistenteUsageLimiter(IOptionsMonitor<AssistenteIaSettings>
         {
             var retryAfter = lease.TryGetMetadata(MetadataName.RetryAfter, out var value) ? value : (TimeSpan?)null;
             lease.Dispose();
+            AssistenteTelemetry.Shared.OperationalEvent(code);
             throw new AssistenteIaException(StatusCodes.Status429TooManyRequests, code, message,
                 retryable: true, retryAfter: retryAfter);
         }

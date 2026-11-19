@@ -1,6 +1,6 @@
 # TODO — Preparação para produção e testes locais
 
-Atualizado em **2026-11-18**. **Estado: planejamento; implementação não iniciada.**
+Atualizado em **2026-11-19**. **Estado: implementação parcial do monitoramento P04.**
 Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 ## Decisões registradas
@@ -9,8 +9,8 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 - [x] Registrar a exigência de solicitação explícita para testes com IA real.
 - [x] Separar neste plano decisões confirmadas, propostas e escolhas pendentes.
 
-Os itens acima representam documentação. Todos os critérios técnicos abaixo
-continuam pendentes. A ordem proposta pode ser ajustada antes da implementação.
+Os itens acima representam documentação. P04 possui implementação e ensaio local;
+as demais frentes e as condições operacionais indicadas abaixo continuam pendentes.
 
 ## Etapa 1 — Ambientes e controle dos testes pagos
 
@@ -70,6 +70,11 @@ Uma rodada real futura depende de solicitação explícita e orçamento definido
   uma configuração pronta para exposição pública.
 
 ### PROD-005 — Verificar disponibilidade e acompanhar falhas
+
+P04 disponibiliza liveness HTTP, métricas, coleta periódica, painel e regras de
+alerta locais. A prontidão completa, canal real, responsável, retenção de logs e
+ensaio no ambiente de deploy continuam abertos. Ver
+[evidência P04](../assistente-conversacional/evidencias/p04-monitoramento-2026-11-19.md).
 
 - [ ] Separar liveness de readiness; readiness deve conferir banco, migrations
   necessárias e acesso ao storage, sem revelar detalhes sensíveis.

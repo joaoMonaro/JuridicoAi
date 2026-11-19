@@ -37,6 +37,12 @@ build e **58 testes E2E do assistente** aprovados (specs pré-existentes P07 for
 escopo mantêm pendência própria). Ver
 [evidência P03](evidencias/p03-limite-mensal-2026-11-18.md).
 
+Atualização em **2026-11-19 (P04):** monitoramento operacional local com métricas
+OpenTelemetry/OTLP, coleta agregada sem conteúdo jurídico, progresso durável dos
+trabalhos, regras de alerta e painel provisionado. O Compose mantém interfaces
+administrativas em loopback; notificações reais, responsável e calibração no deploy
+continuam pendentes. Ver [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com

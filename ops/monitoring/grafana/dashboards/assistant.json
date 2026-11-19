@@ -1,0 +1,483 @@
+{
+  "uid": "juridicoai-assistente",
+  "title": "JuridicoAI — Assistente / Operação",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "timezone": "utc",
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "juridicoai",
+    "p04"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "API disponível",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "probe_success{job=\"juridicoai-api\"}",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "title": "Idade da última coleta",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max(ai_monitoring_snapshot_age_seconds)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "title": "Trabalhos ativos por tipo/estado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max by (category,dimension) (ai_jobs)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "title": "Trabalhos sem progresso",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max by (category,dimension) (ai_jobs_stalled)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "title": "Exclusões pendentes",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max(ai_deletions_pending)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "title": "Idade da exclusão mais antiga",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max(ai_deletion_oldest_age_seconds)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "title": "Consumo mensal agregado (UTC)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max(ai_monthly_consumed_usd)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 8,
+      "title": "Reservas mensais agregadas (UTC)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max(ai_monthly_reserved_usd)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 9,
+      "title": "Reservas pendentes por estado",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max by (dimension) (ai_reservations)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 10,
+      "title": "Organizações por faixa de orçamento (acumuladas)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max by (dimension) (ai_budget_organizations)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 11,
+      "title": "Chamadas físicas ao provedor / 5 minutos",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (operation,outcome) (increase(ai_provider_call_duration_seconds_count[5m]))",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 12,
+      "title": "p95 das etapas (interpretar com volume)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 40,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le,stage) (rate(ai_stage_duration_seconds_bucket[15m])))",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 13,
+      "title": "Tokens conhecidos / 5 minutos (cache é subconjunto da entrada)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind) (increase(ai_provider_tokens_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 14,
+      "title": "Interações criadas nas últimas 24h por estado atual",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 48,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "max by (dimension) (ai_interactions_24h)",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 15,
+      "title": "Falhas dos loops dos workers / 5 minutos",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (worker) (increase(ai_worker_failures_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 16,
+      "title": "Bloqueios e ocorrências operacionais / 5 minutos",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "juridicoai-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 56,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason) (increase(ai_operational_events_total[5m]))",
+          "refId": "A",
+          "legendFormat": "{{category}} {{dimension}} {{outcome}} {{stage}} {{kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

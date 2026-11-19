@@ -1,0 +1,18 @@
+global:
+  resolve_timeout: 5m
+route:
+  receiver: local-review
+  group_by: [alertname, category]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+# Local review in Alertmanager UI. Configure a real channel and responsible operator before pilot rollout.
+receivers:
+  - name: local-review
+inhibit_rules:
+  - source_matchers: ['alertname="ApiUnavailable"']
+    target_matchers: ['alertname="MonitoringStale"']
+  - source_matchers: ['alertname="BudgetExhausted"']
+    target_matchers: ['alertname=~"BudgetWarning|BudgetCritical"']
+  - source_matchers: ['alertname="BudgetCritical"']
+    target_matchers: ['alertname="BudgetWarning"']

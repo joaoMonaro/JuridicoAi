@@ -24,6 +24,7 @@ public static class AssistenteLatency
         {
             if (disposed) return;
             disposed = true;
+            AssistenteTelemetry.Shared.Stage(stage, Stopwatch.GetElapsedTime(started).TotalMilliseconds);
             logger?.LogInformation(new EventId(StageEventId, "AssistenteLatency"),
                 "AI_LATENCY Stage={Stage} DurationMs={DurationMs}", stage,
                 Math.Round(Stopwatch.GetElapsedTime(started).TotalMilliseconds, 3));

@@ -14,7 +14,7 @@ public sealed class AssistenteDeletionWorker(IServiceScopeFactory scopes, ILogge
         {
             try { await using var scope = scopes.CreateAsyncScope(); if (await scope.ServiceProvider.GetRequiredService<AssistenteDeletionProcessor>().ProcessNextAsync(ct)) continue; }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
-            catch (Exception) { logger.LogError("Falha operacional no expurgo autorizado do assistente; a fila será retomada."); }
+            catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Deletion); logger.LogError("Falha operacional no expurgo autorizado do assistente; a fila será retomada."); }
             try { await Task.Delay(1500, ct); } catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
         }
     }
@@ -44,7 +44,7 @@ public sealed class AssistenteDeletionProcessor(JuridicoAiDbContext db, IFileSto
                 await storage.DeleteAsync(remaining[0], ct);
                 remaining = remaining.Skip(1).ToArray();
                 if (await db.Set<AssistenteExclusao>().Where(d => d.Id == job.Id && d.LeaseToken == lease && d.LeaseAte > DateTime.UtcNow).ExecuteUpdateAsync(s =>
-                    s.SetProperty(d => d.Arquivos, AssistentePatchCompiler.Json(remaining)).SetProperty(d => d.LeaseAte, DateTime.UtcNow.AddSeconds(120)), ct) != 1) return true;
+                    s.SetProperty(d => d.Arquivos, AssistentePatchCompiler.Json(remaining)).SetProperty(d => d.UltimoProgressoEm, DateTime.UtcNow).SetProperty(d => d.LeaseAte, DateTime.UtcNow.AddSeconds(120)), ct) != 1) return true;
             }
             if (!await OwnAsync(job.Id, lease, ct)) return true;
             AssistenteDocumentScratch.DeletePrivate(job.ConversaId);

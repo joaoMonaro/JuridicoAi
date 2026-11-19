@@ -760,6 +760,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("tokens_finais_reservados");
 
+                    b.Property<DateTime?>("UltimoProgressoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ultimo_progresso_em");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
@@ -1096,6 +1100,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("tentativas");
 
+                    b.Property<DateTime?>("UltimoProgressoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ultimo_progresso_em");
+
                     b.Property<bool>("Vinculado")
                         .HasColumnType("boolean")
                         .HasColumnName("vinculado");
@@ -1252,6 +1260,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("tentativas");
 
+                    b.Property<DateTime?>("UltimoProgressoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ultimo_progresso_em");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
@@ -1367,6 +1379,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.Property<Guid>("RespostaId")
                         .HasColumnType("uuid")
                         .HasColumnName("resposta_id");
+
+                    b.Property<DateTime?>("UltimoProgressoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ultimo_progresso_em");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")

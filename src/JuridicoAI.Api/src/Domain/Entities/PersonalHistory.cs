@@ -20,6 +20,7 @@ public sealed class AssistenteExclusao
     public Guid ConversaId { get; init; }
     public string Estado { get; set; } = "Autorizada";
     public JsonDocument Arquivos { get; set; } = JsonDocument.Parse("[]");
+    public DateTime? UltimoProgressoEm { get; set; }
     public DateTime AutorizadaEm { get; init; }
     public DateTime? ConcluidaEm { get; set; }
     public Guid? LeaseToken { get; set; }

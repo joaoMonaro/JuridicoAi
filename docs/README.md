@@ -34,11 +34,12 @@ da API ou dos requisitos do MVP.
 - [Configurar a IA — ativação e ajustes](operacao/configuracao-ia.md)
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
 - [Configuração da exportação Word e PDF](operacao/exportacao-word-pdf.md)
+- [Monitoramento do assistente — P04](operacao/monitoramento-assistente.md)
 
 ## Implementações: ativa, entregas e espera
 
 - [Índice de implementações](../implementacoes/README.md)
-- [Preparação para produção e testes locais — planejamento](../implementacoes/features/preparacao-producao/README.md)
+- [Preparação para produção e testes locais — andamento](../implementacoes/features/preparacao-producao/README.md)
 - [Assistente conversacional — estado atual](../implementacoes/features/assistente-conversacional/estado-atual.md)
 - [TODO do assistente e melhorias evidenciadas](../implementacoes/features/assistente-conversacional/TODO.md)
 - [Geração de minutas — planejamento anterior incorporado](../implementacoes/features/geracao-minutas-ia/README.md)
@@ -72,7 +73,8 @@ O projeto contém:
 - persistência em PostgreSQL;
 - testes automatizados de backend, frontend, segurança e qualidade jurídica.
 
-Ainda não há observabilidade distribuída nem contêiner da aplicação. O
-`docker-compose.yml` provisiona PostgreSQL. Rollout comercial,
+Há monitoramento local configurável por OTLP, com painel e regras de alerta em
+`ops/monitoring/`. Não há contêiner da aplicação. O `docker-compose.yml` provisiona
+PostgreSQL. Configuração de notificações e monitoramento no deploy, rollout comercial,
 proteção das exclusões após restauração, configuração das tarifas do piloto e validações jurídicas
 continuam acompanhados na documentação de implementação.

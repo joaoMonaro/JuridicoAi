@@ -1,0 +1,191 @@
+{
+  "groups": [
+    {
+      "name": "juridicoai-assistente",
+      "rules": [
+        {
+          "alert": "ApiUnavailable",
+          "expr": "probe_success{job=\"juridicoai-api\"} == 0 or up{job=\"juridicoai-api\"} == 0",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "API não responde à verificação externa.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#api-indisponivel"
+          }
+        },
+        {
+          "alert": "MonitoringStale",
+          "expr": "(time() - max(ai_monitoring_last_success_timestamp_seconds) > 180) or absent(ai_monitoring_last_success_timestamp_seconds) or up{job=\"juridicoai-metrics\"} == 0",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Coleta ausente ou sem sucesso recente; dados podem estar desatualizados.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#coleta-indisponivel"
+          }
+        },
+        {
+          "alert": "JobsStalled",
+          "expr": "sum(max by (category, dimension) (ai_jobs_stalled)) > 0",
+          "for": "2m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há trabalho ativo sem progresso há pelo menos 10 minutos.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+          }
+        },
+        {
+          "alert": "JobDeadlineExceeded",
+          "expr": "sum(max by (category, dimension) (ai_jobs_deadline_exceeded)) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há trabalho ativo com prazo de execução excedido.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+          }
+        },
+        {
+          "alert": "LeaseExpired",
+          "expr": "sum(max by (category, dimension) (ai_leases_expired)) > 0",
+          "for": "3m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há lease expirado sem recuperação.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+          }
+        },
+        {
+          "alert": "DeletionOverdue",
+          "expr": "max(ai_deletions_overdue) > 0",
+          "for": "2m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há exclusão autorizada pendente além de 15 minutos.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#exclusoes-pendentes"
+          }
+        },
+        {
+          "alert": "ReservationNeedsReview",
+          "expr": "sum(max by (dimension) (ai_reservations_overdue)) > 0",
+          "for": "2m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há reserva não liquidada há mais de 15 minutos; requer conferência.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#reservas-pendentes"
+          }
+        },
+        {
+          "alert": "BudgetWarning",
+          "expr": "max(ai_budget_organizations{dimension=\"70\"}) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há organização na faixa de 70% do limite mensal (consumido + reservado).",
+            "runbook": "docs/operacao/monitoramento-assistente.md#consumo-mensal"
+          }
+        },
+        {
+          "alert": "BudgetCritical",
+          "expr": "max(ai_budget_organizations{dimension=\"90\"}) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há organização na faixa de 90% do limite mensal (consumido + reservado).",
+            "runbook": "docs/operacao/monitoramento-assistente.md#consumo-mensal"
+          }
+        },
+        {
+          "alert": "BudgetExhausted",
+          "expr": "max(ai_budget_organizations{dimension=\"100\"}) > 0",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Há organização na faixa de 100% do limite mensal (consumido + reservado).",
+            "runbook": "docs/operacao/monitoramento-assistente.md#consumo-mensal"
+          }
+        },
+        {
+          "alert": "ProviderFailures",
+          "expr": "sum(increase(ai_provider_call_duration_seconds_count{operation=\"generation\",outcome=\"failed\"}[5m])) >= 3 and (sum(increase(ai_provider_call_duration_seconds_count{operation=\"generation\",outcome=\"succeeded\"}[5m])) or vector(0)) == 0",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Três ou mais falhas do provedor sem sucesso na janela.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#falhas-do-provedor"
+          }
+        },
+        {
+          "alert": "ProviderSlow",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(ai_provider_call_duration_seconds_bucket{operation=\"generation\"}[15m]))) > 90 and sum(increase(ai_provider_call_duration_seconds_count{operation=\"generation\"}[15m])) >= 20",
+          "for": "5m",
+          "labels": {
+            "severity": "warning",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "p95 do provedor acima de 90 segundos com amostra mínima de 20 chamadas.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#falhas-do-provedor"
+          }
+        },
+        {
+          "alert": "WorkerFailures",
+          "expr": "sum by (worker) (increase(ai_worker_failures_total[5m])) >= 3",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Falhas repetidas no loop de um worker do assistente.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+          }
+        },
+        {
+          "alert": "ExecutionTimeouts",
+          "expr": "sum(increase(ai_operational_events_total{reason=\"deadline\"}[5m])) >= 3",
+          "for": "1m",
+          "labels": {
+            "severity": "critical",
+            "owner": "juridicoai-operator"
+          },
+          "annotations": {
+            "summary": "Prazos de execução repetidamente excedidos no assistente.",
+            "runbook": "docs/operacao/monitoramento-assistente.md#falhas-do-provedor"
+          }
+        }
+      ]
+    }
+  ]
+}
