@@ -179,6 +179,10 @@ local não substitui o aviso de transparência apresentado no primeiro uso.
 
 ## Ativação do assistente conversacional
 
+Siga [Configurar a IA](operacao/configuracao-ia.md) para ativar o fluxo completo
+em desenvolvimento. O guia começa pelos comandos de configuração e termina
+com os ajustes opcionais.
+
 Configurar chave/modelo e a flag geral não ativa todos os recortes v2. Capacidades
 combinam flags técnicas, kill switch e permissões da organização. Dependências,
 limites atuais e rotas estão em

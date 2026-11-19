@@ -31,6 +31,7 @@ da API ou dos requisitos do MVP.
 
 ## Operação
 
+- [Configurar a IA — ativação e ajustes](operacao/configuracao-ia.md)
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
 - [Configuração da exportação Word e PDF](operacao/exportacao-word-pdf.md)
 
