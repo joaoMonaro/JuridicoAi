@@ -1,5 +1,8 @@
 # Exclusão e restauração — procedimento operacional
 
+> P05 adiado para depois do MVP em 2026-11-19. Este procedimento orienta sua
+> retomada; volume independente e reaplicação automática não bloqueiam o lançamento.
+
 Complemento técnico de 2026-11-12. A remoção autorizada no banco/armazenamento ativo
 está implementada. Este documento não comprova expurgo de backups nem executa
 restauração em infraestrutura do produto.

@@ -43,6 +43,10 @@ trabalhos, regras de alerta e painel provisionado. O Compose mantém interfaces
 administrativas em loopback; notificações reais, responsável e calibração no deploy
 continuam pendentes. Ver [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
 
+Decisão em **2026-11-19:** P05 adiado para depois do MVP. O código permanece
+em `feature/p05-exclusoes-restauracao`, fora de `homologacao`; volume independente
+não é requisito de lançamento. Exclusão ativa e backup básico permanecem.
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com
@@ -168,7 +172,7 @@ fechados, sem tratar propostas do desenho como SLAs aprovados.
 | P02 | Homologar qualidade jurídica e fidelidade às fontes | **Revisão humana.** Revisar os artefatos reais de P01 com a rubrica, conferir fatos/citações e aprovar ou registrar limitações. Aprovação de checks automáticos não encerra esta etapa. |
 | P03 | Completar controle financeiro de produção | **Código validado; configuração no deploy.** Controle mensal UTC implementado com configuração inicial de US$ 5,00 (ainda não implantada) e testes reais em PostgreSQL/frontend. Falta apenas definir as tarifas reais do modelo e overrides de produção no deploy. |
 | P04 | Preparar monitoramento operacional | **Instrumentação + operação.** Fechar métricas, alertas e rotina de resposta para custo, falhas, jobs sem progresso, leases e exclusões pendentes. Usar metadados técnicos, sem conteúdo jurídico ou credenciais nos logs. |
-| P05 | Proteger exclusões após restauração | **Implementação + infraestrutura + ensaio.** Provisionar registro mínimo externo de autorizações, definir retenção e automatizar reaplicação das exclusões. Ensaiar restauração de banco/arquivos isolada e comprovar ausência dos chats excluídos antes de liberar tráfego. [Procedimento](especificacoes/06-operacao-exclusao-restauracao.md). |
+| P05 | Proteger exclusões após restauração | **Em espera, fora do MVP.** Código preservado em `feature/p05-exclusoes-restauracao`, sem integração em `homologacao`. Retomar quando repriorizado. |
 | P06 | Preparar ativação controlada do v2 | **Implementação + validação.** Completar gate por organização separado das flags operacionais e conferir seleção v1/v2, permissões e jornadas multiusuário nas condições do piloto. Validar com modelo real a integração já exercitada por simulação. |
 | P07 | Fechar compatibilidade e experiência do editor | **Validação + documentação.** Consolidar fixtures do schema existente, incluindo marks/listas/links/headings/emoji/blocos desconhecidos; ampliar verificação de documentos longos, acessibilidade, paginação de revisão, undo/autosave e exportação sem previews. Registrar versões/licenças das dependências e revisar o aviso vigente. Corrigir regressões necessárias à jornada; a suíte E2E completa ainda não está homologada. |
 | P08 | Preparar deploy e rollback do piloto | **Configuração + ensaio operacional.** Aplicar migrations aditivas, drenar workers antigos, conferir temporários legados e permissões/volume persistente; configurar HTTPS e origens pessoais. Ensaiar rollback sem apagar dados v2 nem reabrir conversas em exclusão. [Checklist operacional](especificacoes/06-operacao-exclusao-restauracao.md). |

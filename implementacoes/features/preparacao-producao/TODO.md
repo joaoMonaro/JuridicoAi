@@ -89,12 +89,13 @@ ensaio no ambiente de deploy continuam abertos. Ver
 
 - [ ] Definir retenção, perda tolerável de dados e tempo de recuperação.
 - [ ] Preparar backup consistente de banco e documentos e proteção das credenciais.
-- [ ] Implementar registro mínimo independente das autorizações de exclusão e
-  reaplicação idempotente antes da reabertura de tráfego, conforme P05.
+- [ ] **P05 — Em espera, fora do MVP:** registro independente das exclusões e
+  reaplicação após restauração. Código preservado em branch separada; retomar
+  quando repriorizado.
 - [ ] Tratar arquivos órfãos em falhas de exclusão de documentos do Caso, com
   registro persistido, novas tentativas e auditoria.
-- [ ] Ensaiar restauração com dados fictícios, preservando exclusões e conteúdo
-  já aprovado nas Peças; registrar resultado e limites do ensaio.
+- [ ] Ensaiar backup/restauração básicos com dados fictícios, preservando Peças
+  e arquivos. A reaplicação automática de exclusões após backup pertence ao P05 adiado.
 
 ### PROD-007 — Ensaiar deploy e rollback
 
@@ -110,7 +111,7 @@ ensaio no ambiente de deploy continuam abertos. Ver
 ### PROD-008 — Homologar e registrar a decisão de liberação
 
 - [ ] Conferir os critérios do MVP e as pendências P01/P02/P06/P07 do assistente.
-- [ ] Validar com o advogado: entrada pelo chat, anexos, geração, aprovação,
+- [ ] Validar com o advogado no MVP online, em acesso restrito: entrada pelo chat, anexos, geração, aprovação,
   edição manual, salvamento, retomada e exportação Word/PDF.
 - [ ] Planejar separadamente qualquer rodada de IA real necessária a essa
   homologação e executá-la somente após solicitação explícita e orçamento.

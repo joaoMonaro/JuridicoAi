@@ -87,7 +87,7 @@ próprios. Nenhum teste deve apontar para dados de produção por padrão.
    obrigatórias antes de a API atender requisições.
 3. Escolher a infraestrutura e preparar publicação, persistência e segredos.
 4. Implementar verificações de disponibilidade e monitoramento operacional.
-5. Garantir backup e restauração preservando as exclusões autorizadas.
+5. Preparar backup e restauração básicos; proteção automática das exclusões (P05) adiada.
 6. Ensaiar deploy/rollback e validar a jornada do MVP antes de liberar o piloto.
 
 Os critérios verificáveis e as dependências estão no [TODO](TODO.md).
@@ -102,7 +102,7 @@ específicas da IA permanecem no
 |---|---|
 | P03 — Controle financeiro | Configurar tarifas/limites reais por ambiente; aproveitar o controle já implementado |
 | P04 — Monitoramento | Implementação local disponível; configurar canal/responsável e validar a operação do ambiente |
-| P05 — Backup/exclusão | Preservar exclusões durante restauração; exige desenvolvimento adicional |
+| P05 — Backup/exclusão | Em espera, fora do MVP; código preservado em branch separada |
 | P06 — Rollout | Restringir o piloto por organização; cadastro restrito não substitui esse controle |
 | P07/P01/P02 — Compatibilidade e homologação | Comprovar o fluxo e revisar resultados antes da liberação |
 | P08 — Implantação | Ensaiar migrations, drenagem de workers, deploy e rollback |
@@ -147,6 +147,8 @@ piloto de um advogado, ainda sem escolha de serviço. Múltiplas instâncias exi
 definição de storage compartilhado e limites agregados de requisições.
 
 ## Condição para liberação
+
+P05 e seu volume independente foram adiados em 2026-11-19 e não bloqueiam o MVP.
 
 Concluir as tarefas de segurança, isolamento, persistência, recuperação e
 operação; registrar os ensaios; cumprir os critérios do MVP e validar a jornada
