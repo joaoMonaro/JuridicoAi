@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace JuridicoAI.Api.Application.Services;
 
 // No IAuthContext, Peça/Case repository, feature checks or provider: this surface only reads persisted user-owned content.
-public sealed class PersonalHistoryService(JuridicoAiDbContext db, IPersonalHistoryContext identity, IFileStorage storage)
+public sealed class PersonalHistoryService(JuridicoAiDbContext db, IPersonalHistoryContext identity, IFileStorage storage, IAssistenteDeletionJournal journal)
 {
     private IQueryable<AssistenteConversa> Conversations => db.AssistenteConversas.AsNoTracking().Where(c => c.UserId == identity.UserId);
     public async Task<PersonalConversationPage> ListAsync(string? before, int limit, CancellationToken ct)
@@ -81,27 +81,28 @@ public sealed class PersonalHistoryService(JuridicoAiDbContext db, IPersonalHist
         if (previous is not null)
         {
             if (previous.Id == request.RequestId && previous.ConversaId != id) throw new AssistenteIaException(409, "AI_IDEMPOTENCY_MISMATCH", "O identificador de exclusão já foi utilizado para outra conversa.");
-            await tx.CommitAsync(ct); return DeletionDto(previous);
+            await tx.CommitAsync(ct);
+            var confirmed = await new AssistenteDeletionJournalService(db, journal).ConfirmAsync(previous.Id, ct);
+            return DeletionDto(confirmed);
         }
         var conversation = await db.AssistenteConversas.FromSqlInterpolated($"SELECT * FROM ai_conversations WHERE id = {id} AND user_id = {identity.UserId} FOR UPDATE").AsNoTracking().SingleOrDefaultAsync(ct) ?? throw Missing();
         var files = await db.AssistenteDocumentos.AsNoTracking().Where(d => d.ConversaId == id).Select(d => d.StorageId).ToArrayAsync(ct);
         if (files.Any(f => !PrivatePath(conversation, f))) throw new AssistenteIaException(409, "AI_DELETION_STORAGE_SCOPE_INVALID", "A exclusão requer revisão do armazenamento privado.");
-        var now = DateTime.UtcNow;
-        await db.AssistenteConversas.Where(c => c.Id == id).ExecuteUpdateAsync(s => s.SetProperty(c => c.Estado, "EmExclusao").SetProperty(c => c.ExclusaoEpoch, c => c.ExclusaoEpoch + 1), ct);
-        await db.Set<AssistenteGeracao>().Where(j => j.ConversaId == id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, "Cancelada").SetProperty(j => j.LeaseToken, (Guid?)null).SetProperty(j => j.LeaseAte, (DateTime?)null), ct);
-        await db.Set<AssistenteAnaliseDocumental>().Where(j => j.ConversaId == id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, "Cancelada").SetProperty(j => j.LeaseToken, (Guid?)null).SetProperty(j => j.LeaseAte, (DateTime?)null), ct);
-        await db.AssistenteDocumentos.Where(d => d.ConversaId == id).ExecuteUpdateAsync(s => s.SetProperty(d => d.Estado, "Cancelado").SetProperty(d => d.LeaseToken, (Guid?)null).SetProperty(d => d.LeaseAte, (DateTime?)null), ct);
-        await db.AssistenteMensagens.Where(m => m.ConversaId == id && (m.Estado == "Gerando" || m.Estado == "AguardandoAnalise" || m.Estado == "AguardandoGeracao"))
-            .ExecuteUpdateAsync(s => s.SetProperty(m => m.Estado, "Cancelada").SetProperty(m => m.CodigoErro, "AI_CONVERSATION_DELETING"), ct);
+        var now = DateTime.UtcNow; now = new DateTime(now.Ticks - now.Ticks % 10, DateTimeKind.Utc);
+        await AssistenteDeletionJournalService.BlockAsync(db, id, ct);
         var deletion = new AssistenteExclusao { Id = request.RequestId, ConversaId = id, UserId = identity.UserId, Arquivos = AssistentePatchCompiler.Json(files), AutorizadaEm = now, DisponivelEm = now };
-        db.Add(deletion); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return DeletionDto(deletion);
+        db.Add(deletion); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+        var protectedDeletion = await new AssistenteDeletionJournalService(db, journal).ConfirmAsync(deletion.Id, ct);
+        return DeletionDto(protectedDeletion);
     }
     public async Task<AssistantDeletionDto> DeletionAsync(Guid requestId, CancellationToken ct) => DeletionDto(await db.Set<AssistenteExclusao>().AsNoTracking().SingleOrDefaultAsync(d => d.Id == requestId && d.UserId == identity.UserId, ct) ?? throw Missing());
     public async Task<IReadOnlyList<AssistantDeletionDto>> DeletionsAsync(CancellationToken ct) => (await db.Set<AssistenteExclusao>().AsNoTracking().Where(d => d.UserId == identity.UserId)
         .OrderByDescending(d => d.AutorizadaEm).ThenByDescending(d => d.Id).Take(30).ToArrayAsync(ct)).Select(DeletionDto).ToArray();
     private async Task<AssistenteConversa> OwnAsync(Guid id, CancellationToken ct) => await Conversations.SingleOrDefaultAsync(c => c.Id == id, ct) ?? throw Missing();
     private static PersonalConversationDto Dto(AssistenteConversa c) => new(c.Id, c.Titulo, c.CriadaEm, c.AtualizadaEm);
-    public static AssistantDeletionDto DeletionDto(AssistenteExclusao d) => new(d.Id, d.ConversaId, d.Estado, d.AutorizadaEm, d.ConcluidaEm, d.CodigoErro);
+    public static AssistantDeletionDto DeletionDto(AssistenteExclusao d) => new(d.Id, d.ConversaId,
+        d.JournaledAt is null ? "PendenteDeRetomada" : d.Estado, d.AutorizadaEm, d.ConcluidaEm,
+        d.JournaledAt is null ? "AI_DELETION_JOURNAL_PENDING" : d.CodigoErro);
     private static bool PrivatePath(AssistenteConversa c, string path) => path.StartsWith($"assistant/{c.OrganizationId:N}/{c.Id:N}/", StringComparison.Ordinal) && !path.Contains("..", StringComparison.Ordinal) && !path.Contains('\\');
     private static AssistenteIaException Missing() => new(404, "AI_HISTORY_NOT_FOUND", "Histórico privado não encontrado.");
     private static AssistenteIaException BadPage() => new(400, "AI_HISTORY_PAGE_INVALID", "Paginação do histórico inválida.");

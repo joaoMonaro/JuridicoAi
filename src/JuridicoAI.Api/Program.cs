@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using JuridicoAI.Api.Infrastructure.Observability;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -59,6 +60,16 @@ if (builder.Configuration.GetValue<bool>("AssistenteMonitoring:Enabled"))
 
 
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
+builder.Services.AddOptions<DeletionProtectionSettings>().Bind(builder.Configuration.GetSection("DeletionProtection"))
+    .Validate(x => !builder.Environment.IsProduction() || x.Configured,
+        "Produção exige DeletionProtection configurada com escopo, chave e destino independente.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<IAssistenteDeletionJournal, FileDeletionJournal>();
+builder.Services.AddScoped<IPrivateConversationFiles, PrivateConversationFileCatalog>();
+builder.Services.AddScoped<AssistenteDeletionJournalService>();
+builder.Services.AddScoped<AssistenteDeletionRecovery>();
+builder.Services.AddSingleton<AssistenteRecoveryStatus>();
+builder.Services.AddScoped<AssistenteRecoveryGate>();
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
 builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
     .Validate(x => !x.AnalysisEnabled || x.RetrievalEnabled, "Análise extensa exige recuperação documental.")
@@ -130,6 +141,8 @@ builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSectio
 builder.Services.AddDbContext<JuridicoAiDbContext>(options =>
     options.UseNpgsql(builder.Configuration["Postgres:ConnectionString"]));
 builder.Services.AddHostedService<DatabaseMigrationService>();
+builder.Services.AddHostedService<AssistenteRecoveryStartup>();
+builder.Services.AddHostedService<DeletionJournalWorker>();
 builder.Services.AddHostedService<AssistenteMonitoringWorker>();
 var maxFileSize = builder.Configuration.GetValue<long?>("DocumentStorage:MaxFileSizeBytes") ?? 20 * 1024 * 1024;
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxFileSize + 1024 * 1024);
@@ -292,6 +305,8 @@ builder.Services.AddScoped<IAssistenteIaProvider>(services =>
 builder.Services.AddScoped<IAssistenteTokenCounter>(services =>
     services.GetRequiredService<OpenAiAssistenteIaProvider>());
 var app = builder.Build();
+if (await DeletionProtectionCommands.ExecuteAsync(args, app.Services, CancellationToken.None)) return;
+app.UseMiddleware<AssistenteRecoveryMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

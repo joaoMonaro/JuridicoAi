@@ -1,6 +1,6 @@
 # Preparação para produção e testes locais
 
-> **Estado:** implementação parcial do monitoramento P04; demais frentes em planejamento.
+> **Estado:** implementação parcial de P04/P05; demais frentes em planejamento.
 > **Atualizado em:** 2026-11-19.
 > **Acompanhamento:** [tarefas e critérios de aceite](TODO.md).
 > **Escopo do produto:** [MVP de redação de peças jurídicas](../../../MVP.md).
@@ -12,8 +12,9 @@ preservando uma versão configurável para desenvolvimento e testes locais.
 O objetivo é usar o mesmo código, com configurações, credenciais e dados
 separados por ambiente.
 
-O monitoramento P04 tem implementação e ensaio local registrados em sua
-[evidência](../assistente-conversacional/evidencias/p04-monitoramento-2026-11-19.md).
+P04 e P05 têm implementação e ensaios locais registrados nas evidências de
+[monitoramento](../assistente-conversacional/evidencias/p04-monitoramento-2026-11-19.md)
+e [restauração](../assistente-conversacional/evidencias/p05-exclusoes-restauracao-2026-11-19.md).
 As demais frentes continuam em planejamento, sem contratação, deploy ou testes
 pagos realizados por esta entrega. Marcar tarefas somente após sua verificação.
 
@@ -26,7 +27,7 @@ pagos realizados por esta entrega. Marcar tarefas somente após sua verificaçã
   executadas quando explicitamente solicitadas pelo responsável pelo projeto.
 - A presença de uma chave, de um modelo configurado ou da habilitação de IA
   na aplicação não autoriza testes pagos.
-- A implementação iniciada limita-se ao monitoramento P04; as demais frentes
+- A implementação iniciada cobre os recortes locais P04/P05; as demais frentes
   permanecem em planejamento.
 
 ## Política de testes com IA
@@ -102,7 +103,7 @@ específicas da IA permanecem no
 |---|---|
 | P03 — Controle financeiro | Configurar tarifas/limites reais por ambiente; aproveitar o controle já implementado |
 | P04 — Monitoramento | Implementação local disponível; configurar canal/responsável e validar a operação do ambiente |
-| P05 — Backup/exclusão | Preservar exclusões durante restauração; exige desenvolvimento adicional |
+| P05 — Backup/exclusão | Código e ensaio local disponíveis; configurar registro independente/backup e conferir no deploy |
 | P06 — Rollout | Restringir o piloto por organização; cadastro restrito não substitui esse controle |
 | P07/P01/P02 — Compatibilidade e homologação | Comprovar o fluxo e revisar resultados antes da liberação |
 | P08 — Implantação | Ensaiar migrations, drenagem de workers, deploy e rollback |

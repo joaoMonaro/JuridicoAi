@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using JuridicoAI.Api.Application.Abstractions;
@@ -25,7 +26,8 @@ public sealed class AssistenteGenerationWorker(IServiceScopeFactory scopes, IOpt
                 if (options.CurrentValue.DurableGenerationEnabled)
                 {
                     await using var scope = scopes.CreateAsyncScope();
-                    if (await scope.ServiceProvider.GetRequiredService<AssistenteGenerationProcessor>().ProcessNextAsync(stop)) continue;
+                    if (await scope.ServiceProvider.GetRequiredService<AssistenteRecoveryGate>().IsOpenAsync(stop) &&
+                        await scope.ServiceProvider.GetRequiredService<AssistenteGenerationProcessor>().ProcessNextAsync(stop)) continue;
                 }
             }
             catch (OperationCanceledException) when (stop.IsCancellationRequested) { break; }

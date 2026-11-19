@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
@@ -54,6 +55,7 @@ public sealed class LocalFileStorage : IFileStorage
     {
         cancellationToken.ThrowIfCancellationRequested();
         var path = ResolvePath(storageId);
+        FileDeletionJournal.EnsureNoLinks(path);
         if (File.Exists(path)) File.Delete(path);
         return Task.CompletedTask;
     }

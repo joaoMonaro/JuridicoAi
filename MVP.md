@@ -1,6 +1,6 @@
 # MVP — redação de peças jurídicas
 
-Atualizado em **2026-11-16**. Primeiro usuário: **um advogado empresarial**.
+Atualizado em **2026-11-19**. Primeiro usuário: **um advogado empresarial**.
 
 ## Objetivo
 
@@ -33,6 +33,8 @@ da IA, revisa o texto e exporta um arquivo utilizável no seu trabalho.
 - Novos usos ou funcionalidades além da redação e finalização das peças.
 
 ## Quando estará pronto
+
+A validação com o advogado será feita com o MVP online, em acesso restrito ao piloto.
 
 - [ ] O advogado conclui o fluxo de fornecer informações até exportar a peça,
   usando um trabalho representativo da sua rotina, e considera o resultado útil.

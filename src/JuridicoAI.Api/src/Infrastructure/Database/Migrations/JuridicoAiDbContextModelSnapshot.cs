@@ -1248,6 +1248,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("estado");
 
+                    b.Property<DateTime?>("JournaledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("journaled_at");
+
                     b.Property<DateTime?>("LeaseAte")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("lease_ate");
@@ -1731,6 +1735,42 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasIndex("SubstituidaPorId", "ConversaId", "OrganizationId");
 
                     b.ToTable("ai_proposals", (string)null);
+                });
+
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.AssistenteRestoreState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("InProgress")
+                        .HasColumnType("boolean")
+                        .HasColumnName("in_progress");
+
+                    b.Property<string>("JournalSha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("journal_sha256");
+
+                    b.Property<Guid>("RunId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("run_id");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("verified_at");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ai_restore_state", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_ai_restore_state_singleton", "id = 1");
+                        });
                 });
 
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.Caso", b =>

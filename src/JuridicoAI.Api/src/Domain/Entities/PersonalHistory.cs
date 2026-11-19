@@ -23,6 +23,7 @@ public sealed class AssistenteExclusao
     public DateTime? UltimoProgressoEm { get; set; }
     public DateTime AutorizadaEm { get; init; }
     public DateTime? ConcluidaEm { get; set; }
+    public DateTime? JournaledAt { get; set; }
     public Guid? LeaseToken { get; set; }
     public DateTime? LeaseAte { get; set; }
     public DateTime DisponivelEm { get; set; }

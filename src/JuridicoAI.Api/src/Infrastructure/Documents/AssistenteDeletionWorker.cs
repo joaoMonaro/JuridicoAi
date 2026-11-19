@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
@@ -19,15 +20,16 @@ public sealed class AssistenteDeletionWorker(IServiceScopeFactory scopes, ILogge
         }
     }
 }
-public sealed class AssistenteDeletionProcessor(JuridicoAiDbContext db, IFileStorage storage)
+public sealed class AssistenteDeletionProcessor(JuridicoAiDbContext db, IFileStorage storage, IAssistenteDeletionJournal journal)
 {
-    public async Task<bool> ProcessNextAsync(CancellationToken ct)
+    public async Task<bool> ProcessNextAsync(CancellationToken ct, Guid? requestId = null)
     {
         AssistenteExclusao? job; var now = DateTime.UtcNow; var lease = Guid.NewGuid();
         await using (var tx = await db.Database.BeginTransactionAsync(ct))
         {
             job = await db.Set<AssistenteExclusao>().FromSqlInterpolated($"""
-                SELECT * FROM ai_deletion_requests WHERE estado <> 'RemovidaDoAmbienteAtivo' AND disponivel_em <= {now}
+                SELECT * FROM ai_deletion_requests WHERE estado <> 'RemovidaDoAmbienteAtivo' AND journaled_at IS NOT NULL AND disponivel_em <= {now}
+                AND ({requestId}::uuid IS NULL OR id = {requestId})
                 AND (lease_ate IS NULL OR lease_ate < {now}) ORDER BY autorizada_em LIMIT 1 FOR UPDATE SKIP LOCKED
                 """).AsNoTracking().SingleOrDefaultAsync(ct);
             if (job is null) { await tx.CommitAsync(ct); return false; }
@@ -37,7 +39,15 @@ public sealed class AssistenteDeletionProcessor(JuridicoAiDbContext db, IFileSto
         }
         try
         {
+            var authorization = AssistenteDeletionJournalService.Authorization(job);
+            if (!(await journal.ReadAsync(ct)).Records.Contains(authorization)) throw new InvalidOperationException("Autorização protegida não conferida.");
+            var bound = await db.AssistenteConversas.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(c => c.Id == job.ConversaId, ct);
+            if (bound is not null && (bound.UserId != job.UserId || bound.Estado != "EmExclusao")) throw new InvalidOperationException("Titularidade de exclusão inválida.");
             var remaining = AssistenteChatService.Read<string[]>(job.Arquivos)!;
+            if (remaining.Any(f => !PrivateConversationFileCatalog.InScope(job.ConversaId, f)) ||
+                await db.DocumentosCaso.AnyAsync(d => remaining.Contains(d.StorageId), ct) ||
+                await db.AssistenteDocumentos.AnyAsync(d => remaining.Contains(d.StorageId) && (d.ConversaId != job.ConversaId || d.DocumentoCasoId != null), ct))
+                throw new InvalidOperationException("Escopo privado de exclusão inválido.");
             while (remaining.Length > 0)
             {
                 if (!await OwnAsync(job.Id, lease, ct)) return true;
@@ -47,6 +57,7 @@ public sealed class AssistenteDeletionProcessor(JuridicoAiDbContext db, IFileSto
                     s.SetProperty(d => d.Arquivos, AssistentePatchCompiler.Json(remaining)).SetProperty(d => d.UltimoProgressoEm, DateTime.UtcNow).SetProperty(d => d.LeaseAte, DateTime.UtcNow.AddSeconds(120)), ct) != 1) return true;
             }
             if (!await OwnAsync(job.Id, lease, ct)) return true;
+            FileDeletionJournal.EnsureNoLinks(AssistenteDocumentScratch.Private(job.ConversaId));
             AssistenteDocumentScratch.DeletePrivate(job.ConversaId);
             await using var tx = await db.Database.BeginTransactionAsync(ct);
             // Same content lock order as application: conversation before dependent rows. No storage/provider call holds this transaction.

@@ -1,6 +1,6 @@
 # TODO — Preparação para produção e testes locais
 
-Atualizado em **2026-11-19**. **Estado: implementação parcial do monitoramento P04.**
+Atualizado em **2026-11-19**. **Estado: implementação parcial de P04/P05.**
 Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 ## Decisões registradas
@@ -9,7 +9,7 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 - [x] Registrar a exigência de solicitação explícita para testes com IA real.
 - [x] Separar neste plano decisões confirmadas, propostas e escolhas pendentes.
 
-Os itens acima representam documentação. P04 possui implementação e ensaio local;
+Os itens acima representam documentação. P04/P05 possuem implementação e ensaio local;
 as demais frentes e as condições operacionais indicadas abaixo continuam pendentes.
 
 ## Etapa 1 — Ambientes e controle dos testes pagos
@@ -87,10 +87,14 @@ ensaio no ambiente de deploy continuam abertos. Ver
 
 ### PROD-006 — Proteger backup, restauração e exclusões
 
+P05 tem código e ensaio local com banco e arquivos fictícios. Ver
+[evidência P05](../assistente-conversacional/evidencias/p05-exclusoes-restauracao-2026-11-19.md).
+
 - [ ] Definir retenção, perda tolerável de dados e tempo de recuperação.
 - [ ] Preparar backup consistente de banco e documentos e proteção das credenciais.
-- [ ] Implementar registro mínimo independente das autorizações de exclusão e
-  reaplicação idempotente antes da reabertura de tráfego, conforme P05.
+- [x] Implementar registro mínimo independente e reaplicação idempotente antes da
+  reabertura de tráfego (P05, verificação local). Configurar o volume independente
+  e ensaiar com os backups do deploy continua pendente.
 - [ ] Tratar arquivos órfãos em falhas de exclusão de documentos do Caso, com
   registro persistido, novas tentativas e auditoria.
 - [ ] Ensaiar restauração com dados fictícios, preservando exclusões e conteúdo
@@ -110,7 +114,7 @@ ensaio no ambiente de deploy continuam abertos. Ver
 ### PROD-008 — Homologar e registrar a decisão de liberação
 
 - [ ] Conferir os critérios do MVP e as pendências P01/P02/P06/P07 do assistente.
-- [ ] Validar com o advogado: entrada pelo chat, anexos, geração, aprovação,
+- [ ] Validar com o advogado no MVP online, em acesso restrito: entrada pelo chat, anexos, geração, aprovação,
   edição manual, salvamento, retomada e exportação Word/PDF.
 - [ ] Planejar separadamente qualquer rodada de IA real necessária a essa
   homologação e executá-la somente após solicitação explícita e orçamento.

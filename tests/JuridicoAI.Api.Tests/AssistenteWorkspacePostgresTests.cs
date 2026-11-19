@@ -453,6 +453,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
     }
     private sealed class Database(string connection, string name) : IAsyncDisposable
     {
+        public MemoryDeletionJournal DeletionJournal { get; } = new();
         public Guid OrgId { get; } = Guid.NewGuid();
         public Guid UserId { get; } = Guid.NewGuid();
         public Guid PecaId { get; } = Guid.NewGuid();

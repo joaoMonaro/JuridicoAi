@@ -17,7 +17,7 @@ namespace JuridicoAI.Api.Tests;
 public sealed partial class AssistenteWorkspacePostgresTests
 {
     private sealed record PersonalIdentity(Guid UserId) : IPersonalHistoryContext;
-    private static PersonalHistoryService Personal(Database db, JuridicoAiDbContext ctx, IFileStorage storage, Guid? userId = null) => new(ctx, new PersonalIdentity(userId ?? db.UserId), storage);
+    private static PersonalHistoryService Personal(Database db, JuridicoAiDbContext ctx, IFileStorage storage, Guid? userId = null) => new(ctx, new PersonalIdentity(userId ?? db.UserId), storage, db.DeletionJournal);
     [ReviewPostgresFact]
     public async Task Pessoal_LeConteudoPersistidoSemMembershipOuPecaAtualENaoExpoeInternos()
     {
@@ -73,14 +73,14 @@ public sealed partial class AssistenteWorkspacePostgresTests
         ctx.Add(new AssistenteMemoria { Id = Guid.NewGuid(), OrganizationId = db.OrgId, ConversaId = proposal.ConversaId, RespostaId = response.Id, Versao = 1, AteSequencia = 2, PoliticaVersao = "teste", Registros = JsonDocument.Parse("[]"), CriadaEm = DateTime.UtcNow }); await ctx.SaveChangesAsync();
         var personal = Personal(db, ctx, storage); var request = new DeleteConversationRequest(Guid.NewGuid(), false);
         Assert.Equal("AI_DELETION_CONFIRMATION_REQUIRED", (await Assert.ThrowsAsync<AssistenteIaException>(() => personal.DeleteAsync(proposal.ConversaId, request, default))).Code);
-        Assert.False(await new AssistenteDeletionProcessor(ctx, storage).ProcessNextAsync(default));
+        Assert.False(await new AssistenteDeletionProcessor(ctx, storage, db.DeletionJournal).ProcessNextAsync(default));
         var scratch = AssistenteDocumentScratch.Create(proposal.ConversaId); await File.WriteAllTextAsync(Path.Combine(scratch, "source.txt"), "Cópia temporária privada.");
         var accepted = await personal.DeleteAsync(proposal.ConversaId, request with { ConfirmarExclusao = true }, default);
         Assert.Equal(accepted.RequestId, (await personal.DeleteAsync(proposal.ConversaId, request with { ConfirmarExclusao = true }, default)).RequestId);
         Assert.Equal(404, (await Assert.ThrowsAsync<AssistenteIaException>(() => personal.GetAsync(proposal.ConversaId, default))).StatusCode);
         Assert.Equal("AI_CONVERSATION_DELETING", (await Assert.ThrowsAsync<AssistenteIaException>(() => db.Service(ctx).ObterOuCriarAsync(db.PecaId, default))).Code);
         Assert.Equal(2, await ctx.AssistenteMensagens.CountAsync());
-        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage).ProcessNextAsync(default));
+        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage, db.DeletionJournal).ProcessNextAsync(default));
         await using var verify = db.Context(); var result = await Personal(db, verify, storage).DeletionAsync(request.RequestId, default);
         Assert.Equal("RemovidaDoAmbienteAtivo", result.Estado); Assert.False(result.EliminadaDasCopias); Assert.False(Directory.Exists(AssistenteDocumentScratch.Private(proposal.ConversaId)));
         Assert.Equal(result, await Personal(db, verify, storage).DeleteAsync(proposal.ConversaId, request with { ConfirmarExclusao = true }, default));
@@ -104,7 +104,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         await using var generation = db.Context(); var running = GenerationServices(db, generation, storage, model).Processor.ProcessNextAsync(default);
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         await using (var deleting = db.Context()) await Personal(db, deleting, storage).DeleteAsync(conversation, new(Guid.NewGuid(), true), default);
-        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage).ProcessNextAsync(default));
+        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage, db.DeletionJournal).ProcessNextAsync(default));
         release.TrySetResult(); Assert.True(await running);
         await using var verify = db.Context(); Assert.Empty(await verify.AssistenteConversas.IgnoreQueryFilters().ToArrayAsync()); Assert.Empty(await verify.Set<AssistenteGeracao>().ToArrayAsync());
         Assert.Empty(await verify.Set<AssistenteGeracaoEtapa>().ToArrayAsync()); Assert.Empty(await verify.AssistenteMensagens.ToArrayAsync()); Assert.Empty(await verify.AssistentePropostas.ToArrayAsync());
@@ -117,7 +117,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         await using var db = await Database.Create(); var storage = new DocumentMemoryStorage(); var model = new GenerationModel { AnalyzeFirst = true };
         var (conversation, _) = await QueueGeneration(db, storage, model, documents: true); await DrainGeneration(db, storage, model);
         await using (var authorize = db.Context()) await Personal(db, authorize, storage).DeleteAsync(conversation, new(Guid.NewGuid(), true), default);
-        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage).ProcessNextAsync(default));
+        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage, db.DeletionJournal).ProcessNextAsync(default));
         await using var verify = db.Context(); Assert.Equal("RemovidaDoAmbienteAtivo", (await verify.Set<AssistenteExclusao>().SingleAsync()).Estado);
         Assert.Empty(await verify.Set<AssistenteAnaliseDocumental>().ToArrayAsync()); Assert.Empty(await verify.Set<AssistenteAnaliseLote>().ToArrayAsync()); Assert.Empty(await verify.Set<AssistenteGeracaoEtapa>().ToArrayAsync());
         Assert.Empty(await verify.AssistenteConversas.IgnoreQueryFilters().ToArrayAsync()); Assert.Equal(model.Calls + model.Analysis.GenerationCalls, await verify.AiUsageLedger.CountAsync());
@@ -129,11 +129,11 @@ public sealed partial class AssistenteWorkspacePostgresTests
         await using var db = await Database.Create(); await using var ctx = db.Context(); var inner = new DocumentMemoryStorage(); var conversation = await db.Service(ctx).ObterOuCriarAsync(db.PecaId, default);
         var docs = Documents(db, ctx, inner); await Upload(docs, conversation.Id, "um.txt", "Primeiro arquivo."); await Upload(docs, conversation.Id, "dois.txt", "Segundo arquivo.");
         var protocol = await Personal(db, ctx, inner).DeleteAsync(conversation.Id, new(Guid.NewGuid(), true), default); var storage = new PersonalFlakyStorage(inner);
-        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage).ProcessNextAsync(default));
+        await using (var worker = db.Context()) Assert.True(await new AssistenteDeletionProcessor(worker, storage, db.DeletionJournal).ProcessNextAsync(default));
         Assert.Single(inner.Files); Assert.Equal(404, (await Assert.ThrowsAsync<AssistenteIaException>(() => Personal(db, ctx, inner).GetAsync(conversation.Id, default))).StatusCode);
         Assert.Equal("PendenteDeRetomada", (await Personal(db, ctx, inner).DeletionAsync(protocol.RequestId, default)).Estado);
         await ctx.Set<AssistenteExclusao>().ExecuteUpdateAsync(s => s.SetProperty(d => d.DisponivelEm, DateTime.UtcNow));
-        await using (var restart = db.Context()) Assert.True(await new AssistenteDeletionProcessor(restart, storage).ProcessNextAsync(default));
+        await using (var restart = db.Context()) Assert.True(await new AssistenteDeletionProcessor(restart, storage, db.DeletionJournal).ProcessNextAsync(default));
         Assert.Empty(inner.Files); Assert.Equal(3, storage.Deletes); Assert.Equal("RemovidaDoAmbienteAtivo", (await Personal(db, ctx, inner).DeletionAsync(protocol.RequestId, default)).Estado);
     }
     private sealed class PersonalFlakyStorage(DocumentMemoryStorage inner) : IFileStorage

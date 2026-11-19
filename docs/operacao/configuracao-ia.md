@@ -377,3 +377,9 @@ Referência: [validações e comandos](../../src/JuridicoAI.Api/Program.cs),
 [contratos HTTP](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
 Levantamento do código local em 19/11/2026; valores efetivos de segredos/banco e
 chamadas ao provedor não foram verificados.
+
+## Exclusão do histórico
+
+Para confirmar exclusões, configure também `DeletionProtection` e inicialize o
+registro independente. O [guia P05](exclusao-restauracao.md) reúne as opções e os
+comandos de recuperação. Essa configuração não habilita chamadas à IA.

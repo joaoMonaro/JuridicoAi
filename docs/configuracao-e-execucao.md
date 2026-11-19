@@ -204,3 +204,11 @@ exportação OTLP/HTTP com `AssistenteMonitoring__Enabled=true`; endpoint padrã
 limites do P03. O [procedimento P04](operacao/monitoramento-assistente.md) documenta
 as opções, os serviços locais privados, o painel, os alertas e as pendências de deploy.
 `GET /health/live` verifica somente o processo HTTP; readiness completa segue pendente.
+
+## Proteção das exclusões
+
+`DeletionProtection` define o diretório independente, a chave de integridade e o
+escopo do registro de exclusões. Produção exige configuração; sem ela, exclusões
+locais não são confirmadas. Na primeira instalação, inicializar o registro e
+exportar os protocolos anteriores. Consulte os
+[comandos do P05](operacao/exclusao-restauracao.md) para configuração e restauração.

@@ -76,6 +76,7 @@ docker compose -p juridicoai-monitoring -f ops/monitoring/compose.yaml down
 - [Índice da documentação atual](docs/README.md)
 - [Configuração e execução](docs/configuracao-e-execucao.md)
 - [Monitoramento operacional do assistente](docs/operacao/monitoramento-assistente.md)
+- [Exclusões após restauração — configuração e comandos](docs/operacao/exclusao-restauracao.md)
 - [API HTTP](docs/backend/api.md)
 - [Assistente de IA](docs/backend/assistente-ia.md)
 - [Estado atual do assistente conversacional](implementacoes/features/assistente-conversacional/estado-atual.md)

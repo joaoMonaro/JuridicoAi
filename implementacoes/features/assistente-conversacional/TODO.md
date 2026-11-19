@@ -61,7 +61,7 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
 | 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
 | 2 | P03 — Controle financeiro | Implementado em código (configuração inicial US$ 5,00); falta apenas configurar tarifas/limites reais no ambiente de deploy |
 | 3 | P04 — Monitoramento | Código, painel e regras locais implementados; confirmar limiares, responsável, canal e operação no deploy |
-| 4 | P05 — Backup/exclusão | Registro externo mínimo, reaplicação automatizada e ensaio de restauração sem reativar conteúdo excluído |
+| 4 | P05 — Backup/exclusão | Código e ensaio local implementados; configurar volume independente, retenção e ensaiar no deploy |
 | 5 | P06 — Rollout | Gate v2 por organização, separado das flags operacionais, aplicado nas capacidades e operações autorizadas |
 | 6 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
 | 7 | P08 — Implantação | Configuração e roteiro de deploy/rollback ensaiados, preservando dados e exclusões autorizadas |
@@ -98,6 +98,13 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   importação/reaplicação idempotente antes de abrir tráfego. Definir retenção e
   ensaiar restauração conjunta de banco/arquivos, preservando Peças e fontes do
   Caso. Seguir o [procedimento operacional](especificacoes/06-operacao-exclusao-restauracao.md).
+  **Implementação local em 2026-11-19:** registro assinado fora dos backups de
+  conteúdo, confirmação após gravação durável, retomada de pendências, CLI de
+  reaplicação idempotente e bloqueio persistente de restauração. Ensaiados banco
+  e arquivos com `pg_dump`/`pg_restore`, preservando Peças/fontes compartilhadas e
+  outro chat. Registro não expira automaticamente; retenção dos backups, volume
+  independente e ensaio no ambiente online continuam pendentes. Ver
+  [evidência P05](evidencias/p05-exclusoes-restauracao-2026-11-19.md).
 - [ ] **P06 — Implementar gate de rollout v2 por organização.** Separar habilitação
   do piloto das flags de operação; refletir a autorização nas capacidades e
   revalidá-la no backend. Conferir a seleção v1/v2, isolamento multiusuário e
@@ -113,9 +120,9 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   antigos e conferir temporários legados. Ensaiar deploy/rollback sem downgrade
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
 
-P03 exige configuração das tarifas e do ambiente; P05/P06 exigem desenvolvimento
-adicional; P04 tem implementação local e operação de deploy pendente; P07 exige validação e eventuais
-correções; P08 exige configuração e ensaio. Permanecem condições para o piloto,
+P03 exige configuração das tarifas e do ambiente; P04/P05 têm implementação
+local e condições operacionais pendentes no deploy; P06 exige desenvolvimento
+adicional; P07 exige validação e eventuais correções; P08 exige configuração e ensaio. Permanecem condições para o piloto,
 não apenas melhorias opcionais.
 
 ## Melhorias evidenciadas na avaliação reduzida

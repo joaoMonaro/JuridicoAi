@@ -282,7 +282,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
         public Task SaveAsync(string id, Stream content, CancellationToken ct) => storage.SaveAsync(id, content, ct);
         public Task DeleteAsync(string id, CancellationToken ct) => storage.DeleteAsync(id, ct);
     }
-    private static AssistenteDocumentService Documents(Database db, JuridicoAiDbContext context, DocumentMemoryStorage storage, Guid? user = null) =>
+    private static AssistenteDocumentService Documents(Database db, JuridicoAiDbContext context, IFileStorage storage, Guid? user = null) =>
         new(context, new AssistenteWorkspaceRepository(context), new PecaRepository(context), storage, new TestAuthContext(db.OrgId, user ?? db.UserId),
             db.Access, new Transparency(), Options.Create(new AssistenteDocumentSettings { Enabled = true }));
     private static AssistenteDocumentProcessor Processor(JuridicoAiDbContext context, IFileStorage storage) =>

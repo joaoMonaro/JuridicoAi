@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using JuridicoAI.Api.Application.Services;
 using System.Security.Cryptography;
 using System.Text;
@@ -24,7 +25,8 @@ public sealed class AssistenteDocumentWorker(IServiceScopeFactory scopes,
             {
                 await using var scope = scopes.CreateAsyncScope();
                 var processor = scope.ServiceProvider.GetRequiredService<AssistenteDocumentProcessor>();
-                if (await processor.ProcessNextAsync(stoppingToken)) continue;
+                if (await scope.ServiceProvider.GetRequiredService<AssistenteRecoveryGate>().IsOpenAsync(stoppingToken) &&
+                    await processor.ProcessNextAsync(stoppingToken)) continue;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Document); logger.LogError("Falha operacional na fila documental; nova consulta será realizada."); }

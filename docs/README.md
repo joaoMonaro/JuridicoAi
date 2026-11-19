@@ -35,6 +35,7 @@ da API ou dos requisitos do MVP.
 - [Solução de problemas e limitações conhecidas](operacao/troubleshooting.md)
 - [Configuração da exportação Word e PDF](operacao/exportacao-word-pdf.md)
 - [Monitoramento do assistente — P04](operacao/monitoramento-assistente.md)
+- [Exclusões após restauração — P05](operacao/exclusao-restauracao.md)
 
 ## Implementações: ativa, entregas e espera
 

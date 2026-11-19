@@ -43,6 +43,12 @@ trabalhos, regras de alerta e painel provisionado. O Compose mantém interfaces
 administrativas em loopback; notificações reais, responsável e calibração no deploy
 continuam pendentes. Ver [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
 
+Atualização em **2026-11-19 (P05):** registro independente das exclusões e
+reaplicação após restauração implementados, com bloqueio de tráfego/workers comuns,
+revogação de sessões e ensaio local de banco/arquivos. A configuração do volume
+independente, retenção e ensaio no deploy continuam pendentes. Ver
+[evidência P05](evidencias/p05-exclusoes-restauracao-2026-11-19.md).
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com

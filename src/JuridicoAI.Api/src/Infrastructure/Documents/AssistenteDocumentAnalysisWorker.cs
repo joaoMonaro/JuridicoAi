@@ -1,3 +1,4 @@
+using JuridicoAI.Api.Infrastructure.Recovery;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using JuridicoAI.Api.Application.Abstractions;
@@ -24,7 +25,8 @@ public sealed class AssistenteDocumentAnalysisWorker(IServiceScopeFactory scopes
             try
             {
                 await using var scope = scopes.CreateAsyncScope();
-                if (await scope.ServiceProvider.GetRequiredService<AssistenteDocumentAnalysisProcessor>().ProcessNextAsync(stoppingToken)) continue;
+                if (await scope.ServiceProvider.GetRequiredService<AssistenteRecoveryGate>().IsOpenAsync(stoppingToken) &&
+                    await scope.ServiceProvider.GetRequiredService<AssistenteDocumentAnalysisProcessor>().ProcessNextAsync(stoppingToken)) continue;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
             catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Analysis); logger.LogError("Falha operacional na fila de análise documental; os checkpoints foram preservados."); }
