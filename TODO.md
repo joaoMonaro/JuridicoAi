@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-18**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-19**. Acompanhamento geral das prioridades do projeto.
 O detalhamento de cada feature permanece no seu próprio TODO.
 
 O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
@@ -109,6 +109,12 @@ Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-co
 A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
 
 ## Melhorias futuras — fora do MVP
+
+- [ ] **P05 — Proteção das exclusões após restauração. Em espera.** Volume
+  independente e reaplicação automática adiados por decisão de produto em
+  2026-11-19. Código preservado em `feature/p05-exclusoes-restauracao`, separado
+  de `homologacao`; não bloqueia o MVP. Exclusão no ambiente ativo e backup básico
+  continuam no escopo.
 
 - [ ] **PROJ-006 — Definir a interação por seleção de trechos no assistente. Em espera.**
   Seleção de trechos pausada por decisão do produto em 2026-11-17. Novos pedidos
