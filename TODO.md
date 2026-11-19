@@ -9,6 +9,15 @@ funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP
 
 ## Pendência com alta prioridade
 
+- [ ] **PROJ-007 — Planejar a preparação para produção preservando os testes locais.**
+  **Estado: planejamento; implementação ainda não iniciada.** O destino será em
+  nuvem, com configuração local preservada. Testes com IA real ficam desligados
+  por padrão e só podem ser executados quando explicitamente solicitados, com
+  orçamento definido; ter chave configurada não autoriza consumo. Escopo,
+  decisões em aberto e tarefas PROD-001–PROD-008 estão na
+  [feature de preparação para produção](implementacoes/features/preparacao-producao/README.md)
+  e em seu [TODO](implementacoes/features/preparacao-producao/TODO.md).
+
 - [ ] Validar e concluir a jornada de redação de peças conforme os critérios do
   [MVP](MVP.md), usando a implementação existente do assistente conversacional.
 
@@ -124,4 +133,5 @@ critérios de lançamento nem reintroduzem o scraper no escopo atual.
 
 ## Acompanhamento por feature
 
+- [Preparação para produção — ambientes, segurança, testes pagos e operação](implementacoes/features/preparacao-producao/TODO.md).
 - [Assistente conversacional — entregas, validações e melhorias](implementacoes/features/assistente-conversacional/TODO.md).

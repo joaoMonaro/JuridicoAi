@@ -1,6 +1,6 @@
 # Implementações do JuridicoAI
 
-> **Organização atualizada em:** 2026-11-12
+> **Organização atualizada em:** 2026-11-18
 
 Este diretório separa a implementação ativa, as entregas já registradas e as
 pendências colocadas em espera. A referência do comportamento disponível
@@ -26,7 +26,7 @@ e exclusão autorizada do ambiente ativo.
 A avaliação real reduzida passou nos checks técnicos: quatro cenários/seis
 interações, custo calculado de US$ 0,04549805. Ver
 [resultados e limites](features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
-Restam avaliação ampliada, homologação, controles financeiros de produção,
+Restam avaliação ampliada, homologação, configuração financeira de produção,
 monitoramento, proteção das
 exclusões após restauração, rollout por organização, validação ampliada do editor
 e preparação operacional. OCR permanece desativado e em espera. Implementação
@@ -37,6 +37,16 @@ foi incorporado à ampliação. Sua
 [validação manual](features/geracao-minutas-ia/evidencias/validacao-manual-experiencia-2026-10-23.md)
 e o [prompt fictício](features/geracao-minutas-ia/evidencias/prompts/prompt-geracao-peca-ficticia.txt)
 permanecem como evidências históricas, sem transferir aprovações ao novo fluxo.
+
+## Planejamento — preparação para produção e testes locais
+
+- [Escopo, decisões confirmadas e questões em aberto](features/preparacao-producao/README.md).
+- [Etapas e critérios de aceite — PROD-001–PROD-008](features/preparacao-producao/TODO.md).
+
+O destino será em nuvem, preservando execução e configuração locais. Testes com
+IA real dependem de solicitação explícita e orçamento; credenciais disponíveis
+não autorizam chamadas pagas. A implementação desta preparação ainda não foi
+iniciada. O plano relaciona as entregas compartilhadas com P03–P08 do assistente.
 
 ## Entregas registradas e pendências em espera
 
@@ -61,9 +71,12 @@ implementacoes/
 │   │   ├── desenho-tecnico.md
 │   │   ├── especificacoes/
 │   │   └── contratos/
-│   └── geracao-minutas-ia/
+│   ├── geracao-minutas-ia/
+│   │   ├── README.md
+│   │   └── evidencias/
+│   └── preparacao-producao/
 │       ├── README.md
-│       └── evidencias/
+│       └── TODO.md
 ├── alreadyDone/
 │   ├── README.md
 │   └── assistente-ia/

@@ -37,6 +37,7 @@ da API ou dos requisitos do MVP.
 ## Implementações: ativa, entregas e espera
 
 - [Índice de implementações](../implementacoes/README.md)
+- [Preparação para produção e testes locais — planejamento](../implementacoes/features/preparacao-producao/README.md)
 - [Assistente conversacional — estado atual](../implementacoes/features/assistente-conversacional/estado-atual.md)
 - [TODO do assistente e melhorias evidenciadas](../implementacoes/features/assistente-conversacional/TODO.md)
 - [Geração de minutas — planejamento anterior incorporado](../implementacoes/features/geracao-minutas-ia/README.md)

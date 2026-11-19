@@ -9,6 +9,12 @@ conclusão no estado atual.
 Este TODO acompanha exclusivamente esta feature. As entregas restantes do escopo,
 as melhorias observadas na avaliação e os itens em espera estão separados abaixo.
 
+A preparação transversal do ambiente está em
+[produção e testes locais](../preparacao-producao/README.md), ainda em planejamento.
+Esse plano relaciona P03–P08 sem encerrar as pendências daqui. Testes com IA real
+só devem ser executados quando explicitamente solicitados, com orçamento
+definido; possuir uma chave ou habilitar a IA da aplicação não autoriza testes pagos.
+
 ## Prioridade — Concluir o assistente conversacional sem OCR
 
 Entregues tecnicamente, atrás de flags: conversa livre, revisão/aplicação
