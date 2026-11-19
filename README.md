@@ -43,6 +43,31 @@ assistente. Não versione segredos; consulte [User Secrets](docs/user-secrets.md
 As migrations do Entity Framework Core são aplicadas na inicialização quando
 `Postgres:RunMigrations=true`.
 
+## Abrir o painel de monitoramento
+
+Com Docker em execução, rode na raiz do projeto:
+
+```bash
+export MONITORING_GRAFANA_PASSWORD='sua-senha'
+docker compose -p juridicoai-monitoring -f ops/monitoring/compose.yaml up -d
+```
+
+Em outro terminal, inicie ou reinicie a API já configurada com:
+
+```bash
+AssistenteMonitoring__Enabled=true dotnet run --project src/JuridicoAI.Api
+```
+
+Abra [o painel Grafana](http://localhost:3001/d/juridicoai-assistente).
+Usuário: **admin**. Senha: a definida acima na primeira inicialização.
+Os primeiros dados aparecem em aproximadamente um minuto.
+
+Para parar o painel, preservando seus dados:
+
+```bash
+docker compose -p juridicoai-monitoring -f ops/monitoring/compose.yaml down
+```
+
 ## Documentação
 
 - [Versionamento — produção, homologação e fluxo de mudanças](docs/versionamento.md)
@@ -50,6 +75,7 @@ As migrations do Entity Framework Core são aplicadas na inicialização quando
 - [Preparação para produção e testes locais — planejamento](implementacoes/features/preparacao-producao/README.md)
 - [Índice da documentação atual](docs/README.md)
 - [Configuração e execução](docs/configuracao-e-execucao.md)
+- [Monitoramento operacional do assistente](docs/operacao/monitoramento-assistente.md)
 - [API HTTP](docs/backend/api.md)
 - [Assistente de IA](docs/backend/assistente-ia.md)
 - [Estado atual do assistente conversacional](implementacoes/features/assistente-conversacional/estado-atual.md)

@@ -26,6 +26,7 @@ public sealed class OpenAiAssistenteIaProvider(
     {
         EnsureModelMatchesSnapshot(request);
         using var timing = AssistenteLatency.Measure(logger, "provider.input_tokens");
+        using var observed = AssistenteTelemetry.MeasureProvider(AssistenteProviderOperation.InputTokens);
         using var message = new HttpRequestMessage(HttpMethod.Post, "responses/input_tokens");
         message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
         var payload = CreateInputPayload(request); payload.Remove("include");
@@ -33,6 +34,8 @@ public sealed class OpenAiAssistenteIaProvider(
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            observed.Dispatched();
             using var response = await httpClient.SendAsync(message, cancellationToken);
             if (!response.IsSuccessStatusCode)
                 throw CreateHttpException(response.StatusCode);
@@ -43,6 +46,7 @@ public sealed class OpenAiAssistenteIaProvider(
             if (!document.RootElement.TryGetProperty("input_tokens", out var inputTokens) ||
                 !inputTokens.TryGetInt32(out var count) || count < 0)
                 throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false);
+            observed.Succeeded();
             return count;
         }
         catch (AssistenteIaProviderException)
@@ -51,6 +55,7 @@ public sealed class OpenAiAssistenteIaProvider(
         }
         catch (OperationCanceledException)
         {
+            observed.Cancelled();
             throw;
         }
         catch (HttpRequestException ex)
@@ -77,6 +82,10 @@ public sealed class OpenAiAssistenteIaProvider(
         AssistenteProviderTurnTracker? tracker = null)
     {
         using var timing = AssistenteLatency.Measure(logger, "provider.generation");
+        using var observed = AssistenteTelemetry.MeasureProvider(AssistenteProviderOperation.Generation);
+        int? inputTokens = null;
+        int? cachedInputTokens = null;
+        int? outputTokens = null;
         tracker?.MarkPreSend();
         EnsureModelMatchesSnapshot(request, tracker);
         using var message = new HttpRequestMessage(HttpMethod.Post, "responses");
@@ -92,6 +101,7 @@ public sealed class OpenAiAssistenteIaProvider(
         {
             cancellationToken.ThrowIfCancellationRequested();
             tracker?.MarkDispatched();
+            observed.Dispatched();
             using var response = await AssistenteLatency.MeasureAsync(logger, "provider.headers", () => httpClient.SendAsync(
                 message,
                 HttpCompletionOption.ResponseHeadersRead,
@@ -108,9 +118,6 @@ public sealed class OpenAiAssistenteIaProvider(
             var output = new StringBuilder();
             var completed = false;
             var model = _settings.Model;
-            int? inputTokens = null;
-            int? cachedInputTokens = null;
-            int? outputTokens = null;
             var outputItems = new List<JsonElement>();
 
             while (await reader.ReadLineAsync(cancellationToken) is { } line)
@@ -169,7 +176,10 @@ public sealed class OpenAiAssistenteIaProvider(
                 throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: true), tracker);
 
             if (request.FerramentasDocumentais is not null && outputItems.Any(x => x.GetProperty("type").GetString() == "function_call"))
+            {
+                observed.Succeeded();
                 return new(null, outputItems, model, inputTokens, cachedInputTokens, outputTokens);
+            }
             if (output.Length == 0) throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", true), tracker);
 
             if (request.Conversacional)
@@ -185,10 +195,12 @@ public sealed class OpenAiAssistenteIaProvider(
                     automatic.Intencao == AssistenteIntencao.Responder ? AssistenteOperacao.ResponderNoPainel : AssistenteOperacao.ProporAlteracoes,
                     automatic.Alertas, [], inputTokens, cachedInputTokens, outputTokens, model,
                     new(automatic.Intencao, automatic.Grupos, automatic.SubstituirPropostaReferenciada), automatic.CoberturaPretendida);
+                observed.Succeeded();
                 return new(result, outputItems, model, inputTokens, cachedInputTokens, outputTokens);
             }
             var structured = JsonSerializer.Deserialize<OpenAiStructuredOutput>(output.ToString(), JsonOptions)
                 ?? throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false), tracker);
+            observed.Succeeded();
             return new(new AssistenteIaProviderResult(
                 structured.Titulo,
                 structured.Texto,
@@ -207,6 +219,7 @@ public sealed class OpenAiAssistenteIaProvider(
         }
         catch (OperationCanceledException)
         {
+            observed.Cancelled();
             throw;
         }
         catch (HttpRequestException ex)
@@ -216,6 +229,10 @@ public sealed class OpenAiAssistenteIaProvider(
         catch (JsonException ex)
         {
             throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false, innerException: ex), tracker);
+        }
+        finally
+        {
+            if (observed.WasDispatched) AssistenteTelemetry.Shared.ProviderTokens(inputTokens, cachedInputTokens, outputTokens);
         }
     }
 
@@ -304,19 +321,24 @@ public sealed class OpenAiAssistenteIaProvider(
     {
         EnsureModelMatchesSnapshot(providerRequest);
         using var timing = AssistenteLatency.Measure(logger, "provider.input_tokens");
+        using var observed = AssistenteTelemetry.MeasureProvider(AssistenteProviderOperation.InputTokens);
         payload = new(payload); payload.Remove("include");
         try
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, "responses/input_tokens");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _settings.ApiKey);
             request.Content = JsonContent.Create(payload);
+            ct.ThrowIfCancellationRequested();
+            observed.Dispatched();
             using var response = await httpClient.SendAsync(request, ct);
             if (!response.IsSuccessStatusCode) throw CreateHttpException(response.StatusCode);
             using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
             if (!json.RootElement.TryGetProperty("input_tokens", out var value) || !value.TryGetInt32(out var result) || result < 0)
                 throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false);
+            observed.Succeeded();
             return result;
         }
+        catch (OperationCanceledException) { observed.Cancelled(); throw; }
         catch (HttpRequestException ex) { throw new AssistenteIaProviderException("AI_UNAVAILABLE", true, innerException: ex); }
         catch (JsonException ex) { throw new AssistenteIaProviderException("AI_PROVIDER_ERROR", false, innerException: ex); }
     }

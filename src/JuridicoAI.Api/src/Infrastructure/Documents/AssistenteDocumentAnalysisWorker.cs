@@ -27,7 +27,7 @@ public sealed class AssistenteDocumentAnalysisWorker(IServiceScopeFactory scopes
                 if (await scope.ServiceProvider.GetRequiredService<AssistenteDocumentAnalysisProcessor>().ProcessNextAsync(stoppingToken)) continue;
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
-            catch (Exception) { logger.LogError("Falha operacional na fila de análise documental; os checkpoints foram preservados."); }
+            catch (Exception) { AssistenteTelemetry.Shared.WorkerFailure(JuridicoAI.Api.Application.Abstractions.AssistenteWorkerKind.Analysis); logger.LogError("Falha operacional na fila de análise documental; os checkpoints foram preservados."); }
             try { await Task.Delay(1500, stoppingToken); }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { break; }
         }
@@ -85,12 +85,14 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
                         .SetProperty(j => j.LeaseAte, retry), token);
                     await db.AssistenteMensagens.Where(m => m.Id == job.RespostaId && m.Estado == "Gerando").ExecuteUpdateAsync(s => s.SetProperty(m => m.Estado, "AguardandoAnalise")
                         .SetProperty(m => m.ExpiraEm, job.PrazoEm.AddSeconds(ai.CurrentValue.TimeoutSeconds + 30)), token);
-                }, CancellationToken.None);
+                }, CancellationToken.None, progressed: false);
                 return true;
             }
             var code = ex is AssistenteIaException known ? known.Code : ex is AssistenteIaProviderException providerFailure ? providerFailure.Code : "AI_ANALYSIS_FAILED";
             var state = code is "AI_ANALYSIS_LIMIT" or "AI_ANALYSIS_DEADLINE" ? "Incompleta" :
                 code is "AI_DOCUMENT_SOURCE_CHANGED" or "AI_PROPOSAL_STALE" or "AI_ANALYSIS_POLICY_CHANGED" ? "Desatualizada" : "Interrompida";
+            if (code is not ("AI_MONTHLY_LIMIT_REACHED" or "AI_MONTHLY_LIMIT_INSUFFICIENT")) AssistenteTelemetry.Shared.OperationalEvent(code);
+            if (code == "AI_ANALYSIS_LEASE_LOST") AssistenteTelemetry.Shared.WorkerLeaseLost(AssistenteWorkerKind.Analysis);
             await FailAsync(job, fence, code, state, CancellationToken.None);
             return true;
         }
@@ -117,7 +119,7 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
                 {
                     await db.Set<AssistenteAnaliseDocumental>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.FonteIndice, job.FonteIndice + 1)
                         .SetProperty(j => j.AposOrdem, -1).SetProperty(j => j.Estado, "Lendo").SetProperty(j => j.LeaseAte, (DateTime?)null), token);
-                }, ct);
+                }, ct, progressed: true);
                 return null;
             }
             var size = 0;
@@ -143,7 +145,7 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
                 {
                     await db.Set<AssistenteAnaliseDocumental>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Resumo, output)
                         .SetProperty(j => j.Estado, "Pronta").SetProperty(j => j.LeaseAte, (DateTime?)null), token);
-                }, ct);
+                }, ct, progressed: true);
                 return null;
             }
             var size = 0; var selected = new List<AssistenteAnaliseLote>();
@@ -165,7 +167,7 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
         {
             db.Add(batch);
             await db.Set<AssistenteAnaliseDocumental>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.Estado, type == "Leitura" ? "Lendo" : "Consolidando"), token);
-        }, ct);
+        }, ct, progressed: true);
         return batch;
     }
     private async Task SummarizeAsync(AssistenteAnaliseDocumental job, AssistenteAnaliseLote batch, Guid fence, CancellationToken ct)
@@ -275,7 +277,7 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
                 await db.Set<AssistenteAnaliseLote>().Where(b => children.Contains(b.Id)).ExecuteUpdateAsync(s => s.SetProperty(b => b.ConsolidadoPorId, batch.Id), token);
                 await db.Set<AssistenteAnaliseDocumental>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.LeaseAte, (DateTime?)null), token);
             }
-        }, timeout.Token);
+        }, timeout.Token, progressed: true);
     }
     private async Task FinishAsync(AssistenteAnaliseDocumental job, Guid fence, CancellationToken ct)
     {
@@ -315,12 +317,14 @@ public sealed class AssistenteDocumentAnalysisProcessor(JuridicoAiDbContext db, 
         }
         finally { if (execution is not null) await generator.FinalizarAsync(execution); }
     }
-    private async Task FencedAsync(AssistenteAnaliseDocumental job, Guid fence, Func<CancellationToken, Task> action, CancellationToken ct)
+    private async Task FencedAsync(AssistenteAnaliseDocumental job, Guid fence, Func<CancellationToken, Task> action, CancellationToken ct, bool progressed = false)
     {
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         var live = await db.Set<AssistenteAnaliseDocumental>().FromSqlInterpolated($"SELECT * FROM ai_document_analyses WHERE id = {job.Id} FOR UPDATE").AsNoTracking().SingleAsync(ct);
         if (live.LeaseToken != fence || live.LeaseAte <= DateTime.UtcNow || !Active(live.Estado)) throw Changed("AI_ANALYSIS_LEASE_LOST");
-        await action(ct); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
+        await action(ct);
+        if (progressed) await db.Set<AssistenteAnaliseDocumental>().Where(j => j.Id == job.Id).ExecuteUpdateAsync(s => s.SetProperty(j => j.UltimoProgressoEm, DateTime.UtcNow), ct);
+        await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         db.ChangeTracker.Clear();
     }
     private async Task FailAsync(AssistenteAnaliseDocumental job, Guid fence, string code, string state, CancellationToken ct)

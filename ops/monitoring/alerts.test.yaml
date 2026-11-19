@@ -1,0 +1,317 @@
+{
+  "rule_files": [
+    "alerts.yaml"
+  ],
+  "evaluation_interval": "1m",
+  "tests": [
+    {
+      "name": "fila parada e resolucao sem duplicar replicas",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_jobs_stalled{category=\"generation\",dimension=\"NaFila\",instance=\"a\"}",
+          "values": "1 1 1 0 0"
+        },
+        {
+          "series": "ai_jobs_stalled{category=\"generation\",dimension=\"NaFila\",instance=\"b\"}",
+          "values": "1 1 1 0 0"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "1m",
+          "alertname": "JobsStalled",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "2m",
+          "alertname": "JobsStalled",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Há trabalho ativo sem progresso há pelo menos 10 minutos.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "4m",
+          "alertname": "JobsStalled",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "exclusao atrasada e resolucao",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_deletions_overdue",
+          "values": "1 1 1 0 0"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "2m",
+          "alertname": "DeletionOverdue",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Há exclusão autorizada pendente além de 15 minutos.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#exclusoes-pendentes"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "4m",
+          "alertname": "DeletionOverdue",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "reserva conservadora exige revisao",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_reservations_overdue{dimension=\"Indeterminate\"}",
+          "values": "1 1 1 0 0"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "2m",
+          "alertname": "ReservationNeedsReview",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "warning",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Há reserva não liquidada há mais de 15 minutos; requer conferência.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#reservas-pendentes"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "4m",
+          "alertname": "ReservationNeedsReview",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "coleta totalmente ausente",
+      "interval": "1m",
+      "input_series": [],
+      "alert_rule_test": [
+        {
+          "eval_time": "2m",
+          "alertname": "MonitoringStale",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Coleta ausente ou sem sucesso recente; dados podem estar desatualizados.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#coleta-indisponivel"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "orcamento esgotado e resolucao",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_budget_organizations{dimension=\"100\"}",
+          "values": "1 1 0 0"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "1m",
+          "alertname": "BudgetExhausted",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Há organização na faixa de 100% do limite mensal (consumido + reservado).",
+                "runbook": "docs/operacao/monitoramento-assistente.md#consumo-mensal"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "3m",
+          "alertname": "BudgetExhausted",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "falhas sem serie de sucesso tambem alertam",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_provider_call_duration_seconds_count{operation=\"generation\",outcome=\"failed\"}",
+          "values": "0 1 2 3 4 4"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "1m",
+          "alertname": "ProviderFailures",
+          "exp_alerts": []
+        },
+        {
+          "eval_time": "5m",
+          "alertname": "ProviderFailures",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Três ou mais falhas do provedor sem sucesso na janela.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#falhas-do-provedor"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "falhas com algum sucesso nao sao indisponibilidade total",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_provider_call_duration_seconds_count{operation=\"generation\",outcome=\"failed\"}",
+          "values": "0 1 2 3 4 4"
+        },
+        {
+          "series": "ai_provider_call_duration_seconds_count{operation=\"generation\",outcome=\"succeeded\"}",
+          "values": "0 0 1 1 1 1"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "5m",
+          "alertname": "ProviderFailures",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "api fora do ar detectada externamente",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "probe_success{job=\"juridicoai-api\"}",
+          "values": "0 0 1 1"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "1m",
+          "alertname": "ApiUnavailable",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator",
+                "job": "juridicoai-api"
+              },
+              "exp_annotations": {
+                "summary": "API não responde à verificação externa.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#api-indisponivel"
+              }
+            }
+          ]
+        },
+        {
+          "eval_time": "3m",
+          "alertname": "ApiUnavailable",
+          "exp_alerts": []
+        }
+      ]
+    },
+    {
+      "name": "falha repetida de worker",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_worker_failures_total{worker=\"generation\"}",
+          "values": "0 1 2 3 4 4"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "5m",
+          "alertname": "WorkerFailures",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator",
+                "worker": "generation"
+              },
+              "exp_annotations": {
+                "summary": "Falhas repetidas no loop de um worker do assistente.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#trabalhos-sem-progresso"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "prazos excedidos repetidamente",
+      "interval": "1m",
+      "input_series": [
+        {
+          "series": "ai_operational_events_total{reason=\"deadline\"}",
+          "values": "0 1 2 3 4 4"
+        }
+      ],
+      "alert_rule_test": [
+        {
+          "eval_time": "5m",
+          "alertname": "ExecutionTimeouts",
+          "exp_alerts": [
+            {
+              "exp_labels": {
+                "severity": "critical",
+                "owner": "juridicoai-operator"
+              },
+              "exp_annotations": {
+                "summary": "Prazos de execução repetidamente excedidos no assistente.",
+                "runbook": "docs/operacao/monitoramento-assistente.md#falhas-do-provedor"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -28,6 +28,7 @@ public sealed class AssistenteDocumento
     public DateTime? LeaseAte { get; set; }
     public string ExtratorVersao { get; set; } = "documentos-v1";
     public string QualidadeVersao { get; set; } = "qualidade-v1";
+    public DateTime? UltimoProgressoEm { get; set; }
     public DateTime CriadoEm { get; init; } = DateTime.UtcNow;
 }
 

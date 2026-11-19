@@ -1,3 +1,7 @@
+using JuridicoAI.Api.Infrastructure.Observability;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Exporter;
 using System.Text.Json.Serialization;
 using System.Text;
 using JuridicoAI.Api.Application.Abstractions;
@@ -25,6 +29,34 @@ using System.Threading.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 const string CorsPolicy = "LocalFrontend";
+
+builder.Services.AddSingleton<IAssistenteTelemetry>(AssistenteTelemetry.Shared);
+builder.Services.AddOptions<AssistenteMonitoringSettings>().Bind(builder.Configuration.GetSection("AssistenteMonitoring"))
+    .Validate(x => x.CollectionIntervalSeconds is >= 10 and <= 3600 && x.QueryTimeoutSeconds is >= 1 and <= 30 &&
+        x.StalledJobSeconds >= 60 && x.PendingDeletionSeconds >= 60 && x.OldReservationSeconds >= 60,
+        "Limites de monitoramento inválidos.")
+    .Validate(x => !x.Enabled || Uri.TryCreate(x.OtlpEndpoint, UriKind.Absolute, out var uri) &&
+        uri.Scheme is "http" or "https" && string.IsNullOrEmpty(uri.UserInfo) && string.IsNullOrEmpty(uri.Query),
+        "Endpoint OTLP inválido.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<AssistenteMonitoringState>();
+builder.Services.AddScoped<AssistenteMonitoringCollector>();
+if (builder.Configuration.GetValue<bool>("AssistenteMonitoring:Enabled"))
+{
+    builder.Logging.AddJsonConsole(o => o.IncludeScopes = true);
+    builder.Services.AddOpenTelemetry().ConfigureResource(r => r.AddService("juridicoai-api"))
+        .WithMetrics(metrics => metrics.AddMeter(AssistenteTelemetry.MeterName)
+            .AddView("ai.stage.duration", new ExplicitBucketHistogramConfiguration { Boundaries = [.05, .1, .25, .5, 1, 2, 5, 10, 20, 30, 60, 90, 120, 180, 300, 600, 900] })
+            .AddView("ai.provider.call.duration", new ExplicitBucketHistogramConfiguration { Boundaries = [.05, .1, .25, .5, 1, 2, 5, 10, 20, 30, 60, 90, 120, 180, 300, 600, 900] })
+            .AddOtlpExporter((exporter, reader) =>
+        {
+            exporter.Endpoint = new Uri(builder.Configuration["AssistenteMonitoring:OtlpEndpoint"] ?? "http://localhost:4318/v1/metrics");
+            exporter.Protocol = OtlpExportProtocol.HttpProtobuf;
+            exporter.TimeoutMilliseconds = 5000;
+            reader.PeriodicExportingMetricReaderOptions.ExportIntervalMilliseconds = 15000;
+        }));
+}
+
 
 builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
@@ -98,6 +130,7 @@ builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSectio
 builder.Services.AddDbContext<JuridicoAiDbContext>(options =>
     options.UseNpgsql(builder.Configuration["Postgres:ConnectionString"]));
 builder.Services.AddHostedService<DatabaseMigrationService>();
+builder.Services.AddHostedService<AssistenteMonitoringWorker>();
 var maxFileSize = builder.Configuration.GetValue<long?>("DocumentStorage:MaxFileSizeBytes") ?? 20 * 1024 * 1024;
 builder.Services.Configure<FormOptions>(options => options.MultipartBodyLengthLimit = maxFileSize + 1024 * 1024);
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -278,6 +311,7 @@ app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
 app.MapGet("/", () => "Hello World!");
+app.MapGet("/health/live", () => Results.Ok(new { status = "alive" })).AllowAnonymous();
 app.MapControllers();
 if (args.Contains("provision-organization", StringComparer.OrdinalIgnoreCase))
 {

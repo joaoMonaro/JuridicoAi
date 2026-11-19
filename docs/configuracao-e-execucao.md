@@ -195,3 +195,12 @@ produto. A chave de avaliação foi temporária e não foi persistida. OCR conti
 espera. Não confundir ativação local com a liberação do piloto, cujas pendências
 financeiras, de acesso, backup e operação estão no
 [TODO da feature](../implementacoes/features/assistente-conversacional/TODO.md).
+
+## Monitoramento do assistente
+
+`AssistenteMonitoring:Enabled=false` por padrão. Habilitar coleta periódica e
+exportação OTLP/HTTP com `AssistenteMonitoring__Enabled=true`; endpoint padrão
+`http://localhost:4318/v1/metrics`. O monitoramento não habilita IA nem altera os
+limites do P03. O [procedimento P04](operacao/monitoramento-assistente.md) documenta
+as opções, os serviços locais privados, o painel, os alertas e as pendências de deploy.
+`GET /health/live` verifica somente o processo HTTP; readiness completa segue pendente.

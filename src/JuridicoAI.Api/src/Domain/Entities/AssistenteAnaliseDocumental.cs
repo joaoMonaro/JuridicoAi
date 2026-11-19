@@ -29,6 +29,7 @@ public sealed class AssistenteAnaliseDocumental
     public Guid? LeaseToken { get; set; }
     public DateTime? LeaseAte { get; set; }
     public DateTime CriadaEm { get; init; }
+    public DateTime? UltimoProgressoEm { get; set; }
     public DateTime AtualizadaEm { get; set; }
     public DateTime PrazoEm { get; init; }
 }
