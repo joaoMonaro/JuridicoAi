@@ -20,6 +20,8 @@ pagos realizados por esta entrega. Marcar tarefas somente após sua verificaçã
 ## Decisões confirmadas
 
 - O servidor de destino será em nuvem; o provedor ainda não foi escolhido.
+- A validação com o advogado ocorrerá com o MVP online.
+- P05 e P06 estão adiados para depois do MVP.
 - A preparação deve preservar a possibilidade de executar e configurar o
   projeto localmente para testes.
 - Chamadas reais à IA em testes ficam desativadas por padrão e só podem ser
@@ -103,7 +105,7 @@ específicas da IA permanecem no
 | P03 — Controle financeiro | Configurar tarifas/limites reais por ambiente; aproveitar o controle já implementado |
 | P04 — Monitoramento | Implementação local disponível; configurar canal/responsável e validar a operação do ambiente |
 | P05 — Backup/exclusão | Em espera, fora do MVP; código preservado em branch separada |
-| P06 — Rollout | Restringir o piloto por organização; cadastro restrito não substitui esse controle |
+| P06 — Rollout | Em espera, fora do MVP; controles existentes de acesso e isolamento permanecem |
 | P07/P01/P02 — Compatibilidade e homologação | Comprovar o fluxo e revisar resultados antes da liberação |
 | P08 — Implantação | Ensaiar migrations, drenagem de workers, deploy e rollback |
 
@@ -148,7 +150,8 @@ definição de storage compartilhado e limites agregados de requisições.
 
 ## Condição para liberação
 
-P05 e seu volume independente foram adiados em 2026-11-19 e não bloqueiam o MVP.
+P05 (volume independente/restauração) e P06 (gate adicional de rollout) foram
+adiados em 2026-11-19 e não bloqueiam o MVP. Ver [decisões](../../../docs/decisoes-mvp.md).
 
 Concluir as tarefas de segurança, isolamento, persistência, recuperação e
 operação; registrar os ensaios; cumprir os critérios do MVP e validar a jornada

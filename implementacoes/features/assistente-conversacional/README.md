@@ -357,15 +357,13 @@ mantém as novas flags desligadas por padrão.
 
 ## Sequência restante
 
-1. Revisar os resultados da avaliação real reduzida — P02. O diagnóstico e a
-   correção locais da latência foram [verificados em 2026-11-14](evidencias/m01-latencia-local-2026-11-14.md);
-   a [comparação real](evidencias/m01-latencia-real-2026-11-14.md) também foi concluída
-   (63,941 s para 22,697 s). A política de espera remanescente fica em M03.
-2. Desenvolver controle financeiro de produção — P03; completar monitoramento,
-   proteção de restaurações,
-   rollout, compatibilidade e implantação antes do piloto — P03–P08.
-3. Completar os três cenários adiados de P01 com orçamento adicional definido.
-4. Retomar OCR somente quando repriorizado — P09, em espera.
+1. Preparar a implantação online — P08 — e configurar tarifas/limites (P03) e
+   operação do monitoramento já implementado (P04).
+2. Conferir a jornada existente do editor e corrigir impedimentos — P07.
+3. Com o MVP online, validar com o advogado e revisar a qualidade jurídica — P02.
+   Cenários pagos adicionais de P01 exigem solicitação e orçamento próprios.
+4. P05/P06 e OCR permanecem em espera, fora do MVP. Ver
+   [decisões atuais](../../../docs/decisoes-mvp.md).
 
 A [primeira rodada reduzida](../../../avaliacoes/assistente-conversacional/rodada-1usd.md)
 foi executada com GPT-6.1 Terra: seis interações passaram nos checks técnicos,

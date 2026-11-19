@@ -10,6 +10,10 @@ jurídica ou liberação do piloto. Os IDs P01–P09 remetem aos
 [pontos restantes](../estado-atual.md#pontos-restantes), com natureza e critérios
 de conclusão. Evidências históricas mantêm os limites de cada rodada.
 
+Decisão de produto em **2026-11-19:** P05/P06 estão adiados, fora dos requisitos
+de lançamento. A homologação com o advogado será feita no MVP online. Ver
+[decisões vigentes](../../../../docs/decisoes-mvp.md).
+
 ## Decisões técnicas consolidadas
 
 | Tema | Implementação atual |
@@ -54,7 +58,7 @@ Evidências: [editor](../evidencias/e0-editor-2026-11-11.md),
 - [x] Worker do chat v2 com leases/checkpoints, progresso e bloqueio de resultados tardios.
 - [x] Exclusão manual autorizada no banco e armazenamento ativos, com protocolo.
 - [ ] Registro externo de exclusões e reaplicação automatizada antes de reabrir
-  uma restauração, incluindo ensaio de banco e arquivos — P05.
+  uma restauração, incluindo ensaio de banco e arquivos — P05, **em espera, fora do MVP**.
 
 Evidências: [revisão persistida](../evidencias/e1-revisao-persistida-2026-11-11.md),
 [histórico](../evidencias/e1-e3-historico-2026-11-11.md),
@@ -125,13 +129,13 @@ Evidências: [prova local](../evidencias/e0-editor-2026-11-11.md),
 - [x] Aviso com persistência/anexos privados e versão de aceite correspondente.
 - [x] Migrations aditivas e proteções de downgrade de estruturas com dados.
 - [ ] Completar gate específico de rollout v2 por organização, separado das flags
-  operacionais; validar seleção v1/v2 sem aplicação concorrente dos fluxos — P06.
-- [ ] Homologar a jornada integrada com o modelo real e revisar resultados — P01/P02/P06.
+  operacionais; validar seleção v1/v2 sem aplicação concorrente dos fluxos — P06, **em espera, fora do MVP**.
+- [ ] Homologar a jornada integrada online com o advogado e revisar resultados — P01/P02.
 - [ ] Rever texto/versão final do aviso e regressões da jornada — P07.
 - [ ] Monitoramento e alertas de custo, falhas, jobs e exclusões — P04.
 - [ ] Preparar armazenamento, HTTPS/origens, migrations, drenagem de workers e
   temporários legados; ensaiar deploy/rollback sem perda ou reexposição — P08.
-- [ ] Comprovar proteção das exclusões em backups/restauração — P05.
+- [ ] Comprovar proteção das exclusões em backups/restauração — P05, **em espera, fora do MVP**.
 
 Evidências: [geração](../evidencias/e2-e3-geracao-duravel-2026-11-12.md),
 [histórico pessoal](../evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).
@@ -142,17 +146,17 @@ sua existência não comprova provisionamento nem execução do ensaio.
 
 | Cenário | Situação registrada | Fechamento restante |
 |---|---|---|
-| Dois usuários na mesma Peça; outra organização | Testes técnicos e recorte real de anexo privado de outro titular aprovados | Jornada ampliada e piloto: P01/P06 |
+| Dois usuários na mesma Peça; outra organização | Testes técnicos e recorte real de anexo privado de outro titular aprovados | Jornada ampliada: P01/P07 |
 | Histórico sem Membership | API/PostgreSQL e UI focada aprovados; sem acesso a fontes atuais | Ambiente de implantação: P08 |
 | Leitura nativa parcial/duvidosa | Gate, sinalização e resposta com fonte parcial verificados no recorte real | Avaliação ampliada/revisão: P01/P02 |
 | OCR ruim/parcial/misto | Pipeline inicial; calibração insuficiente, desativado | P09 em espera |
 | Correções e conversa longa | Correção/consulta após aprovação verificadas com modelo real; memória extensa com simulação | Memória extensa real: P01/P02 |
 | Todos os documentos | Cobertura/checkpoints e bloqueio de conclusão incompleta testados | Qualidade real: P01/P02 |
-| Aprovação, aplicação simultânea e perda de resposta | Transação, recibo, idempotência e reconciliação testados | Jornada integrada: P06/P07 |
+| Aprovação, aplicação simultânea e perda de resposta | Transação, recibo, idempotência e reconciliação testados | Jornada integrada: P07 |
 | Autosave e aprovação parcial | Coordenação e remapeamento verificados em testes focados | Matriz ampliada: P07 |
 | Undo/redo, marks e exportação | Recorte local/focado validado; exportação integral não homologada | P07 |
 | Exclusão durante execução | Cancelamento, fence e expurgo ativo testados | Monitoramento/deploy: P04/P08 |
-| Restauração de backup | Procedimento documentado; infraestrutura/ensaio pendentes | P05 |
+| Proteção das exclusões após restauração | P05 adiado; backup básico continua no escopo | P05 em espera, fora do MVP |
 | Limites, restart e timeout | Ledger/checkpoints/retomada testados; resultado incerto sem retry pago automático | Custo real e controle financeiro: P01/P03 |
 
 Backend usa testes unitários e integração PostgreSQL para locks, transações e

@@ -7,6 +7,7 @@ com status explícito. Outros planos e decisões em evolução permanecem em
 
 ## Visão geral
 
+- [Decisões do MVP e próxima prioridade](decisoes-mvp.md)
 - [Arquitetura e fluxos](arquitetura.md)
 - [Versionamento — produção, homologação e fluxo de mudanças](versionamento.md)
 - [Configuração e execução](configuracao-e-execucao.md)

@@ -61,9 +61,8 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
 | 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
 | 2 | P03 — Controle financeiro | Implementado em código (configuração inicial US$ 5,00); falta apenas configurar tarifas/limites reais no ambiente de deploy |
 | 3 | P04 — Monitoramento | Código, painel e regras locais implementados; confirmar limiares, responsável, canal e operação no deploy |
-| 4 | P06 — Rollout | Gate v2 por organização, separado das flags operacionais, aplicado nas capacidades e operações autorizadas |
-| 5 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
-| 6 | P08 — Implantação | Configuração e roteiro de deploy/rollback ensaiados, preservando dados e exclusões autorizadas |
+| 4 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
+| 5 | P08 — Implantação | Configuração e roteiro de deploy/rollback ensaiados, preservando dados e exclusões autorizadas |
 
 ### Entregas ainda abertas do escopo
 
@@ -92,10 +91,6 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   notificação real, retenção de logs e validação no ambiente de deploy continuam
   pendentes. Ver [operação](../../../docs/operacao/monitoramento-assistente.md) e
   [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
-- [ ] **P06 — Implementar gate de rollout v2 por organização.** Separar habilitação
-  do piloto das flags de operação; refletir a autorização nas capacidades e
-  revalidá-la no backend. Conferir a seleção v1/v2, isolamento multiusuário e
-  desligamento sem apagar histórico ou interromper exclusões já autorizadas.
 - [ ] **P07 — Fechar compatibilidade e experiência.** Consolidar fixtures de
   schema/formatação, listas, links, headings, emoji e blocos antigos; validar
   documentos longos, acessibilidade, paginação, undo/autosave e exportação sem
@@ -107,9 +102,11 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   antigos e conferir temporários legados. Ensaiar deploy/rollback sem downgrade
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
 
-P03 exige configuração das tarifas e do ambiente; P06 exige desenvolvimento
-adicional; P04 tem implementação local e operação de deploy pendente; P07 exige validação e eventuais
-correções; P08 exige configuração e ensaio. Permanecem condições para o piloto; P05 está em espera fora desse recorte.
+P03 exige configuração das tarifas e do ambiente; P04 tem operação de deploy
+pendente; P07 exige conferência da jornada existente e eventuais correções;
+P08 exige configuração e ensaio. P05/P06 estão em espera, fora do MVP.
+A próxima prioridade é preparar o ambiente online e conferir a jornada existente;
+a validação com o advogado ocorrerá online. Ver [decisões](../../../docs/decisoes-mvp.md).
 
 ## Melhorias evidenciadas na avaliação reduzida
 
@@ -158,6 +155,13 @@ esta rodada de API não demonstrou um defeito visual nem homologou essa experiê
   sem integração em `homologacao`. Retomar quando repriorizado, definindo destino
   independente, retenção e ensaio de restauração. Exclusão do ambiente ativo e
   backup básico continuam no MVP.
+
+## Em espera — P06 (fora do MVP)
+
+- [ ] **P06 — Gate adicional de rollout v2 por organização.** Adiado por decisão
+  de produto em 2026-11-19. Não bloqueia o lançamento; retomar quando repriorizado.
+  Autenticação, isolamento dos dados, permissões e controles de IA existentes
+  permanecem no escopo.
 
 ## Em espera — OCR
 

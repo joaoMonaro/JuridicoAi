@@ -12,6 +12,12 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 Os itens acima representam documentação. P04 possui implementação e ensaio local;
 as demais frentes e as condições operacionais indicadas abaixo continuam pendentes.
 
+## Prioridade atual
+
+Preparar o ambiente online (hospedagem/configuração/segurança/operação), conferindo
+a jornada existente. A validação com o advogado ocorrerá online. P05/P06 estão
+fora do MVP; ver [decisões](../../../docs/decisoes-mvp.md).
+
 ## Etapa 1 — Ambientes e controle dos testes pagos
 
 ### PROD-001 — Definir configuração por ambiente
@@ -110,7 +116,8 @@ ensaio no ambiente de deploy continuam abertos. Ver
 
 ### PROD-008 — Homologar e registrar a decisão de liberação
 
-- [ ] Conferir os critérios do MVP e as pendências P01/P02/P06/P07 do assistente.
+- [ ] Conferir os critérios do MVP e as pendências ativas P01/P02/P07 do assistente.
+  P05/P06 estão adiados e não são condições de liberação.
 - [ ] Validar com o advogado no MVP online, em acesso restrito: entrada pelo chat, anexos, geração, aprovação,
   edição manual, salvamento, retomada e exportação Word/PDF.
 - [ ] Planejar separadamente qualquer rodada de IA real necessária a essa

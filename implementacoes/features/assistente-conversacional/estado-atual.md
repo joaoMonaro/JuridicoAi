@@ -47,6 +47,11 @@ Decisão em **2026-11-19:** P05 adiado para depois do MVP. O código permanece
 em `feature/p05-exclusoes-restauracao`, fora de `homologacao`; volume independente
 não é requisito de lançamento. Exclusão ativa e backup básico permanecem.
 
+Decisão em **2026-11-19:** P06 também fica fora do MVP. O gate adicional de
+rollout por organização está em espera; controles existentes de acesso e isolamento
+permanecem. A próxima prioridade é a implantação online e a conferência da jornada.
+Ver [decisões vigentes](../../../docs/decisoes-mvp.md).
+
 ## Ponto em que estamos
 
 O fluxo principal está implementado no backend e no frontend: conversar com
@@ -173,7 +178,7 @@ fechados, sem tratar propostas do desenho como SLAs aprovados.
 | P03 | Completar controle financeiro de produção | **Código validado; configuração no deploy.** Controle mensal UTC implementado com configuração inicial de US$ 5,00 (ainda não implantada) e testes reais em PostgreSQL/frontend. Falta apenas definir as tarifas reais do modelo e overrides de produção no deploy. |
 | P04 | Preparar monitoramento operacional | **Instrumentação + operação.** Fechar métricas, alertas e rotina de resposta para custo, falhas, jobs sem progresso, leases e exclusões pendentes. Usar metadados técnicos, sem conteúdo jurídico ou credenciais nos logs. |
 | P05 | Proteger exclusões após restauração | **Em espera, fora do MVP.** Código preservado em `feature/p05-exclusoes-restauracao`, sem integração em `homologacao`. Retomar quando repriorizado. |
-| P06 | Preparar ativação controlada do v2 | **Implementação + validação.** Completar gate por organização separado das flags operacionais e conferir seleção v1/v2, permissões e jornadas multiusuário nas condições do piloto. Validar com modelo real a integração já exercitada por simulação. |
+| P06 | Preparar ativação controlada do v2 | **Em espera, fora do MVP.** Gate adicional por organização adiado; controles existentes permanecem. |
 | P07 | Fechar compatibilidade e experiência do editor | **Validação + documentação.** Consolidar fixtures do schema existente, incluindo marks/listas/links/headings/emoji/blocos desconhecidos; ampliar verificação de documentos longos, acessibilidade, paginação de revisão, undo/autosave e exportação sem previews. Registrar versões/licenças das dependências e revisar o aviso vigente. Corrigir regressões necessárias à jornada; a suíte E2E completa ainda não está homologada. |
 | P08 | Preparar deploy e rollback do piloto | **Configuração + ensaio operacional.** Aplicar migrations aditivas, drenar workers antigos, conferir temporários legados e permissões/volume persistente; configurar HTTPS e origens pessoais. Ensaiar rollback sem apagar dados v2 nem reabrir conversas em exclusão. [Checklist operacional](especificacoes/06-operacao-exclusao-restauracao.md). |
 | P09 | Calibrar OCR | **Em espera.** Retomar somente quando repriorizado. Usar corpus representativo, medir cobertura/qualidade e aprovar critérios antes de ativar. [Registro da pausa](../../standBy/calibracao-ocr/README.md). |
@@ -188,7 +193,8 @@ amplos de P07 não devem reaparecer como ausência dessas implementações.
 O código e os testes de **P03 — controle financeiro de produção** foram
 implementados e validados (configuração inicial US$ 5,00; tarifas reais ainda
 pendentes de definição operacional no deploy). Os próximos desenvolvimentos na
-sequência são **P04–P08**. O recorte local de M01 está implementado/testado:
+sequência são a configuração operacional de **P04**, a conferência de **P07** e
+a implantação **P08**; P05/P06 estão adiados. O recorte local de M01 está implementado/testado:
 reagendamento e admissão corrigidos, medições por etapa disponíveis. A comparação
 real também foi concluída: 22,697 s na consulta, ante 63,941 s. A espera
 remanescente por cota está em M03; esse ganho observado não foi inferido da
@@ -199,7 +205,7 @@ concluída no [recorte reduzido](../../../avaliacoes/assistente-conversacional/r
 quatro cenários/seis interações, abaixo do teto total de US$ 1,00. Os três cenários
 adiados permanecem pendentes e exigem orçamento adicional definido para execução.
 
-Configuração operacional de P03 no deploy e frentes P04–P08 continuam como
+Configuração operacional de P03/P04 no deploy e frentes P07/P08 continuam como
 condições para liberar o piloto (não homologado). M01 está concluído no
 recorte de latência; M03 acompanha a política de cotas. M02 registra a correção concluída
 na preparação do teste de isolamento. P09 não bloqueia a

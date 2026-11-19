@@ -5,14 +5,16 @@ O detalhamento de cada feature permanece no seu próprio TODO.
 
 O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
 empresarial, a entrada de dados pelo chatbot e o congelamento de novas
-funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP.
+funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP. As [decisões atuais](docs/decisoes-mvp.md)
+registram P05/P06 adiados e a validação com o advogado no MVP online.
 
 ## Pendência com alta prioridade
 
-- [ ] **PROJ-007 — Planejar a preparação para produção preservando os testes locais.**
-  **Estado: planejamento; implementação ainda não iniciada.** O destino será em
-  nuvem, com configuração local preservada. Testes com IA real ficam desligados
-  por padrão e só podem ser executados quando explicitamente solicitados, com
+- [ ] **PROJ-007 — Preparar a implantação online preservando os testes locais.**
+  **Próxima prioridade:** definir hospedagem e preparar o ambiente do MVP online.
+  P04 está implementado localmente; configuração de deploy permanece pendente.
+  O destino será em nuvem, com configuração local preservada. Testes com IA real
+  ficam desligados por padrão e só podem ser executados quando explicitamente solicitados, com
   orçamento definido; ter chave configurada não autoriza consumo. Escopo,
   decisões em aberto e tarefas PROD-001–PROD-008 estão na
   [feature de preparação para produção](implementacoes/features/preparacao-producao/README.md)
@@ -115,6 +117,10 @@ A melhoria foi observada em uma rodada e não garante a latência de todo pedido
   2026-11-19. Código preservado em `feature/p05-exclusoes-restauracao`, separado
   de `homologacao`; não bloqueia o MVP. Exclusão no ambiente ativo e backup básico
   continuam no escopo.
+
+- [ ] **P06 — Gate adicional de rollout por organização. Em espera.** Adiado por
+  decisão de produto em 2026-11-19; não bloqueia o MVP. Autenticação, isolamento,
+  permissões e controles de IA existentes continuam no escopo.
 
 - [ ] **PROJ-006 — Definir a interação por seleção de trechos no assistente. Em espera.**
   Seleção de trechos pausada por decisão do produto em 2026-11-17. Novos pedidos

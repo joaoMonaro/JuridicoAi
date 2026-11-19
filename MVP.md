@@ -31,6 +31,7 @@ da IA, revisa o texto e exporta um arquivo utilizável no seu trabalho.
 - Scraper, pesquisa e processamento de jurisprudências.
 - OCR e leitura de imagens ou documentos digitalizados.
 - Proteção automática de exclusões após restauração e volume independente (P05), adiados.
+- Gate adicional de rollout por organização (P06), adiado.
 - Novos usos ou funcionalidades além da redação e finalização das peças.
 
 ## Quando estará pronto
@@ -46,6 +47,8 @@ A validação com o advogado será feita com o MVP online, em acesso restrito ao
 - [ ] Word e PDF contêm o texto salvo e o layout escolhido, conferidos pelo advogado.
 - [ ] O ambiente está configurado para esse usuário, com acesso aos dados
   protegido e tempo de resposta e consumo verificados para o uso inicial.
+
+As decisões e a próxima prioridade estão em [Decisões do MVP](docs/decisoes-mvp.md).
 
 ## Regra de encerramento
 
