@@ -74,6 +74,12 @@ separada de intenção automática. Com revisão e histórico habilitados,
 Peça. A mesma geração decide entre responder, propor edição e gerar minuta.
 Propostas abrem diretamente a comparação; só a aprovação grava a Peça.
 Pedidos seguintes podem ajustar uma proposta pendente, preservando o aplicado.
+O chat avança com as informações disponíveis, sem interromper a redação para
+pedir esclarecimentos. Dados desconhecidos ficam em campos
+`[PREENCHER: descrição]`, sem presumir partes, competência, tratamentos ou fatos.
+Perguntas, pedidos de documentos e sugestões para complementar informações só
+são apresentados quando o usuário solicitar expressamente esse levantamento.
+Alertas continuam descrevendo lacunas e limitações de forma declarativa.
 Conversa exige `AI_ASSISTANT`; propostas e aplicação exigem `AI_EDIT`; minuta
 inicial/substituição integral também exigem `AI_DOCUMENT_GENERATION`.
 Veja [ativação, contratos, testes e limites](../../implementacoes/features/assistente-conversacional/evidencias/e3-conversa-livre-2026-11-11.md).
