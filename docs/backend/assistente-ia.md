@@ -144,7 +144,8 @@ A sessão pessoal usa JWT/esquema separado; não autoriza os endpoints organizac
 - a configuração `AssistenteIa:Enabled` é a trava superior da aplicação;
 - o kill switch persistido `AI_ENABLED` pode interromper novas operações;
 - `AI_ASSISTANT`, `AI_EDIT`, `AI_REVIEW` e `AI_DOCUMENT_GENERATION` são
-  liberadas nominalmente por Organization;
+  habilitadas por padrão para Organizations ativas, com overrides administrativos
+  por Organization; não há gate adicional de participação no v2;
 - o primeiro uso exige confirmação do aviso de transparência versionado;
 - instruções encontradas em documentos ou contexto são tratadas como dados,
   não como instruções de sistema;

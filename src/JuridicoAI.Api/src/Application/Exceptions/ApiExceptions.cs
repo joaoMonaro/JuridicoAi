@@ -36,6 +36,12 @@ public sealed class NaoAutorizadoException(string message) : ApiException(messag
     public override int StatusCode => StatusCodes.Status401Unauthorized;
 }
 
+public sealed class AcessoNegadoException(string message, string? code = null) : ApiException(message)
+{
+    public override int StatusCode => StatusCodes.Status403Forbidden;
+    public string? Code { get; } = code;
+}
+
 public sealed class ConflitoException(string message, string? code = null) : ApiException(message)
 {
     public override int StatusCode => StatusCodes.Status409Conflict;

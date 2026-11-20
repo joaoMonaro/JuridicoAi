@@ -1,7 +1,7 @@
 # Preparação para produção e testes locais
 
-> **Estado:** implementação parcial do monitoramento P04; demais frentes em planejamento.
-> **Atualizado em:** 2026-11-19.
+> **Estado:** monitoramento P04 parcial e acesso P06 simplificado implementado; configuração do deploy pendente.
+> **Atualizado em:** 2026-11-20.
 > **Acompanhamento:** [tarefas e critérios de aceite](TODO.md).
 > **Escopo do produto:** [MVP de redação de peças jurídicas](../../../MVP.md).
 
@@ -14,8 +14,10 @@ separados por ambiente.
 
 O monitoramento P04 tem implementação e ensaio local registrados em sua
 [evidência](../assistente-conversacional/evidencias/p04-monitoramento-2026-11-19.md).
+O acesso P06 foi simplificado e implementado em 2026-11-20; ver
+[evidência](../assistente-conversacional/evidencias/p06-acesso-piloto-2026-11-20.md).
 As demais frentes continuam em planejamento, sem contratação, deploy ou testes
-pagos realizados por esta entrega. Marcar tarefas somente após sua verificação.
+pagos realizados por estas entregas. Marcar tarefas somente após sua verificação.
 
 ## Decisões confirmadas
 
@@ -26,8 +28,8 @@ pagos realizados por esta entrega. Marcar tarefas somente após sua verificaçã
   executadas quando explicitamente solicitadas pelo responsável pelo projeto.
 - A presença de uma chave, de um modelo configurado ou da habilitação de IA
   na aplicação não autoriza testes pagos.
-- A implementação iniciada limita-se ao monitoramento P04; as demais frentes
-  permanecem em planejamento.
+- A implementação inclui monitoramento P04 e cadastro/acesso P06 simplificado;
+  a preparação do ambiente publicado permanece pendente.
 
 ## Política de testes com IA
 
@@ -68,7 +70,7 @@ Os nomes finais dos perfis e das opções serão definidos no desenho técnico.
 |---|---|---|---|
 | Transporte | HTTP em loopback permitido | HTTPS | HTTPS |
 | Origem do frontend | Localhost conforme configuração local | Lista explícita de origens | Lista explícita de origens |
-| Cadastro | Configurável para cenários locais | Restrito aos participantes autorizados | Restrito ao piloto, sujeito à definição da política |
+| Cadastro | Habilitado em Development; configurável | Fechado; provisionamento por CLI | Fechado; provisionamento do piloto por CLI |
 | Dados e credenciais | Recursos de teste separados | Dados fictícios e segredos próprios | Dados reais e segredos próprios |
 | Banco | PostgreSQL local ou descartável | Banco separado, sem acesso público | Banco privado |
 | Documentos | Diretório local configurável | Storage persistente de homologação | Storage persistente e privado |
@@ -103,7 +105,7 @@ específicas da IA permanecem no
 | P03 — Controle financeiro | Configurar tarifas/limites reais por ambiente; aproveitar o controle já implementado |
 | P04 — Monitoramento | Implementação local disponível; configurar canal/responsável e validar a operação do ambiente |
 | P05 — Backup/exclusão | Em espera, fora do MVP; código preservado em branch separada |
-| P06 — Rollout | Restringir o piloto por organização; cadastro restrito não substitui esse controle |
+| P06 — Acesso ao piloto | Cadastro fechado e provisionamento por CLI; acesso ao agente automático, sujeito aos controles existentes, sem gate adicional de v2 (decisão de 2026-11-20) |
 | P07/P01/P02 — Compatibilidade e homologação | Comprovar o fluxo e revisar resultados antes da liberação |
 | P08 — Implantação | Ensaiar migrations, drenagem de workers, deploy e rollback |
 
@@ -135,7 +137,6 @@ de testes por esta documentação nem certificação do frontend ou da nuvem.
 - Necessidade de homologação permanente ou criada sob demanda.
 - Volume persistente ou armazenamento de objetos para os documentos; confirmar
   compatibilidade com o storage local usado atualmente.
-- Política final de cadastro e provisionamento do primeiro usuário.
 - Perfis locais necessários e experiência de habilitação de IA real na aplicação.
 - Comando/opção para testes reais, orçamento por rodada e mecanismo para bloquear
   saídas ao provedor na suíte comum.

@@ -124,9 +124,11 @@ Evidências: [prova local](../evidencias/e0-editor-2026-11-11.md),
 - [x] Flags operacionais e capacidades existentes selecionam a experiência disponível.
 - [x] Aviso com persistência/anexos privados e versão de aceite correspondente.
 - [x] Migrations aditivas e proteções de downgrade de estruturas com dados.
-- [ ] Completar gate específico de rollout v2 por organização, separado das flags
-  operacionais; validar seleção v1/v2 sem aplicação concorrente dos fluxos — P06.
-- [ ] Homologar a jornada integrada com o modelo real e revisar resultados — P01/P02/P06.
+- [x] P06 simplificado por decisão de produto em 2026-11-20: cadastro público
+  configurável e agente disponível ao participante autenticado, sem gate adicional
+  de v2. Permissões atuais habilitadas por padrão, respeitando bloqueios
+  administrativos, flags e limite financeiro. Ver [evidência P06](../evidencias/p06-acesso-piloto-2026-11-20.md).
+- [ ] Homologar a jornada integrada com o modelo real e revisar resultados — P01/P02.
 - [ ] Rever texto/versão final do aviso e regressões da jornada — P07.
 - [ ] Monitoramento e alertas de custo, falhas, jobs e exclusões — P04.
 - [ ] Preparar armazenamento, HTTPS/origens, migrations, drenagem de workers e
@@ -142,13 +144,13 @@ sua existência não comprova provisionamento nem execução do ensaio.
 
 | Cenário | Situação registrada | Fechamento restante |
 |---|---|---|
-| Dois usuários na mesma Peça; outra organização | Testes técnicos e recorte real de anexo privado de outro titular aprovados | Jornada ampliada e piloto: P01/P06 |
+| Dois usuários na mesma Peça; outra organização | Testes técnicos e recorte real de anexo privado de outro titular aprovados; P06 simplificado validado com PostgreSQL em 2026-11-20 | Jornada ampliada e piloto: P01/P02 |
 | Histórico sem Membership | API/PostgreSQL e UI focada aprovados; sem acesso a fontes atuais | Ambiente de implantação: P08 |
 | Leitura nativa parcial/duvidosa | Gate, sinalização e resposta com fonte parcial verificados no recorte real | Avaliação ampliada/revisão: P01/P02 |
 | OCR ruim/parcial/misto | Pipeline inicial; calibração insuficiente, desativado | P09 em espera |
 | Correções e conversa longa | Correção/consulta após aprovação verificadas com modelo real; memória extensa com simulação | Memória extensa real: P01/P02 |
 | Todos os documentos | Cobertura/checkpoints e bloqueio de conclusão incompleta testados | Qualidade real: P01/P02 |
-| Aprovação, aplicação simultânea e perda de resposta | Transação, recibo, idempotência e reconciliação testados | Jornada integrada: P06/P07 |
+| Aprovação, aplicação simultânea e perda de resposta | Transação, recibo, idempotência e reconciliação testados | Jornada integrada: P07 |
 | Autosave e aprovação parcial | Coordenação e remapeamento verificados em testes focados | Matriz ampliada: P07 |
 | Undo/redo, marks e exportação | Recorte local/focado validado; exportação integral não homologada | P07 |
 | Exclusão durante execução | Cancelamento, fence e expurgo ativo testados | Monitoramento/deploy: P04/P08 |

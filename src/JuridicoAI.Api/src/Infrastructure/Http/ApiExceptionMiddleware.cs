@@ -25,6 +25,7 @@ public sealed class ApiExceptionMiddleware(RequestDelegate next, ILogger<ApiExce
                 {
                     ConflitoDeVersaoException conflito => conflito.Code,
                     ConflitoException conflito => conflito.Code,
+                    AcessoNegadoException acesso => acesso.Code,
                     AssistenteIaException assistente => assistente.Code,
                     _ => null
                 },

@@ -86,22 +86,26 @@ A inicialização falha de forma explícita se o assistente estiver habilitado s
 chave, modelo ou com limites inválidos. A chave nunca deve ser colocada em
 `appsettings*.json`, `.env`, commits, logs ou exemplos compartilhados.
 
-O kill switch global não libera um tenant sozinho. Para habilitar uma flag em
-uma Organization, execute o comando operacional com acesso à mesma configuração
-de PostgreSQL da API:
+O participante autenticado já tem acesso ao agente na sua Organization ativa.
+As quatro permissões atuais (`AI_ASSISTANT`, `AI_EDIT`, `AI_REVIEW` e
+`AI_DOCUMENT_GENERATION`) são habilitadas por padrão; não é preciso liberá-las
+individualmente no provisionamento. Flags operacionais, kill switch e limites
+financeiros continuam valendo. Para criar um bloqueio administrativo por
+Organization, execute com acesso à mesma configuração de PostgreSQL da API:
 
 ```bash
 AI_FEATURE_ORGANIZATION_ID="uuid-da-organizacao" \
 AI_FEATURE_NAME="AI_ASSISTANT" \
-AI_FEATURE_ENABLED="true" \
+AI_FEATURE_ENABLED="false" \
 AI_OPERATION_UPDATED_BY_ID="uuid-do-owner" \
-AI_OPERATION_REASON="Liberação para tenant interno" \
+AI_OPERATION_REASON="Bloqueio administrativo do agente" \
 dotnet run --project src/JuridicoAI.Api -- set-ai-feature
 ```
 
-Repita explicitamente para `AI_EDIT`, `AI_REVIEW` ou
-`AI_DOCUMENT_GENERATION`, conforme o estágio do rollout. Ausência de registro
-equivale a desabilitado. Esse comando é administrativo e não recebe conteúdo
+Também é possível configurar `AI_EDIT`, `AI_REVIEW` ou `AI_DOCUMENT_GENERATION`.
+Ausência de registro equivale a habilitado para essas quatro permissões em
+Organization ativa; um registro `false` bloqueia e `true` restaura a permissão.
+Esse comando é administrativo e não recebe conteúdo
 jurídico; até existir uma interface autenticada, sua execução deve ficar
 restrita ao ambiente operacional controlado. O operador informado precisa ser
 um `Owner` ativo da Organization e a justificativa deve ter entre 1 e 500 caracteres.

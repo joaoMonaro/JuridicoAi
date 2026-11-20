@@ -12,6 +12,14 @@ rotas, tabelas e defaults implementados das projeções originais.
 A [conferência documental](evidencias/conferencia-documental-2026-11-12.md)
 registra os ajustes de coerência feitos após a avaliação.
 
+Atualização em **2026-11-20 (P06):** por decisão de produto, o cadastro público
+passa a ser configurável e fechado por padrão (aberto no perfil Development).
+O participante autenticado acessa o agente sem gate adicional de v2; as quatro
+permissões atuais de IA ficam habilitadas por padrão em organizações ativas,
+preservando bloqueios administrativos explícitos e controles financeiros.
+79 testes focados aprovados, incluindo PostgreSQL descartável, sem consumo real
+de IA. Ver [evidência P06](evidencias/p06-acesso-piloto-2026-11-20.md).
+
 Atualização em **2026-11-17**: painel simplificado para conversa/anexos, contexto
 automático da Peça salva e da própria conversa, materiais do Caso por pedido
 expresso e seleção de trechos pausada em PROJ-006. Backend: 298 testes aprovados
@@ -142,7 +150,8 @@ homologa o novo fluxo conversacional.
 - As flags de revisão, conversa, geração durável, memória e documentos estão
   **desligadas por padrão** na configuração versionada. Conversa natural é o
   padrão do fluxo persistido; a antiga flag de intenção automática foi removida. Há
-  permissões de IA por organização; falta o gate específico de rollout v2.
+  overrides administrativos de IA por organização. O gate adicional de v2 foi
+  dispensado por decisão de produto em 2026-11-20 (P06).
 - Histórico pessoal e processamento de exclusões aceitas não dependem de manter
   as flags de geração habilitadas nem do vínculo organizacional do titular.
 - O endpoint v1 independente conserva o fluxo anterior ligado à requisição.
@@ -173,7 +182,7 @@ fechados, sem tratar propostas do desenho como SLAs aprovados.
 | P03 | Completar controle financeiro de produção | **Código validado; configuração no deploy.** Controle mensal UTC implementado com configuração inicial de US$ 5,00 (ainda não implantada) e testes reais em PostgreSQL/frontend. Falta apenas definir as tarifas reais do modelo e overrides de produção no deploy. |
 | P04 | Preparar monitoramento operacional | **Instrumentação + operação.** Fechar métricas, alertas e rotina de resposta para custo, falhas, jobs sem progresso, leases e exclusões pendentes. Usar metadados técnicos, sem conteúdo jurídico ou credenciais nos logs. |
 | P05 | Proteger exclusões após restauração | **Em espera, fora do MVP.** Código preservado em `feature/p05-exclusoes-restauracao`, sem integração em `homologacao`. Retomar quando repriorizado. |
-| P06 | Preparar ativação controlada do v2 | **Implementação + validação.** Completar gate por organização separado das flags operacionais e conferir seleção v1/v2, permissões e jornadas multiusuário nas condições do piloto. Validar com modelo real a integração já exercitada por simulação. |
+| P06 | Cadastro fechado e acesso automático ao agente | **Concluído em 2026-11-20.** Configuração `Auth:RegistrationEnabled`, provisionamento por CLI e permissões atuais habilitadas por padrão em organizações ativas, respeitando overrides. Sem gate adicional de v2. 79 testes aprovados. |
 | P07 | Fechar compatibilidade e experiência do editor | **Validação + documentação.** Consolidar fixtures do schema existente, incluindo marks/listas/links/headings/emoji/blocos desconhecidos; ampliar verificação de documentos longos, acessibilidade, paginação de revisão, undo/autosave e exportação sem previews. Registrar versões/licenças das dependências e revisar o aviso vigente. Corrigir regressões necessárias à jornada; a suíte E2E completa ainda não está homologada. |
 | P08 | Preparar deploy e rollback do piloto | **Configuração + ensaio operacional.** Aplicar migrations aditivas, drenar workers antigos, conferir temporários legados e permissões/volume persistente; configurar HTTPS e origens pessoais. Ensaiar rollback sem apagar dados v2 nem reabrir conversas em exclusão. [Checklist operacional](especificacoes/06-operacao-exclusao-restauracao.md). |
 | P09 | Calibrar OCR | **Em espera.** Retomar somente quando repriorizado. Usar corpus representativo, medir cobertura/qualidade e aprovar critérios antes de ativar. [Registro da pausa](../../standBy/calibracao-ocr/README.md). |

@@ -5,8 +5,10 @@ using JuridicoAI.Api.Application.Services;
 using JuridicoAI.Api.Domain.Entities;
 using JuridicoAI.Api.Domain.Enums;
 using JuridicoAI.Api.Infrastructure.Auth;
+using JuridicoAI.Api.Infrastructure.Http;
 using JuridicoAI.Api.Infrastructure.Settings;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json;
@@ -42,6 +44,58 @@ public sealed class AuthApplicationServiceTests
         Assert.Equal(MembershipRoleEnum.Owner, result.Membership.Role);
         Assert.Equal(result.Organization.Id, result.Membership.OrganizationId);
         Assert.True(repository.ProvisionCalled);
+    }
+
+    [Fact]
+    public async Task Register_DesabilitadoPorPadraoRetorna403SemCriarDadosOuCookie()
+    {
+        var repository = new FakeAuthRepository();
+        var settings = new AuthSettings();
+        var http = new DefaultHttpContext();
+        http.Request.Path = "/auth/register";
+        http.Response.Body = new MemoryStream();
+        var controller = new AuthController(CreateService(repository, settings), Options.Create(settings))
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        var middleware = new ApiExceptionMiddleware(async _ =>
+        {
+            // O bloqueio antecede até a validação dos dados e consulta de e-mail.
+            await controller.Register(new("", "", "", ""), default);
+        }, NullLogger<ApiExceptionMiddleware>.Instance);
+
+        await middleware.InvokeAsync(http);
+
+        Assert.False(settings.RegistrationEnabled);
+        Assert.Equal(StatusCodes.Status403Forbidden, http.Response.StatusCode);
+        http.Response.Body.Position = 0;
+        using var problem = await JsonDocument.ParseAsync(http.Response.Body);
+        Assert.Equal("REGISTRATION_DISABLED", problem.RootElement.GetProperty("code").GetString());
+        Assert.Equal(0, http.Response.Headers.SetCookie.Count);
+        Assert.Empty(repository.Organizations);
+        Assert.Empty(repository.Users);
+        Assert.Empty(repository.Memberships);
+        Assert.Empty(repository.Sessions);
+        Assert.False(repository.RegisterCalled);
+    }
+
+    [Fact]
+    public async Task Register_DesabilitadoPreservaProvisionamentoLoginERefresh()
+    {
+        var repository = new FakeAuthRepository();
+        var provisioning = new OrganizationApplicationService(repository, new FakePasswordHasher());
+        var created = await provisioning.ProvisionarAsync(
+            new("Escritório", "Advogado", "piloto@example.test", "senha-segura-123"), default);
+        var service = CreateService(repository, new AuthSettings());
+
+        var login = await service.LoginAsync(new("piloto@example.test", "senha-segura-123"), default);
+        var refreshed = await service.RefreshAsync(login.RefreshToken, default);
+
+        Assert.Equal(created.User.Id, refreshed.User.Id);
+        Assert.Equal(created.Organization.Id, refreshed.Organization.Id);
+        Assert.NotEqual(login.RefreshToken, refreshed.RefreshToken);
+        Assert.True(repository.ProvisionCalled);
+        Assert.False(repository.RegisterCalled);
     }
 
     [Fact]
@@ -138,7 +192,7 @@ public sealed class AuthApplicationServiceTests
         var repository = new FakeAuthRepository();
         var settings = new AuthSettings
         {
-            AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30, SecureRefreshCookie = true
+            RegistrationEnabled = true, AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30, SecureRefreshCookie = true
         };
         var controller = new AuthController(CreateService(repository, settings), Options.Create(settings))
         {
@@ -264,7 +318,7 @@ public sealed class AuthApplicationServiceTests
 
     private static AuthApplicationService CreateService(FakeAuthRepository repository, AuthSettings? settings = null) =>
         new(repository, new FakePasswordHasher(), new FakeTokenService(), new MutableAuthContext(),
-            Options.Create(settings ?? new AuthSettings { AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30 }));
+            Options.Create(settings ?? new AuthSettings { RegistrationEnabled = true, AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30 }));
 
     private sealed record SetupResult(AuthApplicationService Service, FakeAuthRepository Repository,
         MutableAuthContext Auth, User User, Organization Organization);
