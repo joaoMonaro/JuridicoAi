@@ -8,15 +8,32 @@ namespace JuridicoAI.Api.Infrastructure.Repositories;
 
 public sealed class OrganizationFeatureRepository(JuridicoAiDbContext context) : IOrganizationFeatureRepository
 {
+    // O acesso ao piloto já libera o agente; registros persistidos são overrides
+    // administrativos. Novas permissões devem definir seu próprio padrão.
+    private static readonly OrganizationFeatureEnum[] DefaultFeatures =
+    [
+        OrganizationFeatureEnum.AI_ASSISTANT,
+        OrganizationFeatureEnum.AI_EDIT,
+        OrganizationFeatureEnum.AI_REVIEW,
+        OrganizationFeatureEnum.AI_DOCUMENT_GENERATION
+    ];
+
     public async Task<IReadOnlySet<OrganizationFeatureEnum>> ListarHabilitadasAsync(
         Guid organizationId,
-        CancellationToken cancellationToken) =>
-        (await context.OrganizationFeatures
+        CancellationToken cancellationToken)
+    {
+        if (!await context.Organizations.AnyAsync(
+                x => x.Id == organizationId && x.Status == OrganizationStatusEnum.Active,
+                cancellationToken))
+            return new HashSet<OrganizationFeatureEnum>();
+
+        var disabled = await context.OrganizationFeatures
             .AsNoTracking()
-            .Where(x => x.OrganizationId == organizationId && x.Enabled)
+            .Where(x => x.OrganizationId == organizationId && !x.Enabled)
             .Select(x => x.Feature)
-            .ToListAsync(cancellationToken))
-        .ToHashSet();
+            .ToListAsync(cancellationToken);
+        return DefaultFeatures.Except(disabled).ToHashSet();
+    }
 
     public async Task DefinirAsync(
         Guid organizationId,

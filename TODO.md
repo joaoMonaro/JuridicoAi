@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-19**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-20**. Acompanhamento geral das prioridades do projeto.
 **Somente a seção “Essencial para publicar o MVP” reúne os bloqueios de lançamento,
 em ordem decrescente de prioridade.** As demais tarefas continuam acompanhadas
 abaixo, sem exigir a conclusão de todo o plano técnico para o primeiro piloto.
@@ -13,15 +13,14 @@ local e manter novas funcionalidades fora do lançamento.
 
 ### 1. Acesso seguro e restrito ao piloto — prioridade máxima
 
-- [ ] Restringir cadastro/provisionamento e acesso ao usuário e à organização do
-  piloto; concluir a autorização v2 por organização no backend (**P06**).
 - [ ] Configurar HTTPS, cookie de refresh com `Secure`, origens CORS explícitas
   e segredos próprios de produção; conferir proxy e rate limit no deploy escolhido.
 - [ ] Verificar isolamento de dados e revogação da sessão; corrigir a corrida
   entre renovação do refresh token e logout da sessão principal.
 
-Detalhamento: **PROD-003/P06** nos [TODOs de produção](implementacoes/features/preparacao-producao/TODO.md#prod-003--proteger-acesso-e-transporte)
-e do [assistente](implementacoes/features/assistente-conversacional/TODO.md#entregas-ainda-abertas-do-escopo).
+Detalhamento: **PROD-003** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md#prod-003--proteger-acesso-e-transporte).
+O cadastro fechado e o acesso automático ao agente (**P06**) estão concluídos,
+registrados abaixo em “Entregas concluídas”.
 
 ### 2. Ambiente online e preservação dos dados — prioridade alta
 
@@ -151,6 +150,13 @@ critérios de lançamento nem reintroduzem o scraper no escopo atual.
 
 Os resultados abaixo são evidências históricas das respectivas entregas.
 A liberação em produção exige validar novamente a versão candidata.
+
+- [x] **P06 — Bloquear cadastro público por configuração e liberar o agente ao participante autenticado.**
+  Concluído em 2026-11-20: `Auth:RegistrationEnabled=false` bloqueia o registro;
+  provisionamento por CLI preservado e acesso ao agente automático em organizações
+  ativas, respeitando os controles existentes. Sem gate adicional de v2.
+  **79 testes aprovados**, incluindo PostgreSQL descartável e IA simulada.
+  Ver [evidência P06](implementacoes/features/assistente-conversacional/evidencias/p06-acesso-piloto-2026-11-20.md).
 
 - [x] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
 

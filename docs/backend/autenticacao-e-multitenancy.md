@@ -48,7 +48,14 @@ Em produção, configure `Auth:SecureRefreshCookie=true`. O cookie usa
 
 ## Configuração
 
+O cadastro público fica fechado por padrão (`Auth:RegistrationEnabled=false`).
+O perfil `Development` habilita o cadastro para desenvolvimento; variáveis de
+ambiente e user-secrets podem sobrescrever essa opção. No piloto, use
+`Auth__RegistrationEnabled=false` e crie o participante pelo comando administrativo.
+Essa opção não bloqueia login, refresh ou provisionamento.
+
 ```bash
+export Auth__RegistrationEnabled=false
 export Auth__JwtSecret="um-segredo-aleatorio-com-pelo-menos-32-caracteres"
 export Auth__Issuer="JuridicoAI"
 export Auth__Audience="JuridicoAI.Web"
@@ -65,13 +72,16 @@ instância da aplicação.
 
 | Método | Rota | Autenticação |
 |---|---|---|
-| `POST` | `/auth/register` | pública |
+| `POST` | `/auth/register` | pública, somente com cadastro habilitado |
 | `POST` | `/auth/login` | pública |
 | `POST` | `/auth/refresh` | cookie de refresh |
 | `POST` | `/auth/logout` | cookie de refresh, idempotente |
 | `GET` | `/auth/me` | Bearer JWT |
 
 ### Registro
+
+Com `Auth:RegistrationEnabled=false`, a API retorna HTTP 403 com o código
+`REGISTRATION_DISABLED`, sem criar dados ou emitir tokens/cookie.
 
 ```json
 {
@@ -169,6 +179,16 @@ futuro sem duplicar User.
 
 Convites, criação de Members, confirmação de e-mail e recuperação de senha
 ainda não fazem parte da API.
+
+## Acesso ao agente no piloto
+
+O participante provisionado já tem acesso ao agente na sua Organization ativa,
+sem lista de participantes ou gate adicional de v2. Isso também vale para contas
+existentes: as quatro permissões atuais de IA ficam habilitadas por padrão;
+bloqueios administrativos explícitos continuam sendo respeitados por organização.
+As flags operacionais do ambiente, o kill switch, o aviso de transparência e o
+controle financeiro continuam valendo. Fechar o cadastro não revoga contas já
+criadas; antes do piloto, conferir as contas ativas no banco do ambiente publicado.
 
 ## Isolamento dos dados privados
 

@@ -66,6 +66,7 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |
 | `Postgres:RunMigrations` | `true` | aplica migrations pendentes do EF Core ao iniciar |
 | `Auth:JwtSecret` | vazio | segredo JWT obrigatório, com ao menos 32 caracteres |
+| `Auth:RegistrationEnabled` | `false` (`true` em Development) | habilita cadastro público; manter `false` no piloto e provisionar o participante por CLI |
 | `Auth:Issuer` | `JuridicoAI` | emissor dos access tokens |
 | `Auth:Audience` | `JuridicoAI.Web` | audiência dos access tokens |
 | `Auth:AccessTokenTtlMinutes` | `15` | duração do access token |

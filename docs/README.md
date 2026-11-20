@@ -62,7 +62,8 @@ referência normativa para o comportamento atual.
 O projeto contém:
 
 - uma API ASP.NET Core em .NET 10 com autenticação JWT e Swagger em desenvolvimento;
-- cadastro inicial de organização e usuário, login e renovação de sessão;
+- cadastro público configurável, provisionamento de organização/usuário por CLI,
+  login e renovação de sessão;
 - casos, envolvidos, contextos, documentos, peças e templates de peças;
 - editor de peças com autosave no frontend;
 - exportação de peças para Word editável e PDF, com conversor local configurável;
@@ -75,6 +76,6 @@ O projeto contém:
 
 Há monitoramento local configurável por OTLP, com painel e regras de alerta em
 `ops/monitoring/`. Não há contêiner da aplicação. O `docker-compose.yml` provisiona
-PostgreSQL. Configuração de notificações e monitoramento no deploy, rollout comercial,
+PostgreSQL. Configuração de notificações e monitoramento no deploy, acesso ao piloto,
 proteção das exclusões após restauração, configuração das tarifas do piloto e validações jurídicas
 continuam acompanhados na documentação de implementação.

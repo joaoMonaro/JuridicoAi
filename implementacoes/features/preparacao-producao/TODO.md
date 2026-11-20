@@ -1,6 +1,6 @@
 # TODO — Preparação para produção e testes locais
 
-Atualizado em **2026-11-19**. **Estado: implementação parcial do monitoramento P04.**
+Atualizado em **2026-11-20**. **Estado: monitoramento P04 parcial e acesso P06 simplificado implementado.**
 Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 ## Decisões registradas
@@ -10,7 +10,8 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 - [x] Separar neste plano decisões confirmadas, propostas e escolhas pendentes.
 
 Os itens acima representam documentação. P04 possui implementação e ensaio local;
-as demais frentes e as condições operacionais indicadas abaixo continuam pendentes.
+P06 simplificado tem código e testes concluídos. As demais frentes e as condições
+operacionais indicadas abaixo continuam pendentes.
 
 ## Etapa 1 — Ambientes e controle dos testes pagos
 
@@ -48,7 +49,9 @@ Uma rodada real futura depende de solicitação explícita e orçamento definido
 
 - [ ] Exigir cookie de refresh com `Secure` em produção e rejeitar configuração insegura.
 - [ ] Configurar CORS por ambiente; permitir somente origens explícitas em produção.
-- [ ] Definir a política de cadastro/provisionamento e restringir o acesso inicial ao piloto.
+- [x] Implementar bloqueio configurável do cadastro público e acesso automático
+  ao agente para o participante autenticado (**P06**). Concluído e testado em
+  2026-11-20; provisionamento por CLI preservado, sem gate adicional de v2.
 - [ ] Validar configurações obrigatórias sem expor segredos nos erros ou logs.
 - [ ] Definir HTTPS na borda, proxies confiáveis e tratamento dos headers encaminhados.
 - [ ] Conferir rate limit com o IP correto atrás do proxy, sem confiar em headers arbitrários.
@@ -110,14 +113,15 @@ ensaio no ambiente de deploy continuam abertos. Ver
 
 ### PROD-008 — Homologar e registrar a decisão de liberação
 
-- [ ] Conferir os critérios do MVP e as pendências P01/P02/P06/P07 do assistente.
+- [ ] Conferir os critérios do MVP e as pendências P01/P02/P07 do assistente.
 - [ ] Validar com o advogado no MVP online, em acesso restrito: entrada pelo chat, anexos, geração, aprovação,
   edição manual, salvamento, retomada e exportação Word/PDF.
 - [ ] Planejar separadamente qualquer rodada de IA real necessária a essa
   homologação e executá-la somente após solicitação explícita e orçamento.
 - [ ] Reexecutar os checks adequados à versão candidata; registrar evidências
   atuais, sem reutilizar aprovações de commits anteriores automaticamente.
-- [ ] Conferir acesso restrito ao usuário/organização do piloto e acompanhamento operacional.
+- [ ] Conferir acesso restrito ao usuário/organização do piloto e acompanhamento
+  operacional, usando o cadastro fechado e o provisionamento por CLI já entregues.
 - [ ] Registrar a decisão de liberação e a versão entregue, conforme o fluxo
   de [versionamento](../../../docs/versionamento.md).
 

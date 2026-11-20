@@ -16,6 +16,9 @@ public sealed class AuthApplicationService(
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken ct)
     {
+        if (!_settings.RegistrationEnabled)
+            throw new AcessoNegadoException("O cadastro público está desabilitado.", "REGISTRATION_DISABLED");
+
         var organizationName = OrganizationApplicationService.NormalizarNome(request.OrganizationName, "organizationName");
         var name = OrganizationApplicationService.NormalizarNome(request.Name, "name");
         var email = OrganizationApplicationService.NormalizarEmail(request.Email);

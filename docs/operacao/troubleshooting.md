@@ -33,7 +33,7 @@ desenvolvimento pronta para produção. Antes de expor a aplicação:
 - aplique a política de retenção e exclusão de dados e backups;
 - valide que logs e telemetria não recebem conteúdo jurídico ou credenciais;
 - configure preços, orçamento, métricas, dashboards e alertas da IA;
-- execute o rollout por Organization e preserve o kill switch testado;
+- mantenha o cadastro fechado no piloto e preserve o kill switch testado;
 - conclua as revisões jurídicas de LGPD, contratos, suboperadores e
   transferência internacional.
 
@@ -46,12 +46,13 @@ Verifique, nesta ordem:
 
 1. `AssistenteIa:Enabled=true`, com `ApiKey` e `Model` válidos;
 2. kill switch persistido `AI_ENABLED=true`;
-3. flag `AI_ASSISTANT` habilitada para a Organization;
-4. flag específica da operação (`AI_EDIT`, `AI_REVIEW` ou
-   `AI_DOCUMENT_GENERATION`), quando aplicável;
+3. Organization ativa e sem bloqueio administrativo em `AI_ASSISTANT`;
+4. ausência de bloqueio administrativo na permissão da operação (`AI_EDIT`,
+   `AI_REVIEW` ou `AI_DOCUMENT_GENERATION`), quando aplicável;
 5. confirmação da versão atual do aviso de transparência pelo usuário.
 
-Ausência de uma flag equivale a desabilitado. Os comandos administrativos estão
+As quatro permissões atuais são habilitadas por padrão para Organizations ativas;
+registros explícitos `false` bloqueiam o recurso. Os comandos administrativos estão
 em [User Secrets](../user-secrets.md). Não envie a saída de `user-secrets list`
 para logs ou suporte, pois ela contém valores completos.
 

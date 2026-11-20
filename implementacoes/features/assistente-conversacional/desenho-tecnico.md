@@ -392,7 +392,8 @@ testes são técnicos, com provedores simulados nos cenários de geração.
 
 Restam avaliação real/homologação (P01/P02), controle financeiro de produção
 (P03), monitoramento (P04), registro externo de exclusões e restauração (P05),
-rollout por organização (P06), matriz ampliada do editor/experiência (P07) e
+configuração do acesso ao piloto no deploy (PROD-003; P06 simplificado concluído
+em código em 2026-11-20), matriz ampliada do editor/experiência (P07) e
 preparação/ensaio de implantação (P08). OCR continua em espera (P09).
 
 Os detalhes de natureza, critérios e dependências estão nos

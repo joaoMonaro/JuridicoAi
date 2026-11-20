@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-19**. Referência completa:
+Atualizado em **2026-11-20**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -61,9 +61,8 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
 | 1 | M01 — Latência | Concluído: diagnóstico, correção local e comparação real; espera remanescente acompanhada em M03 |
 | 2 | P03 — Controle financeiro | Implementado em código (configuração inicial US$ 5,00); falta apenas configurar tarifas/limites reais no ambiente de deploy |
 | 3 | P04 — Monitoramento | Código, painel e regras locais implementados; confirmar limiares, responsável, canal e operação no deploy |
-| 4 | P06 — Rollout | Gate v2 por organização, separado das flags operacionais, aplicado nas capacidades e operações autorizadas |
-| 5 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
-| 6 | P08 — Implantação | Configuração e roteiro de deploy/rollback ensaiados, preservando dados e exclusões autorizadas |
+| 4 | P07 — Editor/experiência | Fechar a matriz de compatibilidade e corrigir regressões identificadas na jornada |
+| 5 | P08 — Implantação | Configuração e roteiro de deploy/rollback ensaiados, preservando dados e exclusões autorizadas |
 
 ### Entregas ainda abertas do escopo
 
@@ -92,10 +91,6 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   notificação real, retenção de logs e validação no ambiente de deploy continuam
   pendentes. Ver [operação](../../../docs/operacao/monitoramento-assistente.md) e
   [evidência P04](evidencias/p04-monitoramento-2026-11-19.md).
-- [ ] **P06 — Implementar gate de rollout v2 por organização.** Separar habilitação
-  do piloto das flags de operação; refletir a autorização nas capacidades e
-  revalidá-la no backend. Conferir a seleção v1/v2, isolamento multiusuário e
-  desligamento sem apagar histórico ou interromper exclusões já autorizadas.
 - [ ] **P07 — Fechar compatibilidade e experiência.** Consolidar fixtures de
   schema/formatação, listas, links, headings, emoji e blocos antigos; validar
   documentos longos, acessibilidade, paginação, undo/autosave e exportação sem
@@ -107,9 +102,20 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   antigos e conferir temporários legados. Ensaiar deploy/rollback sem downgrade
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
 
-P03 exige configuração das tarifas e do ambiente; P06 exige desenvolvimento
-adicional; P04 tem implementação local e operação de deploy pendente; P07 exige validação e eventuais
-correções; P08 exige configuração e ensaio. Permanecem condições para o piloto; P05 está em espera fora desse recorte.
+P03 exige configuração das tarifas e do ambiente; P04 tem
+implementação local e operação de deploy pendente; P07 exige validação e eventuais
+correções; P08 exige configuração e ensaio. Permanecem condições para o piloto;
+P05 está em espera fora desse recorte.
+
+## Entregas concluídas
+
+- [x] **P06 — Fechar cadastro e disponibilizar o agente ao participante autenticado.**
+  Concluído em 2026-11-20 no escopo simplificado definido pelo produto.
+  `Auth:RegistrationEnabled` bloqueia o cadastro público; provisionamento por CLI
+  preservado. Acesso ao agente automático em organizações ativas, respeitando
+  bloqueios administrativos, flags operacionais, transparência e limite financeiro.
+  **79 testes aprovados**, incluindo PostgreSQL descartável e IA simulada.
+  Ver [evidência P06](evidencias/p06-acesso-piloto-2026-11-20.md).
 
 ## Melhorias evidenciadas na avaliação reduzida
 
