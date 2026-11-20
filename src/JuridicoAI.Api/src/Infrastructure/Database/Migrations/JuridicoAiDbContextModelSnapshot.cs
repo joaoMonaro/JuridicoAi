@@ -2425,6 +2425,12 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("refresh_token_hash");
 
+                    b.Property<string>("RevocationTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("revocation_token_hash");
+
                     b.Property<DateTime?>("RevogadaEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revogada_em");
@@ -2444,6 +2450,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.HasIndex("RefreshTokenHash")
                         .IsUnique()
                         .HasDatabaseName("uq_sessions_refresh_token_hash");
+
+                    b.HasIndex("RevocationTokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("uq_sessions_revocation_token_hash");
 
                     b.HasIndex("UserId", "OrganizationId")
                         .HasDatabaseName("ix_sessions_user_organization");

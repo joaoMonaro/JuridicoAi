@@ -38,6 +38,7 @@ public sealed class Session
     public Guid UserId { get; init; }
     public Guid OrganizationId { get; init; }
     public string RefreshTokenHash { get; set; } = string.Empty;
+    public string RevocationTokenHash { get; init; } = string.Empty;
     public DateTime ExpiraEm { get; init; }
     public DateTime? RevogadaEm { get; set; }
     public DateTime DataCriacao { get; init; }

@@ -3,7 +3,6 @@ using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Exporter;
 using System.Text.Json.Serialization;
-using System.Text;
 using JuridicoAI.Api.Application.Abstractions;
 using JuridicoAI.Api.Application.DTOs;
 using JuridicoAI.Api.Application.Services;
@@ -21,7 +20,6 @@ using JuridicoAI.Api.Infrastructure.Documents;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -161,45 +159,8 @@ builder.Services.AddCors();
 builder.Services.AddOptions<CorsOptions>().Configure<FrontendOriginPolicy>(
     (options, origins) => origins.ConfigureCors(options));
 var jwtSettings = builder.Configuration.GetSection("Auth").Get<AuthSettings>() ?? new AuthSettings();
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
-{
-    options.MapInboundClaims = false;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.JwtSecret)),
-        ValidAlgorithms = [SecurityAlgorithms.HmacSha256],
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidateAudience = true,
-        ValidAudience = jwtSettings.Audience,
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.FromSeconds(30),
-        NameClaimType = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub,
-        RoleClaimType = "role"
-    };
-    options.Events = new JwtBearerEvents
-    {
-        OnTokenValidated = async context =>
-        {
-            var sessionClaim = context.Principal?.FindFirst("sessionId")?.Value;
-            var userClaim = context.Principal?.FindFirst("sub")?.Value;
-            var organizationClaim = context.Principal?.FindFirst("organizationId")?.Value;
-            if (!Guid.TryParse(sessionClaim, out var sessionId) || !Guid.TryParse(userClaim, out var userId) ||
-                !Guid.TryParse(organizationClaim, out var organizationId))
-            { context.Fail("Sessao invalida."); return; }
-            var repository = context.HttpContext.RequestServices.GetRequiredService<IAuthRepository>();
-            var session = await repository.ObterSessionAsync(sessionId, context.HttpContext.RequestAborted);
-            var user = await repository.ObterUserAsync(userId, context.HttpContext.RequestAborted);
-            var membership = await repository.ObterMembershipAsync(userId, organizationId, context.HttpContext.RequestAborted);
-            if (session is null || session.UserId != userId || session.OrganizationId != organizationId ||
-                session.RevogadaEm is not null || session.ExpiraEm <= DateTime.UtcNow ||
-                user?.Status != UserStatusEnum.Active || membership?.Organization.Status != OrganizationStatusEnum.Active ||
-                membership.Membership.Role.ToString() != context.Principal?.FindFirst("role")?.Value)
-                context.Fail("Sessao invalida.");
-        }
-    };
-});
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => OrganizationAuthentication.Configure(options, jwtSettings));
 builder.Services.AddAuthentication().AddJwtBearer(PersonalHistoryAuthentication.Scheme, options => PersonalHistoryAuthentication.Configure(options, jwtSettings));
 builder.Services.AddScoped<IPersonalHistoryContext, PersonalHistoryContext>();
 builder.Services.AddScoped<PersonalHistoryAuthService>();

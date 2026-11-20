@@ -44,11 +44,13 @@ public sealed class AuthApplicationService(
             Id = Guid.NewGuid(), OrganizationId = organization.Id, UserId = user.Id,
             Role = MembershipRoleEnum.Owner, DataCriacao = agora, DataAtualizacao = agora
         };
-        var refresh = tokens.CriarRefreshToken();
+        var revocation = tokens.CriarRefreshToken();
+        var refresh = revocation + "." + tokens.CriarRefreshToken();
         var session = new Session
         {
             Id = Guid.NewGuid(), UserId = user.Id, OrganizationId = organization.Id,
             RefreshTokenHash = tokens.HashRefreshToken(refresh),
+            RevocationTokenHash = tokens.HashRefreshToken(revocation),
             ExpiraEm = agora.AddDays(_settings.RefreshTokenTtlDays),
             DataCriacao = agora, DataAtualizacao = agora
         };
@@ -78,16 +80,17 @@ public sealed class AuthApplicationService(
 
     public async Task<AuthResponse> RefreshAsync(string? refreshToken, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(refreshToken)) throw CredenciaisInvalidas();
-        var hash = tokens.HashRefreshToken(refreshToken);
+        var revocation = RevocationSecret(refreshToken) ?? throw CredenciaisInvalidas();
+        var hash = tokens.HashRefreshToken(refreshToken!);
         var session = await repository.ObterSessionPorRefreshHashAsync(hash, ct);
         var agora = DateTime.UtcNow;
-        if (session is null || session.RevogadaEm is not null || session.ExpiraEm <= agora) throw CredenciaisInvalidas();
+        if (session is null || session.RevogadaEm is not null || session.ExpiraEm <= agora ||
+            session.RevocationTokenHash != tokens.HashRefreshToken(revocation)) throw CredenciaisInvalidas();
         var user = await repository.ObterUserAsync(session.UserId, ct);
         var membership = await repository.ObterMembershipAsync(session.UserId, session.OrganizationId, ct);
         if (user is null || user.Status != UserStatusEnum.Active || membership is null || membership.Organization.Status != OrganizationStatusEnum.Active)
             throw CredenciaisInvalidas();
-        var novoRefresh = tokens.CriarRefreshToken();
+        var novoRefresh = revocation + "." + tokens.CriarRefreshToken();
         if (!await repository.RotacionarRefreshAsync(session.Id, hash, tokens.HashRefreshToken(novoRefresh), agora, ct))
             throw CredenciaisInvalidas();
         var access = tokens.CriarAccessToken(user, membership.Organization, membership.Membership, session, agora);
@@ -96,9 +99,9 @@ public sealed class AuthApplicationService(
 
     public async Task LogoutAsync(string? refreshToken, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(refreshToken)) return;
-        var session = await repository.ObterSessionPorRefreshHashAsync(tokens.HashRefreshToken(refreshToken), ct);
-        if (session is not null) await repository.RevogarSessionAsync(session.Id, DateTime.UtcNow, ct);
+        var revocation = RevocationSecret(refreshToken);
+        if (revocation is null) return;
+        await repository.RevogarSessionPorRevocationHashAsync(tokens.HashRefreshToken(revocation), DateTime.UtcNow, ct);
     }
 
     public async Task<MeResponse> MeAsync(CancellationToken ct)
@@ -113,19 +116,34 @@ public sealed class AuthApplicationService(
     private async Task<AuthResponse> CriarSessaoAsync(User user, MembershipDetails details, CancellationToken ct)
     {
         var agora = DateTime.UtcNow;
-        var refresh = tokens.CriarRefreshToken();
+        var revocation = tokens.CriarRefreshToken();
+        var refresh = revocation + "." + tokens.CriarRefreshToken();
         var session = new Session
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
             OrganizationId = details.Organization.Id,
             RefreshTokenHash = tokens.HashRefreshToken(refresh),
+            RevocationTokenHash = tokens.HashRefreshToken(revocation),
             ExpiraEm = agora.AddDays(_settings.RefreshTokenTtlDays),
             DataCriacao = agora,
             DataAtualizacao = agora
         };
         await repository.CriarSessionAsync(session, ct);
         return Response(tokens.CriarAccessToken(user, details.Organization, details.Membership, session, agora), refresh, user, details, session.ExpiraEm);
+    }
+
+    private static string? RevocationSecret(string? refreshToken)
+    {
+        if (string.IsNullOrEmpty(refreshToken) || refreshToken.Length > 512) return null;
+        var parts = refreshToken.Split('.');
+        if (parts.Length is not (1 or 2)) return null;
+        Span<byte> decoded = stackalloc byte[64];
+        foreach (var part in parts)
+            if (part.Length != 88 || !Convert.TryFromBase64String(part, decoded, out var written) || written != 64)
+                return null;
+        // Um token legado inteiro passa a ser o segredo estável após a primeira renovação.
+        return parts[0];
     }
 
     private AuthResponse Response(string access, string refresh, User user, MembershipDetails details, DateTime refreshExpiresAt) =>

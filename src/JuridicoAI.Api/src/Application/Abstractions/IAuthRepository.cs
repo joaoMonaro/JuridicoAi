@@ -18,7 +18,7 @@ public interface IAuthRepository
     Task<Session?> ObterSessionPorRefreshHashAsync(string hash, CancellationToken ct);
     Task<Session?> ObterSessionAsync(Guid id, CancellationToken ct);
     Task<bool> RotacionarRefreshAsync(Guid sessionId, string hashAtual, string novoHash, DateTime agora, CancellationToken ct);
-    Task RevogarSessionAsync(Guid sessionId, DateTime agora, CancellationToken ct);
+    Task RevogarSessionPorRevocationHashAsync(string hash, DateTime agora, CancellationToken ct);
 }
 
 public interface IPasswordHasher

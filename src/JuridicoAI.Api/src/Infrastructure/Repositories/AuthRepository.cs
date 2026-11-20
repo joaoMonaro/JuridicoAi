@@ -70,7 +70,7 @@ public sealed class AuthRepository(JuridicoAiDbContext context) : IAuthRepositor
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.RefreshTokenHash, novo)
                 .SetProperty(x => x.UltimoUsoEm, agora).SetProperty(x => x.DataAtualizacao, agora), ct) == 1;
 
-    public Task RevogarSessionAsync(Guid id, DateTime agora, CancellationToken ct) =>
-        context.Sessions.Where(x => x.Id == id && x.RevogadaEm == null)
+    public Task RevogarSessionPorRevocationHashAsync(string hash, DateTime agora, CancellationToken ct) =>
+        context.Sessions.Where(x => x.RevocationTokenHash == hash && x.RevogadaEm == null)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevogadaEm, agora).SetProperty(x => x.DataAtualizacao, agora), ct);
 }

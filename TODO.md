@@ -11,17 +11,7 @@ local e manter novas funcionalidades fora do lançamento.
 
 ## Essencial para publicar o MVP
 
-### 1. Acesso seguro e restrito ao piloto — prioridade máxima
-
-- [ ] Verificar isolamento de dados e revogação da sessão; corrigir a corrida
-  entre renovação do refresh token e logout da sessão principal.
-
-Detalhamento: **PROD-003** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md#prod-003--proteger-acesso-e-transporte).
-O cadastro fechado e o acesso automático ao agente (**P06**) estão concluídos,
-assim como HTTPS, cookie seguro, CORS e proxies confiáveis no backend, registrados abaixo
-em “Entregas concluídas”.
-
-### 2. Ambiente online e preservação dos dados — prioridade alta
+### 1. Ambiente online e preservação dos dados — prioridade alta
 
 - [ ] Escolher a hospedagem e publicar o MVP em nuvem, com PostgreSQL privado,
   documentos em storage persistente e privado e dados/credenciais separados dos testes locais.
@@ -38,7 +28,7 @@ Detalhamento: recorte de **PROD-001/PROD-004/PROD-006/PROD-007/P08** no
 [TODO de produção](implementacoes/features/preparacao-producao/TODO.md).
 Homologação pode ser temporária; não é exigido manter três ambientes permanentes.
 
-### 3. IA configurada e consumo controlado — prioridade alta
+### 2. IA configurada e consumo controlado — prioridade alta
 
 - [ ] Configurar modelo, chave, flags/permissões, tarifas reais, versão de preços
   e limite mensal da organização, reutilizando o controle financeiro **P03**.
@@ -51,7 +41,7 @@ Homologação pode ser temporária; não é exigido manter três ambientes perma
 Detalhamento: **PROD-002/P03** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md)
 e na [evidência financeira](implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md).
 
-### 4. Jornada completa validada com o advogado — prioridade alta
+### 3. Jornada completa validada com o advogado — prioridade alta
 
 - [ ] **PROJ-003 — Validar a entrada e a redação pelo chat.** No MVP online e
   restrito, concluir um trabalho representativo: iniciar/retomar a Peça, fornecer
@@ -69,7 +59,7 @@ e as pendências **P01/P02/P07** estão no [TODO do assistente](implementacoes/f
 Executar somente os cenários necessários para comprovar esse uso inicial;
 rodadas reais adicionais dependem de solicitação e orçamento.
 
-### 5. Conferência final e liberação — após os itens anteriores
+### 4. Conferência final e liberação — após os itens anteriores
 
 - [ ] Executar os checks da versão candidata, incluindo PostgreSQL descartável,
   e verificar acesso ao banco/storage e o fluxo publicado.
@@ -151,6 +141,14 @@ critérios de lançamento nem reintroduzem o scraper no escopo atual.
 
 Os resultados abaixo são evidências históricas das respectivas entregas.
 A liberação em produção exige validar novamente a versão candidata.
+
+- [x] **PROD-003 — Corrigir a corrida refresh/logout e verificar isolamento e revogação da sessão principal.**
+  Concluído em 2026-11-20: credencial estável de revogação, renovação atômica e
+  logout independente da última rotação. Tokens legados preservados por migration.
+  JWT real e PostgreSQL descartável comprovaram as duas ordens da corrida,
+  resposta atrasada, revogação por sessão e isolamento entre organizações e
+  entre titulares de conversas/anexos. **401 testes aprovados e 1 de OCR ignorado**
+  na suíte completa, sem IA real. Ver [evidência da sessão principal](implementacoes/features/preparacao-producao/evidencias/sessao-principal-2026-11-20.md).
 
 - [x] **PROD-003 — Proteger transporte, origens e encaminhamento por proxy no backend.**
   Concluído em 2026-11-20: HTTP recusado com 400/`HTTPS_REQUIRED` antes dos

@@ -15,7 +15,8 @@ O PostgreSQL contém:
 - `organizations`: nome, status `Active` ou `Inactive` e timestamps;
 - `users`: nome, e-mail globalmente único, hash de senha, status e timestamps;
 - `memberships`: vínculo único por Organization e User, com a role;
-- `sessions`: hash do refresh token, expiração, revogação e último uso.
+- `sessions`: hashes do refresh token completo e da credencial estável de
+  revogação, expiração, revogação e último uso.
 
 Uma Organization inativa ou um User inativo não pode iniciar nem renovar uma
 sessão. O e-mail é normalizado com `Trim()` e letras minúsculas.
@@ -39,9 +40,11 @@ referenciada. Seus claims incluem:
 }
 ```
 
-O access token dura 15 minutos por padrão. O refresh token é um valor opaco de
-64 bytes aleatórios, dura 30 dias e é enviado somente em cookie HttpOnly. O
-banco armazena seu SHA-256 hexadecimal, nunca o token original.
+O access token dura 15 minutos por padrão. O refresh token, opaco para o cliente,
+contém duas partes de 64 bytes aleatórios codificados em Base64, separadas por
+ponto: credencial estável de revogação e parte rotativa. Dura 30 dias por padrão
+e é enviado somente em cookie HttpOnly. O banco armazena os SHA-256 hexadecimais
+do token completo e da parte estável, nunca seus valores originais.
 
 O perfil Production define `Auth:SecureRefreshCookie=true`; sobrescrever para
 `false` impede a inicialização. O cookie usa `HttpOnly`, `SameSite=Strict` e
@@ -160,11 +163,41 @@ O refresh token não aparece no JSON; ele é definido no cookie
 
 `POST /auth/refresh` não exige access token. A operação valida Session, User,
 Organization e Membership e troca atomicamente o hash armazenado. O token
-anterior deixa de funcionar imediatamente.
+anterior deixa de renovar acesso imediatamente. A parte estável é preservada;
+renovar exige o token completo atual. A atualização exige também sessão não
+revogada e não expirada, permitindo somente uma rotação concorrente por token.
 
-`POST /auth/logout` revoga a Session indicada pelo cookie e remove o cookie. Repetir
-a operação é seguro. Como o middleware consulta a Session em cada requisição
-autenticada, um access token de uma Session revogada também deixa de ser aceito.
+`POST /auth/logout` identifica a Session pelo hash da parte estável do cookie e
+a revoga com um único UPDATE, removendo o cookie na resposta. Um cookie anterior
+à última rotação continua podendo encerrar a mesma sessão. Repetir a operação
+é seguro; ela afeta somente a sessão identificada, preservando outras sessões
+do mesmo usuário e de outros usuários.
+
+Se o refresh atualizar primeiro, o logout ainda encontra a sessão pela credencial
+estável. Se o logout revogar primeiro, a atualização condicional do refresh falha
+com HTTP 401. Uma resposta de refresh atrasada pode entregar um cookie, mas suas
+credenciais já não concedem acesso. A validação JWT de produção, centralizada em
+`OrganizationAuthentication`, consulta a sessão no banco em cada requisição;
+validações posteriores ao logout recusam também os access tokens já emitidos.
+
+Tokens vazios, malformados ou maiores que 512 caracteres não renovam acesso;
+logout com token ausente ou inválido continua idempotente.
+
+### Compatibilidade e migration da sessão principal
+
+A migration `20261120155327_AddMainSessionRevocationSecret` adiciona
+`revocation_token_hash` e seu índice único. Para sessões existentes, copia o hash
+do refresh atual para esse campo. O token legado de uma parte continua funcionando
+e, na primeira renovação, passa a ser a parte estável do formato composto. Depois
+dessa rotação, o token antigo serve para logout, mas não renova acesso.
+
+Atualizar com a instância antiga parada/drenada, aplicar a migration e iniciar
+a nova versão, evitando processos antigos gravando sessões sem o novo campo.
+O downgrade é bloqueado enquanto houver sessões ativas, não expiradas, com
+tokens compostos, para preservar sua credencial de revogação. A migration foi
+verificada somente em PostgreSQL descartável; nenhum banco existente foi alterado.
+
+Ver [evidência de concorrência, revogação e isolamento](../../implementacoes/features/preparacao-producao/evidencias/sessao-principal-2026-11-20.md).
 
 ### Usuário atual
 
