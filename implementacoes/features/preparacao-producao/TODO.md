@@ -47,27 +47,44 @@ Uma rodada real futura depende de solicitação explícita e orçamento definido
 
 ### PROD-003 — Proteger acesso e transporte
 
-- [ ] Exigir cookie de refresh com `Secure` em produção e rejeitar configuração insegura.
-- [ ] Configurar CORS por ambiente; permitir somente origens explícitas em produção.
+- [x] Exigir HTTPS no backend de produção: HTTP retorna 400/`HTTPS_REQUIRED`
+  antes dos endpoints, sem aceitar cabeçalhos de proxy por conta própria.
+  Concluído em 2026-11-20, com HTTP local preservado em Development.
+- [x] Exigir cookie de refresh com `Secure` em produção e rejeitar configuração
+  insegura na inicialização. Padrão `true` no perfil Production. Concluído em
+  2026-11-20; 24 testes de transporte/autenticação aprovados, incluindo TLS real
+  com certificado temporário e cookies de login/refresh/logout.
+- [x] Configurar CORS por ambiente; permitir somente origens HTTPS explícitas em
+  produção por `Cors:AllowedOrigins`, com validação na inicialização. Mesma lista
+  para a sessão pessoal; localhost automático apenas em Development.
+  Concluído em 2026-11-20: 47 testes de transporte/autenticação aprovados.
 - [x] Implementar bloqueio configurável do cadastro público e acesso automático
   ao agente para o participante autenticado (**P06**). Concluído e testado em
   2026-11-20; provisionamento por CLI preservado, sem gate adicional de v2.
-- [ ] Validar configurações obrigatórias sem expor segredos nos erros ou logs.
-- [ ] Definir HTTPS na borda, proxies confiáveis e tratamento dos headers encaminhados.
-- [ ] Conferir rate limit com o IP correto atrás do proxy, sem confiar em headers arbitrários.
-- [ ] Cobrir cadastro, cookies, origens, proxy e rejeição de configuração insegura
-  com verificações automatizadas sem IA real.
+- [x] Validar as configurações de autenticação, transporte, origens e proxies
+  na inicialização, sem incluir seus valores nas mensagens de erro.
+- [x] Implementar proxies confiáveis por `ReverseProxy:KnownProxies` e
+  `KnownNetworks`, com limite de saltos (`ForwardLimit=1` por padrão), exigência
+  de contagens iguais em `X-Forwarded-For`/`X-Forwarded-Proto` e encaminhamento
+  desativado quando as listas estiverem vazias. Concluído em 2026-11-20.
+- [x] Aplicar e testar o rate limit com o IP correto atrás do proxy, sem confiar
+  em headers de origens desconhecidas. Mantidas 10 requisições/minuto por IP.
+- [x] Cobrir cadastro, cookies, origens, proxy e rejeição de configuração insegura
+  com testes sem IA real: 68 aprovados em 2026-11-20, incluindo TLS em loopback,
+  HTTP 429 na 11ª requisição, isolamento entre IPs, cadeias e cabeçalhos forjados.
 
 ## Etapa 3 — Infraestrutura e publicação
 
 ### PROD-004 — Definir hospedagem e persistência
 
-- [ ] Escolher provedor/região, modalidade de execução, domínio e orçamento.
+- [ ] Escolher provedor/região, modalidade de execução, domínio e orçamento;
+  configurar certificado HTTPS e os IPs/redes reais dos proxies na publicação.
 - [ ] Definir pacote de publicação e dependências de extração documental/exportação PDF.
 - [ ] Configurar PostgreSQL privado e credenciais próprias, com permissões adequadas.
 - [ ] Definir storage persistente e privado; verificar sua compatibilidade com
   `IFileStorage`, downloads, workers e exclusões.
-- [ ] Definir armazenamento de segredos, permissões de execução e temporários.
+- [ ] Definir e injetar os segredos de produção durante a publicação, junto com
+  seu armazenamento, permissões de execução e temporários (decisão de 2026-11-20).
 - [ ] Preparar homologação com dados fictícios e verificar que testes não alcancem produção.
 - [ ] Documentar a opção local e impedir o uso acidental do Compose local como
   uma configuração pronta para exposição pública.

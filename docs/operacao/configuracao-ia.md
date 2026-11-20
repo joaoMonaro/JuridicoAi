@@ -336,8 +336,9 @@ documentação.
 | Upload geral | `DocumentStorage:MaxFileSizeBytes=20971520`; conferir também limites do proxy e do assistente |
 | Formatos do Caso | `DocumentStorage:AllowedExtensions` e `AllowedMimeTypes`; padrões em `appsettings.json` |
 | JWT | `Auth:Issuer=JuridicoAI`, `Audience=JuridicoAI.Web`, `AccessTokenTtlMinutes=15`, `RefreshTokenTtlDays=30` |
-| Cookie organizacional | `Auth:SecureRefreshCookie=false`; configurar para HTTPS no deploy |
-| Origem do frontend | `Auth:PersonalHistoryAllowedOrigins`: lista de origens exatas; localhost já permitido |
+| Cookie organizacional | `Auth:SecureRefreshCookie=true` no perfil Production; `false` impede a inicialização nesse ambiente. Padrão local continua `false` |
+| Origem do frontend | `Cors:AllowedOrigins`: lista de origens HTTPS exatas obrigatória em Production, compartilhada com a sessão pessoal; localhost automático apenas em Development |
+| Proxy | `ReverseProxy:KnownProxies`/`KnownNetworks`: IPs ou CIDRs reais da hospedagem; listas vazias desativam o encaminhamento. `ForwardLimit=1` por padrão |
 | Histórico pessoal | Cookie de refresh sempre `Secure` e `SameSite=Strict`; exige HTTPS/mesmo site no deploy |
 
 Aplique todas as migrations. Em várias instâncias, compartilhe o acesso aos
