@@ -71,6 +71,10 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `Auth:Audience` | `JuridicoAI.Web` | audiência dos access tokens |
 | `Auth:AccessTokenTtlMinutes` | `15` | duração do access token |
 | `Auth:RefreshTokenTtlDays` | `30` | duração máxima do refresh token |
+| `Auth:SecureRefreshCookie` | `false` (`true` em Production) | cookie de refresh enviado somente por HTTPS; desligar em Production impede a inicialização |
+| `ReverseProxy:KnownProxies` | lista vazia | IPs específicos dos proxies confiáveis; nenhuma confiança automática em loopback |
+| `ReverseProxy:KnownNetworks` | lista vazia | redes CIDR confiáveis, IPv4 ou IPv6; redes universais `/0` são rejeitadas |
+| `ReverseProxy:ForwardLimit` | `1` | máximo de saltos processados da direita para a esquerda; deve ser maior que zero |
 | `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
 | `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
 | `AssistenteIa:Enabled` | `false` | trava de configuração superior do assistente |
@@ -97,7 +101,7 @@ user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 | `AssistenteIa:OutputCostPerMillionTokensUsd` | `0` | tarifa de saída; informar preço real do modelo |
 | `AssistenteIa:PricingVersion` | `unconfigured` | identificação da tabela de preços usada nas reservas |
 | `AssistenteIa:AllowSimulatedWithoutFinancialControl` | `false` | opt-out explícito para testes simulados; proibido em produção |
-| `Auth:PersonalHistoryAllowedOrigins` | lista opcional | origens adicionais para autenticação pessoal; exige HTTPS e mesmo site para refresh Strict |
+| `Cors:AllowedOrigins` | lista vazia | origens exatas do frontend, compartilhadas com a sessão pessoal; produção exige lista não vazia, HTTPS e host não local |
 
 Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
 o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
@@ -152,8 +156,49 @@ dotnet run --project src/JuridicoAI.Api/JuridicoAI.Api.csproj
 O perfil HTTP de desenvolvimento usa `http://localhost:5299`. O endpoint raiz
 `GET /` pode ser usado como verificação básica e retorna `Hello World!`.
 
-O CORS aceita origens cujo host seja `localhost` ou `127.0.0.1`, em qualquer
-porta. Isso não é uma política pronta para produção.
+Em Production, a API recusa HTTP em todas as rotas com status 400 e código
+`HTTPS_REQUIRED`. O certificado/domínio será configurado na publicação. Se o
+HTTPS terminar em proxy, configure os IPs ou redes confiáveis em `ReverseProxy`.
+O middleware de encaminhamento já é executado antes da validação de HTTPS,
+autenticação e rate limit.
+Segredos próprios do ambiente também serão definidos e injetados na publicação.
+
+O encaminhamento fica desativado quando `KnownProxies` e `KnownNetworks` estão
+vazios. Com origem confiável, somente `X-Forwarded-For` e `X-Forwarded-Proto`
+são processados; devem ter a mesma quantidade de entradas. Cabeçalhos de
+origens desconhecidas são ignorados. `X-Forwarded-Host` não altera o host da API.
+Configurações com IP/rede inválidos, rede `/0` ou limite menor que 1 impedem a
+inicialização. Exemplo ilustrativo para um único proxy:
+
+```bash
+export ReverseProxy__KnownProxies__0="10.0.0.10"
+export ReverseProxy__ForwardLimit=1
+```
+
+O IP acima deve ser substituído pelo endereço do proxy que se conecta à API.
+Se a hospedagem usar uma rede de proxies dinâmica, configure o CIDR informado
+por ela em `ReverseProxy__KnownNetworks__0`. Para uma cadeia com mais de um proxy,
+declare os intermediários confiáveis e ajuste `ForwardLimit` à topologia real.
+O proxy deve controlar os cabeçalhos que encaminha; restrinja o acesso ao
+backend conforme a arquitetura publicada. A autenticação mantém a cota de 10
+requisições/minuto por IP original, por instância. Os endereços reais e a
+verificação no ambiente publicado pertencem ao deploy já previsto.
+
+Em Development, origens HTTP/HTTPS de loopback (`localhost`, `127.0.0.1` e
+`[::1]`) continuam permitidas em qualquer porta. Em Production, somente a lista
+explícita `Cors:AllowedOrigins` é aceita; lista vazia, HTTP, localhost, curingas,
+caminho, barra final, credenciais, query ou fragmento impedem a inicialização.
+A origem deve incluir esquema, host e porta quando necessária, no formato
+canônico enviado pelo navegador. Exemplo de configuração no deploy:
+
+```bash
+export Cors__AllowedOrigins__0="https://app.seu-dominio.com.br"
+```
+
+Uma única lista governa o CORS e a verificação de Origin da sessão pessoal.
+A antiga chave `Auth:PersonalHistoryAllowedOrigins` foi substituída por
+`Cors:AllowedOrigins`. Os cookies `SameSite=Strict` continuam exigindo que
+frontend e API pertençam ao mesmo site.
 
 ## Configuração mínima por funcionalidade
 

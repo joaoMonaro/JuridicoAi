@@ -24,11 +24,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
-using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
-
-const string CorsPolicy = "LocalFrontend";
 
 builder.Services.AddSingleton<IAssistenteTelemetry>(AssistenteTelemetry.Shared);
 builder.Services.AddOptions<AssistenteMonitoringSettings>().Bind(builder.Configuration.GetSection("AssistenteMonitoring"))
@@ -123,10 +122,12 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
                    Uri.TryCreate(x.PrivacyPolicyUrl, UriKind.Absolute, out _),
         "AssistenteIa:PrivacyPolicyUrl deve ser uma URL absoluta quando informada.")
     .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<AuthSettings>, AuthSettingsValidator>();
 builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
-    .Validate(x => x.JwtSecret.Length >= 32, "Auth:JwtSecret deve possuir ao menos 32 caracteres.")
-    .Validate(x => x.AccessTokenTtlMinutes > 0 && x.RefreshTokenTtlDays > 0, "TTLs de autenticacao invalidos.")
     .ValidateOnStart();
+builder.Services.AddOptions<ForwardedHeadersOptions>().PostConfigure<IConfiguration>(
+    (options, configuration) => (configuration.GetSection("ReverseProxy").Get<ReverseProxySettings>() ?? new())
+        .ConfigureForwardedHeaders(options));
 builder.Services.AddDbContext<JuridicoAiDbContext>(options =>
     options.UseNpgsql(builder.Configuration["Postgres:ConnectionString"]));
 builder.Services.AddHostedService<DatabaseMigrationService>();
@@ -155,22 +156,10 @@ builder.Services.AddSwaggerGen(options =>
         [new OpenApiSecuritySchemeReference("Bearer", document)] = []
     });
 });
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(CorsPolicy, policy =>
-    {
-        policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
-                return uri.Host is "localhost" or "127.0.0.1" || (builder.Configuration.GetSection("Auth:PersonalHistoryAllowedOrigins").Get<string[]>() ?? []).Contains(origin, StringComparer.Ordinal);
-            })
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithExposedHeaders("Content-Disposition")
-            .AllowCredentials();
-    });
-});
+builder.Services.AddSingleton<FrontendOriginPolicy>();
+builder.Services.AddCors();
+builder.Services.AddOptions<CorsOptions>().Configure<FrontendOriginPolicy>(
+    (options, origins) => origins.ConfigureCors(options));
 var jwtSettings = builder.Configuration.GetSection("Auth").Get<AuthSettings>() ?? new AuthSettings();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
@@ -218,19 +207,7 @@ builder.Services.AddScoped<PersonalHistoryService>();
 builder.Services.AddScoped<AssistenteDeletionProcessor>();
 builder.Services.AddHostedService<AssistenteDeletionWorker>();
 builder.Services.AddAuthorization();
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
-        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-        _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 10,
-            Window = TimeSpan.FromMinutes(1),
-            QueueLimit = 0,
-            AutoReplenishment = true
-        }));
-});
+builder.Services.AddRateLimiter(AuthRateLimitPolicy.Configure);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CasoApplicationService>();
 builder.Services.AddScoped<PecaApplicationService>();
@@ -303,10 +280,12 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseForwardedHeaders();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ApiExceptionMiddleware>();
+app.UseMiddleware<ProductionHttpsMiddleware>();
 app.UseMiddleware<AssistenteRequestSizeMiddleware>();
-app.UseCors(CorsPolicy);
+app.UseCors(FrontendOriginPolicy.PolicyName);
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();

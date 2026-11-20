@@ -43,8 +43,22 @@ O access token dura 15 minutos por padrão. O refresh token é um valor opaco de
 64 bytes aleatórios, dura 30 dias e é enviado somente em cookie HttpOnly. O
 banco armazena seu SHA-256 hexadecimal, nunca o token original.
 
-Em produção, configure `Auth:SecureRefreshCookie=true`. O cookie usa
-`SameSite=Strict` e caminho `/auth`.
+O perfil Production define `Auth:SecureRefreshCookie=true`; sobrescrever para
+`false` impede a inicialização. O cookie usa `HttpOnly`, `SameSite=Strict` e
+caminho `/auth`, inclusive nas operações de renovação e logout. Em Development,
+o padrão continua `false` para permitir HTTP local.
+
+Em Production, a API exige HTTPS em todas as rotas. Requisições HTTP retornam
+400 com código `HTTPS_REQUIRED`, antes da execução dos endpoints e sem emitir
+cookies ou redirecionar a requisição. Cabeçalhos de origens não autorizadas não
+contornam a proteção. O middleware padrão de encaminhamento é executado antes
+de HTTPS e do rate limit: `ReverseProxy:KnownProxies`/`KnownNetworks` definem
+quem pode encaminhar o IP e o protocolo originais. As duas listas vazias mantêm
+o encaminhamento desativado; `ForwardLimit` limita os saltos e vale 1 por padrão.
+As contagens de `X-Forwarded-For` e `X-Forwarded-Proto` devem coincidir.
+O certificado, o domínio e os endereços reais dos proxies serão configurados
+na publicação. A cota de autenticação permanece 10 requisições/minuto por IP
+original, por instância.
 
 ## Configuração
 
@@ -224,8 +238,10 @@ Membership dos endpoints do workspace para permitir leitura histórica.
   organização/role; validade da sessão e conta conferida no banco.
 - Refresh de 7 dias, hashes no banco e cookie `juridicoai_history_refresh`,
   Secure/HttpOnly/Strict, caminho `/auth/pessoal`. Endpoints verificam Origin e
-  usam o rate limit de autenticação. Origens adicionais em
-  `Auth:PersonalHistoryAllowedOrigins`; frontend/API precisam manter o mesmo site.
+  usam o rate limit de autenticação. A verificação de origem usa a mesma lista
+  do CORS em `Cors:AllowedOrigins`: produção exige origens HTTPS exatas, sem
+  localhost ou curingas. O acesso local automático é exclusivo de Development.
+  Frontend/API precisam manter o mesmo site para os cookies Strict.
 
 O token pessoal é aceito somente nas rotas `/assistente/v2/pessoal`, que leem ou
 excluem o histórico privado do próprio titular. Não acessa Peça/Caso atuais,

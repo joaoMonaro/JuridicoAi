@@ -13,19 +13,20 @@ local e manter novas funcionalidades fora do lançamento.
 
 ### 1. Acesso seguro e restrito ao piloto — prioridade máxima
 
-- [ ] Configurar HTTPS, cookie de refresh com `Secure`, origens CORS explícitas
-  e segredos próprios de produção; conferir proxy e rate limit no deploy escolhido.
 - [ ] Verificar isolamento de dados e revogação da sessão; corrigir a corrida
   entre renovação do refresh token e logout da sessão principal.
 
 Detalhamento: **PROD-003** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md#prod-003--proteger-acesso-e-transporte).
 O cadastro fechado e o acesso automático ao agente (**P06**) estão concluídos,
-registrados abaixo em “Entregas concluídas”.
+assim como HTTPS, cookie seguro, CORS e proxies confiáveis no backend, registrados abaixo
+em “Entregas concluídas”.
 
 ### 2. Ambiente online e preservação dos dados — prioridade alta
 
 - [ ] Escolher a hospedagem e publicar o MVP em nuvem, com PostgreSQL privado,
   documentos em storage persistente e privado e dados/credenciais separados dos testes locais.
+  Na publicação, preencher domínio/certificado HTTPS, origem real do frontend,
+  endereços dos proxies e segredos do ambiente; conferir HTTPS e rate limit publicados.
 - [ ] Aplicar as migrations e instalar as dependências de leitura de PDF com texto,
   DOCX e TXT e de exportação Word/PDF; manter OCR desativado.
 - [ ] Verificar que reiniciar ou atualizar a instância preserva Peças, conversas e
@@ -150,6 +151,20 @@ critérios de lançamento nem reintroduzem o scraper no escopo atual.
 
 Os resultados abaixo são evidências históricas das respectivas entregas.
 A liberação em produção exige validar novamente a versão candidata.
+
+- [x] **PROD-003 — Proteger transporte, origens e encaminhamento por proxy no backend.**
+  Concluído em 2026-11-20: HTTP recusado com 400/`HTTPS_REQUIRED` antes dos
+  endpoints; `Auth:SecureRefreshCookie=true` no perfil Production, com rejeição
+  da inicialização se desabilitado. HTTP local preservado em Development.
+  `Cors:AllowedOrigins` define a lista exata de origens HTTPS em produção,
+  compartilhada com a sessão pessoal; configuração vazia ou inválida impede
+  a inicialização. Localhost automático somente em Development.
+  Proxies confiáveis definidos por `ReverseProxy:KnownProxies`/`KnownNetworks`;
+  listas vazias desativam encaminhamento. IP e protocolo originais são tratados
+  antes de HTTPS e do rate limit, preservando 10 requisições/minuto por IP.
+  **68 testes aprovados**, incluindo TLS real, inicialização, cookies, CORS,
+  sessão pessoal, proxies, cadeias e bloqueio por IP sem aceitar falsificações.
+  Certificado/domínio, origem, proxies reais e segredos serão definidos na publicação já prevista.
 
 - [x] **P06 — Bloquear cadastro público por configuração e liberar o agente ao participante autenticado.**
   Concluído em 2026-11-20: `Auth:RegistrationEnabled=false` bloqueia o registro;

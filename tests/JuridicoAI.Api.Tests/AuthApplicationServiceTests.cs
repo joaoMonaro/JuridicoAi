@@ -228,6 +228,44 @@ public sealed class AuthApplicationServiceTests
         await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.RefreshAsync(firstRefresh, default));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task LoginRefreshELogout_PreservamAtributosDoCookie(bool secure)
+    {
+        var settings = new AuthSettings { SecureRefreshCookie = secure };
+        var setup = Setup(settings);
+        AuthController Controller(string? cookie = null)
+        {
+            var http = new DefaultHttpContext();
+            if (cookie is not null) http.Request.Headers.Cookie = cookie.Split(';', 2)[0];
+            return new AuthController(setup.Service, Options.Create(settings))
+            {
+                ControllerContext = new ControllerContext { HttpContext = http }
+            };
+        }
+        string Cookie(AuthController controller)
+        {
+            var value = Assert.Single(controller.Response.Headers.SetCookie)!;
+            var attributes = value.Split(';').Select(part => part.Trim()).ToArray();
+            Assert.Equal(secure, attributes.Contains("secure", StringComparer.OrdinalIgnoreCase));
+            Assert.Contains("httponly", attributes, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("samesite=strict", attributes, StringComparer.OrdinalIgnoreCase);
+            Assert.Contains("path=/auth", attributes, StringComparer.OrdinalIgnoreCase);
+            return value;
+        }
+
+        var login = Controller();
+        await login.Login(new("user@example.com", "correta"), default);
+        var refresh = Controller(Cookie(login));
+        await refresh.Refresh(default);
+        var logout = Controller(Cookie(refresh));
+        await logout.Logout(default);
+        Cookie(logout);
+
+        Assert.NotNull(Assert.Single(setup.Repository.Sessions).RevogadaEm);
+    }
+
     [Fact]
     public async Task Login_NaoEnumeraUsuarioSenhaOuOrganizationInativa()
     {
@@ -305,14 +343,14 @@ public sealed class AuthApplicationServiceTests
         ClockSkew = TimeSpan.Zero
     };
 
-    private static SetupResult Setup()
+    private static SetupResult Setup(AuthSettings? settings = null)
     {
         var repository = new FakeAuthRepository();
         var user = repository.AddUser();
         var organization = repository.AddOrganization(user, MembershipRoleEnum.Owner);
         var auth = new MutableAuthContext { User = user.Id, Organization = organization.Id };
         var service = new AuthApplicationService(repository, new FakePasswordHasher(), new FakeTokenService(), auth,
-            Options.Create(new AuthSettings { AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30 }));
+            Options.Create(settings ?? new AuthSettings { AccessTokenTtlMinutes = 15, RefreshTokenTtlDays = 30 }));
         return new(service, repository, auth, user, organization);
     }
 
