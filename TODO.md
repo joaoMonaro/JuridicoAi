@@ -13,8 +13,6 @@ local e manter novas funcionalidades fora do lançamento.
 
 ### 1. Acesso seguro e restrito ao piloto — prioridade máxima
 
-- [ ] Conferir HTTPS, proxy e rate limit no deploy escolhido. Informar a origem
-  real do frontend e definir/injetar os segredos próprios durante a publicação.
 - [ ] Verificar isolamento de dados e revogação da sessão; corrigir a corrida
   entre renovação do refresh token e logout da sessão principal.
 
@@ -27,6 +25,8 @@ em “Entregas concluídas”.
 
 - [ ] Escolher a hospedagem e publicar o MVP em nuvem, com PostgreSQL privado,
   documentos em storage persistente e privado e dados/credenciais separados dos testes locais.
+  Na publicação, preencher domínio/certificado HTTPS, origem real do frontend,
+  endereços dos proxies e segredos do ambiente; conferir HTTPS e rate limit publicados.
 - [ ] Aplicar as migrations e instalar as dependências de leitura de PDF com texto,
   DOCX e TXT e de exportação Word/PDF; manter OCR desativado.
 - [ ] Verificar que reiniciar ou atualizar a instância preserva Peças, conversas e
