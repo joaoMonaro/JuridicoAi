@@ -121,6 +121,7 @@ public sealed class AuthApplicationServiceTests
         Assert.Equal(organization.Id, membership.OrganizationId);
         Assert.Equal(user.Id, membership.UserId);
         Assert.Equal("hash-" + response.RefreshToken, session.RefreshTokenHash);
+        Assert.Equal("hash-" + response.RefreshToken.Split('.')[0], session.RevocationTokenHash);
         Assert.DoesNotContain("senha-segura-123", session.RefreshTokenHash);
         Assert.Equal(session.ExpiraEm, response.RefreshTokenExpiresAt);
         Assert.True(repository.RegisterCalled);
@@ -292,6 +293,47 @@ public sealed class AuthApplicationServiceTests
     }
 
     [Fact]
+    public async Task Refresh_MantemSegredoEstavelELogoutComCookieAnteriorRevogaTokenNovo()
+    {
+        var setup = Setup();
+        var login = await setup.Service.LoginAsync(new("user@example.com", "correta"), default);
+        var refreshed = await setup.Service.RefreshAsync(login.RefreshToken, default);
+
+        Assert.Equal(login.RefreshToken.Split('.')[0], refreshed.RefreshToken.Split('.')[0]);
+        Assert.NotEqual(login.RefreshToken.Split('.')[1], refreshed.RefreshToken.Split('.')[1]);
+        await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.RefreshAsync(login.RefreshToken, default));
+        await setup.Service.LogoutAsync(login.RefreshToken, default);
+        Assert.NotNull(Assert.Single(setup.Repository.Sessions).RevogadaEm);
+        await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.RefreshAsync(refreshed.RefreshToken, default));
+    }
+
+    [Fact]
+    public async Task Refresh_SegredoDeRevogacaoSozinhoNaoRenovaAcesso()
+    {
+        var setup = Setup();
+        var login = await setup.Service.LoginAsync(new("user@example.com", "correta"), default);
+        var secret = login.RefreshToken.Split('.')[0];
+
+        await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.RefreshAsync(secret, default));
+        Assert.Null(Assert.Single(setup.Repository.Sessions).RevogadaEm);
+        await setup.Service.LogoutAsync(secret, default);
+        Assert.NotNull(Assert.Single(setup.Repository.Sessions).RevogadaEm);
+    }
+
+    [Fact]
+    public async Task Refresh_ELogoutTratamTokensMalformadosSemAlterarSessaoAtiva()
+    {
+        var setup = Setup();
+        await setup.Service.LoginAsync(new("user@example.com", "correta"), default);
+        foreach (var invalid in new string?[] { null, "", "invalid", "a.b.c", new string('x', 513) })
+        {
+            await Assert.ThrowsAsync<NaoAutorizadoException>(() => setup.Service.RefreshAsync(invalid, default));
+            await setup.Service.LogoutAsync(invalid, default);
+        }
+        Assert.Null(Assert.Single(setup.Repository.Sessions).RevogadaEm);
+    }
+
+    [Fact]
     public async Task Logout_RevogaSessaoEPermaneceIdempotente()
     {
         var setup = Setup();
@@ -380,7 +422,12 @@ public sealed class AuthApplicationServiceTests
     {
         private int _next;
         public string CriarAccessToken(User u, Organization o, Membership m, Session s, DateTime now) => $"access:{u.Id}:{o.Id}:{m.Role}:{s.Id}";
-        public string CriarRefreshToken() => "refresh-" + Interlocked.Increment(ref _next);
+        public string CriarRefreshToken()
+        {
+            var bytes = new byte[64];
+            BitConverter.GetBytes(Interlocked.Increment(ref _next)).CopyTo(bytes, 0);
+            return Convert.ToBase64String(bytes);
+        }
         public string HashRefreshToken(string token) => "hash-" + token;
     }
 
@@ -418,6 +465,6 @@ public sealed class AuthApplicationServiceTests
         public Task<Session?> ObterSessionPorRefreshHashAsync(string hash, CancellationToken ct) => Task.FromResult(Sessions.SingleOrDefault(x => x.RefreshTokenHash == hash));
         public Task<Session?> ObterSessionAsync(Guid id, CancellationToken ct) => Task.FromResult(Sessions.SingleOrDefault(x => x.Id == id));
         public Task<bool> RotacionarRefreshAsync(Guid id, string current, string next, DateTime now, CancellationToken ct) { var x = Sessions.SingleOrDefault(x => x.Id == id && x.RefreshTokenHash == current && x.RevogadaEm is null && x.ExpiraEm > now); if (x is null) return Task.FromResult(false); x.RefreshTokenHash = next; x.UltimoUsoEm = now; return Task.FromResult(true); }
-        public Task RevogarSessionAsync(Guid id, DateTime now, CancellationToken ct) { var x = Sessions.SingleOrDefault(x => x.Id == id); if (x is not null) x.RevogadaEm ??= now; return Task.CompletedTask; }
+        public Task RevogarSessionPorRevocationHashAsync(string hash, DateTime now, CancellationToken ct) { var x = Sessions.SingleOrDefault(x => x.RevocationTokenHash == hash); if (x is not null) x.RevogadaEm ??= now; return Task.CompletedTask; }
     }
 }

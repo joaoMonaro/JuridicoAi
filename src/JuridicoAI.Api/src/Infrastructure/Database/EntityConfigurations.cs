@@ -294,12 +294,14 @@ internal sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedNever(); builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.OrganizationId).HasColumnName("organization_id");
         builder.Property(x => x.RefreshTokenHash).HasColumnName("refresh_token_hash").HasMaxLength(64).IsRequired();
+        builder.Property(x => x.RevocationTokenHash).HasColumnName("revocation_token_hash").HasMaxLength(64).IsRequired();
         builder.Property(x => x.ExpiraEm).HasColumnName("expira_em"); builder.Property(x => x.RevogadaEm).HasColumnName("revogada_em");
         builder.Property(x => x.DataCriacao).HasColumnName("data_criacao"); builder.Property(x => x.DataAtualizacao).HasColumnName("data_atualizacao");
         builder.Property(x => x.UltimoUsoEm).HasColumnName("ultimo_uso_em");
         builder.HasOne<User>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Organization>().WithMany().HasForeignKey(x => x.OrganizationId).OnDelete(DeleteBehavior.Restrict);
         builder.HasIndex(x => x.RefreshTokenHash).IsUnique().HasDatabaseName("uq_sessions_refresh_token_hash");
+        builder.HasIndex(x => x.RevocationTokenHash).IsUnique().HasDatabaseName("uq_sessions_revocation_token_hash");
         builder.HasIndex(x => new { x.UserId, x.OrganizationId }).HasDatabaseName("ix_sessions_user_organization");
     }
 }

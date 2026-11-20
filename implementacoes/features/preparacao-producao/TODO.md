@@ -1,6 +1,6 @@
 # TODO — Preparação para produção e testes locais
 
-Atualizado em **2026-11-20**. **Estado: monitoramento P04 parcial e acesso P06 simplificado implementado.**
+Atualizado em **2026-11-20**. **Estado: PROD-003 e P06 concluídos no backend; monitoramento P04 parcial e deploy pendente.**
 Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 ## Decisões registradas
@@ -10,7 +10,7 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 - [x] Separar neste plano decisões confirmadas, propostas e escolhas pendentes.
 
 Os itens acima representam documentação. P04 possui implementação e ensaio local;
-P06 simplificado tem código e testes concluídos. As demais frentes e as condições
+PROD-003 e P06 simplificado têm código e testes concluídos. As demais frentes e as condições
 operacionais indicadas abaixo continuam pendentes.
 
 ## Etapa 1 — Ambientes e controle dos testes pagos
@@ -61,6 +61,11 @@ Uma rodada real futura depende de solicitação explícita e orçamento definido
 - [x] Implementar bloqueio configurável do cadastro público e acesso automático
   ao agente para o participante autenticado (**P06**). Concluído e testado em
   2026-11-20; provisionamento por CLI preservado, sem gate adicional de v2.
+- [x] Verificar isolamento e revogação da sessão principal e corrigir a corrida
+  entre refresh e logout. Credencial estável, UPDATEs condicionais e migration
+  compatível com tokens legados. Concluído em 2026-11-20: 25 testes focados e
+  regressão completa com **401 aprovados e 1 de OCR ignorado**, sem IA real.
+  Ver [evidência de sessão e isolamento](evidencias/sessao-principal-2026-11-20.md).
 - [x] Validar as configurações de autenticação, transporte, origens e proxies
   na inicialização, sem incluir seus valores nas mensagens de erro.
 - [x] Implementar proxies confiáveis por `ReverseProxy:KnownProxies` e
