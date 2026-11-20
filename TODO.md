@@ -1,112 +1,122 @@
 # TODO — Projeto JuridicoAI
 
 Atualizado em **2026-11-19**. Acompanhamento geral das prioridades do projeto.
-O detalhamento de cada feature permanece no seu próprio TODO.
+**Somente a seção “Essencial para publicar o MVP” reúne os bloqueios de lançamento,
+em ordem decrescente de prioridade.** As demais tarefas continuam acompanhadas
+abaixo, sem exigir a conclusão de todo o plano técnico para o primeiro piloto.
 
-O [escopo de lançamento do MVP](MVP.md) registra o uso inicial por um advogado
-empresarial, a entrada de dados pelo chatbot e o congelamento de novas
-funcionalidades de produto. Seus critérios definem o ponto de conclusão do MVP.
+Referência de aceite: [MVP de redação de peças jurídicas](MVP.md), para um advogado
+empresarial, com entrada de fatos e documentos pelo chat. Preservar a execução
+local e manter novas funcionalidades fora do lançamento.
 
-## Pendência com alta prioridade
+## Essencial para publicar o MVP
+
+### 1. Acesso seguro e restrito ao piloto — prioridade máxima
+
+- [ ] Restringir cadastro/provisionamento e acesso ao usuário e à organização do
+  piloto; concluir a autorização v2 por organização no backend (**P06**).
+- [ ] Configurar HTTPS, cookie de refresh com `Secure`, origens CORS explícitas
+  e segredos próprios de produção; conferir proxy e rate limit no deploy escolhido.
+- [ ] Verificar isolamento de dados e revogação da sessão; corrigir a corrida
+  entre renovação do refresh token e logout da sessão principal.
+
+Detalhamento: **PROD-003/P06** nos [TODOs de produção](implementacoes/features/preparacao-producao/TODO.md#prod-003--proteger-acesso-e-transporte)
+e do [assistente](implementacoes/features/assistente-conversacional/TODO.md#entregas-ainda-abertas-do-escopo).
+
+### 2. Ambiente online e preservação dos dados — prioridade alta
+
+- [ ] Escolher a hospedagem e publicar o MVP em nuvem, com PostgreSQL privado,
+  documentos em storage persistente e privado e dados/credenciais separados dos testes locais.
+- [ ] Aplicar as migrations e instalar as dependências de leitura de PDF com texto,
+  DOCX e TXT e de exportação Word/PDF; manter OCR desativado.
+- [ ] Verificar que reiniciar ou atualizar a instância preserva Peças, conversas e
+  arquivos, incluindo o funcionamento das exclusões já disponíveis.
+- [ ] Preparar backup básico de banco e documentos e comprovar uma restauração
+  com dados fictícios; registrar como recuperar o serviço se a publicação falhar.
+
+Detalhamento: recorte de **PROD-001/PROD-004/PROD-006/PROD-007/P08** no
+[TODO de produção](implementacoes/features/preparacao-producao/TODO.md).
+Homologação pode ser temporária; não é exigido manter três ambientes permanentes.
+
+### 3. IA configurada e consumo controlado — prioridade alta
+
+- [ ] Configurar modelo, chave, flags/permissões, tarifas reais, versão de preços
+  e limite mensal da organização, reutilizando o controle financeiro **P03**.
+- [ ] Conferir o bloqueio por limite e acompanhar consumo e tempo de resposta
+  para o uso inicial, sem aumentar cotas automaticamente.
+- [ ] Fazer os checks de publicação com IA simulada e banco descartável, sem
+  dados ou credenciais de produção. Testes reais exigem solicitação explícita e
+  orçamento próprio; uma chave configurada não autoriza consumo em testes.
+
+Detalhamento: **PROD-002/P03** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md)
+e na [evidência financeira](implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md).
+
+### 4. Jornada completa validada com o advogado — prioridade alta
+
+- [ ] **PROJ-003 — Validar a entrada e a redação pelo chat.** No MVP online e
+  restrito, concluir um trabalho representativo: iniciar/retomar a Peça, fornecer
+  fatos/anexos e obter uma minuta, sem cadastrar os dados jurídicos em outras telas.
+- [ ] Revisar fatos, fontes, lacunas e utilidade jurídica com o advogado (**P02**);
+  confirmar que nenhuma alteração é aplicada sem aprovação.
+- [ ] Verificar aprovação/rejeição, edição manual, salvamento e retomada após
+  recarga ou falha de conexão, sem perda de texto ou duplicação de alterações.
+- [ ] Conferir Word e PDF contra o texto salvo e o layout escolhido; apresentar
+  as limitações de leitura dos anexos. Corrigir os defeitos que impedirem esse fluxo.
+
+O fluxo já está implementado; falta homologar o uso e corrigir os impedimentos
+identificados. Os [ajustes entregues](implementacoes/features/assistente-conversacional/evidencias/painel-simplificado-2026-11-17.md)
+e as pendências **P01/P02/P07** estão no [TODO do assistente](implementacoes/features/assistente-conversacional/TODO.md).
+Executar somente os cenários necessários para comprovar esse uso inicial;
+rodadas reais adicionais dependem de solicitação e orçamento.
+
+### 5. Conferência final e liberação — após os itens anteriores
+
+- [ ] Executar os checks da versão candidata, incluindo PostgreSQL descartável,
+  e verificar acesso ao banco/storage e o fluxo publicado.
+- [ ] Definir quem acompanha o piloto e como consultar erros, consumo, jobs e
+  exclusões pendentes, aproveitando os logs e o monitoramento já existentes.
+- [ ] Registrar o commit, as verificações, o procedimento de publicação/recuperação
+  e a aprovação dos critérios do [MVP](MVP.md); promover a versão conforme o
+  [fluxo de versionamento](docs/versionamento.md).
+
+Detalhamento: recorte de **PROD-005/PROD-008/P04** no
+[TODO de produção](implementacoes/features/preparacao-producao/TODO.md).
+A aprovação técnica não substitui a validação do advogado.
+
+## Coordenação da preparação para produção
 
 - [ ] **PROJ-007 — Planejar a preparação para produção preservando os testes locais.**
-  **Estado: planejamento; implementação ainda não iniciada.** O destino será em
-  nuvem, com configuração local preservada. Testes com IA real ficam desligados
-  por padrão e só podem ser executados quando explicitamente solicitados, com
-  orçamento definido; ter chave configurada não autoriza consumo. Escopo,
-  decisões em aberto e tarefas PROD-001–PROD-008 estão na
-  [feature de preparação para produção](implementacoes/features/preparacao-producao/README.md)
-  e em seu [TODO](implementacoes/features/preparacao-producao/TODO.md).
+  **Estado: frentes restantes em planejamento, com monitoramento P04 parcialmente
+  implementado e ensaiado localmente.** Para este lançamento, acompanhar o recorte
+  essencial acima. Os planos detalhados também contêm melhorias posteriores;
+  não é necessário encerrar todos os seus itens para concluir o MVP.
+  Ver [escopo e decisões de produção](implementacoes/features/preparacao-producao/README.md).
 
-- [ ] Validar e concluir a jornada de redação de peças conforme os critérios do
-  [MVP](MVP.md), usando a implementação existente do assistente conversacional.
+## Melhorias técnicas posteriores — não bloqueiam a publicação inicial
 
-- [x] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
+Estes itens permanecem abertos. Repriorizar se algum deles impedir os critérios
+do MVP no ambiente ou no trabalho representativo do piloto.
 
-Decisão de escopo: a coleta e o processamento de jurisprudências acrescentam
-complexidade desnecessária ao MVP. As rotas anteriores permitiam ingestão e
-reprocessamento sem autenticação, além de consulta pública aos dados brutos.
-
-**Concluído em 2026-11-17:** endpoints de `/api/jurisprudencias`, serviços,
-repositórios, configurações e dependências exclusivos retirados da API,
-incluindo MongoDB e Playwright. Solução, Docker Compose e documentação
-atualizados. O scraper foi extraído para `../JuridicoAI.Scrapper`, com CLI
-independente e cópia do legado de integração para consulta.
-
-Verificação: build sem avisos/erros, **291 testes aprovados e 1 de OCR ignorado**,
-incluindo PostgreSQL descartável e regressão das quatro rotas removidas. Nenhum
-banco ou volume existente foi apagado. Ver
-[registro da extração e validação](implementacoes/alreadyDone/extracao-scraper-2026-11-17.md).
-
-- [ ] **PROJ-003 — Validar e simplificar a entrada na redação pelo chat. Prioridade: `high` (alta).**
-
-**Estado conferido no código em 2026-11-18:** já é possível criar um Caso e uma
-Peça vazia, fornecer fatos e anexos na conversa e pedir uma minuta para revisão
-e aprovação. O fluxo dispensa o cadastro prévio de empresas, partes, endereços,
-contextos e documentos separados do Caso. A conferência do código e dos testes
-existentes não equivale a uma nova execução com o modelo real ou à homologação
-pelo advogado.
-
-A entrada atual exige título e descrição do Caso no frontend e título da Peça;
-o modelo da Peça é opcional. A descrição do Caso já é opcional na API. Caso e
-Peça organizam o trabalho, enquanto os dados jurídicos e arquivos podem ser
-fornecidos pelo chat. O painel usa a Peça salva, a conversa e seus anexos;
-materiais antigos do Caso são consultados mediante pedido expresso. Ver
-[ajustes já entregues](implementacoes/features/assistente-conversacional/evidencias/painel-simplificado-2026-11-17.md).
-
-**Trabalho restante:** conferir com o advogado se o caminho de criar/abrir Caso,
-criar/retomar Peça e acessar o chat está claro; identificar campos, etapas ou
-atalhos que provoquem repetição de dados ou desviem para cadastros dispensáveis.
-Simplificar os pontos identificados e corrigir os impedimentos encontrados,
-reaproveitando o fluxo implementado. A necessidade de alterar a criação de Caso
-ou Peça deve resultar dessa validação, preservando os registros existentes.
-
-**Critérios de conclusão:**
-
-- [ ] Registrar uma execução representativa em que o advogado inicia o trabalho,
-  fornece fatos/anexos no chat e chega à primeira minuta revisada e aprovada sem
-  precisar cadastrar os dados jurídicos em outras telas.
-- [ ] Registrar os pontos de atrito da entrada e corrigir os que impedem ou
-  confundem essa jornada, verificando novamente o percurso após as mudanças.
-- [ ] Preservar o acesso aos trabalhos existentes, às configurações/modelos de
-  layout, à edição manual, ao salvamento, à retomada e à exportação.
-
-A tarefa permanece aberta para validação de uso e eventuais ajustes de jornada.
-A qualidade jurídica, a compatibilidade completa do editor e as condições
-financeiras e operacionais seguem no
-[TODO do assistente](implementacoes/features/assistente-conversacional/TODO.md).
-Cadastros estruturados automáticos pela IA e seleção de trechos continuam fora
-deste recorte, conforme o MVP e a PROJ-006.
-
-## Pendências
-
-- [x] **PROJ-001 — Testar e corrigir a latência da IA. Prioridade: `medium` (média).**
-
-Na avaliação reduzida, uma consulta simples sobre a minuta aprovada levou
-**63,941 segundos**, enquanto as demais interações ficaram entre 5,300 e
-22,993 segundos. O tempo medido é o da interação completa; os registros originais
-não separaram as etapas da demora.
-
-**Concluído em 2026-11-14:** diagnóstico, correção, instrumentação e repetição
-real com GPT-6.1 Terra. A consulta passou de **63,941 s para 22,697 s** nesta
-comparação. O cenário completo de três interações passou nos checks técnicos,
-com custo calculado de **US$ 0,03260130**. Ver
-[evidência real](implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
-
-A geração no provedor levou 2,555 s; a espera dominante foi de aproximadamente
-18,905 s até a admissão pelo limite local. Essa política remanescente está em
-**M03 (medium)** no TODO da feature, separada da correção de reagendamento.
-
-Verificações realizadas:
-
-1. Consulta reproduzida e etapas medidas separadamente.
-2. Reagendamento excessivo e consumo de cota em negações corrigidos/testados.
-3. Tempos comparados com o modelo real, sem elevar cotas ou reduzir contexto.
-4. Diagnóstico/resultados registrados. Não há SLA aprovado; novas rodadas pagas
-   continuam exigindo orçamento definido.
-
-Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
-A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
+- [ ] Automatizar build, testes e deploy em CI; a conferência da versão candidata
+  pode ser executada manualmente no primeiro lançamento.
+- [ ] Implementar readiness automatizada e completar canais de alerta, limiares
+  e retenção de logs de **P04**, além do acompanhamento básico definido para o piloto.
+- [ ] Ampliar a automação dos ensaios de deploy/rollback e a separação das
+  permissões de migrations/runtime, conforme a operação evoluir.
+- [ ] Corrigir respostas HTTP 500 para JSON inválido de Peças/templates, retornando
+  HTTP 400 para tipos incorretos em `type`, `format` e margens.
+- [ ] Tratar arquivos órfãos na exclusão de documentos do Caso com fila persistida
+  e novas tentativas. O cadastro separado de documentos do Caso está fora do MVP.
+- [ ] Adicionar orçamento, timeout e gravação parcial ao avaliador C# antes de
+  voltar a utilizá-lo em rodadas pagas; usar o avaliador com orçamento já disponível
+  nas validações necessárias ao MVP.
+- [ ] Ampliar **P01/P07** para os demais cenários de análise documental, memória
+  extensa e compatibilidade, além dos necessários para o uso inicial homologado.
+- [ ] **M03 — Rever a política de cotas para etapas internas e mensagens.**
+  A consulta real ainda aguardou aproximadamente 18,9 s pela reposição da cota.
+  Definir a política antes de alterar limites, preservando concorrência, proteção
+  contra abuso e orçamento. PROJ-001/M01 permanece concluído.
+  Ver [M03 no TODO do assistente](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
 
 ## Melhorias futuras — fora do MVP
 
@@ -136,6 +146,56 @@ A melhoria foi observada em uma rodada e não garante a latência de todo pedido
 
 Estas melhorias ficam para depois da conclusão e validação do MVP; não são
 critérios de lançamento nem reintroduzem o scraper no escopo atual.
+
+## Entregas concluídas
+
+Os resultados abaixo são evidências históricas das respectivas entregas.
+A liberação em produção exige validar novamente a versão candidata.
+
+- [x] **PROJ-002 — Retirar o scraper e o fluxo de jurisprudências do MVP. Prioridade: `high` (alta).**
+
+Decisão de escopo: a coleta e o processamento de jurisprudências acrescentam
+complexidade desnecessária ao MVP. As rotas anteriores permitiam ingestão e
+reprocessamento sem autenticação, além de consulta pública aos dados brutos.
+
+**Concluído em 2026-11-17:** endpoints de `/api/jurisprudencias`, serviços,
+repositórios, configurações e dependências exclusivos retirados da API,
+incluindo MongoDB e Playwright. Solução, Docker Compose e documentação
+atualizados. O scraper foi extraído para `../JuridicoAI.Scrapper`, com CLI
+independente e cópia do legado de integração para consulta.
+
+Verificação: build sem avisos/erros, **291 testes aprovados e 1 de OCR ignorado**,
+incluindo PostgreSQL descartável e regressão das quatro rotas removidas. Nenhum
+banco ou volume existente foi apagado. Ver
+[registro da extração e validação](implementacoes/alreadyDone/extracao-scraper-2026-11-17.md).
+
+- [x] **PROJ-001 — Testar e corrigir a latência da IA. Prioridade: `medium` (média).**
+
+Na avaliação reduzida, uma consulta simples sobre a minuta aprovada levou
+**63,941 segundos**, enquanto as demais interações ficaram entre 5,300 e
+22,993 segundos. O tempo medido é o da interação completa; os registros originais
+não separaram as etapas da demora.
+
+**Concluído em 2026-11-14:** diagnóstico, correção, instrumentação e repetição
+real com GPT-6.1 Terra. A consulta passou de **63,941 s para 22,697 s** nesta
+comparação. O cenário completo de três interações passou nos checks técnicos,
+com custo calculado de **US$ 0,03260130**. Ver
+[evidência real](implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
+
+A geração no provedor levou 2,555 s; a espera dominante foi de aproximadamente
+18,905 s até a admissão pelo limite local. Essa política remanescente está em
+**M03 (medium)** no TODO da feature, separada da correção de reagendamento.
+
+Verificações realizadas:
+
+1. Consulta reproduzida e etapas medidas separadamente.
+2. Reagendamento excessivo e consumo de cota em negações corrigidos/testados.
+3. Tempos comparados com o modelo real, sem elevar cotas ou reduzir contexto.
+4. Diagnóstico/resultados registrados. Não há SLA aprovado; novas rodadas pagas
+   continuam exigindo orçamento definido.
+
+Detalhamento: [M01/M03 no TODO da feature](implementacoes/features/assistente-conversacional/TODO.md#melhorias-evidenciadas-na-avaliação-reduzida).
+A melhoria foi observada em uma rodada e não garante a latência de todo pedido.
 
 ## Acompanhamento por feature
 
