@@ -43,6 +43,14 @@ assistente. Não versione segredos; consulte [User Secrets](docs/user-secrets.md
 As migrations do Entity Framework Core são aplicadas na inicialização quando
 `Postgres:RunMigrations=true`.
 
+Para aplicar migrations separadamente, use `dotnet run --project
+src/JuridicoAI.Api -- migrate-database` com a conexão do ambiente configurada.
+O comando aplica as migrations e encerra sem iniciar o servidor.
+
+O [ensaio local de publicação](ops/rehearsal/README.md) compila e executa frontend,
+API e dependências em containers isolados, com dados fictícios e IA simulada,
+e verifica persistência, backup e restauração antes da publicação em nuvem.
+
 ## Abrir o painel de monitoramento
 
 Com Docker em execução, rode na raiz do projeto:

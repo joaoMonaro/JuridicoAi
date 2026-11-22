@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: rehearsal
+      POSTGRES_USER: rehearsal
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rehearsal -d rehearsal"]
+      interval: 2s
+      timeout: 3s
+      retries: 40
+    networks: [isolated]
+  fake-ai:
+    image: ${FAKE_IMAGE:?}
+    read_only: true
+    networks: [isolated]
+  api:
+    image: ${API_IMAGE:?}
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Postgres__ConnectionString: Host=postgres;Database=rehearsal;Username=rehearsal;Password=${DATABASE_PASSWORD}
+      Postgres__RunMigrations: "false"
+      Auth__JwtSecret: ${JWT_SECRET:?}
+      Auth__RegistrationEnabled: "false"
+      Auth__SecureRefreshCookie: "true"
+      Cors__AllowedOrigins__0: https://app.juridicoai.test:${HTTPS_PORT}
+      ReverseProxy__KnownProxies__0: ${PROXY_IP:?}
+      DocumentStorage__RootPath: /var/lib/juridicoai/documents
+      PecaExport__LibreOfficePath: /usr/bin/soffice
+      PecaExport__TempPath: /tmp/juridicoai-export
+      AssistenteIa__Enabled: "true"
+      AssistenteIa__ApiKey: synthetic-local-only
+      AssistenteIa__Model: rehearsal-fixture
+      AssistenteIa__BaseUrl: http://fake-ai:8080/v1/
+      AssistenteIa__ReviewV2Enabled: "true"
+      AssistenteIa__ConversationV2Enabled: "true"
+      AssistenteIa__DurableGenerationEnabled: "true"
+      AssistenteIa__HistoryMemoryEnabled: "true"
+      AssistenteIa__InputCostPerMillionTokensUsd: "1"
+      AssistenteIa__CachedInputCostPerMillionTokensUsd: "0.1"
+      AssistenteIa__OutputCostPerMillionTokensUsd: "2"
+      AssistenteIa__PricingVersion: synthetic-rehearsal-not-real-prices
+      AssistenteIa__DefaultMonthlyLimitUsd: "5"
+      AssistenteDocumentos__Enabled: "true"
+      AssistenteDocumentos__RetrievalEnabled: "true"
+      AssistenteDocumentos__AnalysisEnabled: "true"
+      AssistenteDocumentos__OcrEnabled: "false"
+    read_only: true
+    tmpfs: [/tmp]
+    volumes:
+      - documents:/var/lib/juridicoai/documents
+    depends_on:
+      postgres: {condition: service_healthy}
+    networks: [isolated]
+  web:
+    image: ${WEB_IMAGE:?}
+    ports: ["127.0.0.1:${HTTPS_PORT}:8443"]
+    volumes:
+      - certificates:/certs:ro
+    depends_on: [api]
+    networks:
+      isolated:
+        ipv4_address: ${PROXY_IP}
+      ingress: {}
+networks:
+  ingress:
+  isolated:
+    internal: true
+    ipam:
+      config:
+        - subnet: ${SUBNET:?}
+volumes:
+  database:
+  documents:
+  certificates:

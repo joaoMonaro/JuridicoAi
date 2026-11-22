@@ -61,6 +61,12 @@ remover containers ou volumes MongoDB existentes.
 As chaves podem ser definidas em `appsettings*.json`, variáveis de ambiente ou
 user-secrets. Em variáveis de ambiente, use `__` no lugar de `:`.
 
+Para aplicar migrations em uma etapa controlada, configure a conexão e execute
+`dotnet run --project src/JuridicoAI.Api -- migrate-database`. O comando encerra
+sem iniciar o servidor. No runtime publicado, use `Postgres__RunMigrations=false`.
+O [ensaio isolado de publicação](../ops/rehearsal/README.md) exercita esse fluxo
+com PostgreSQL e storage exclusivos, sem alterar o Compose de desenvolvimento.
+
 | Chave | Padrão | Finalidade |
 |---|---:|---|
 | `Postgres:ConnectionString` | vazio | conexão obrigatória para operações de casos |

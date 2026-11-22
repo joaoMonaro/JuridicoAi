@@ -1,6 +1,6 @@
 # TODO — Preparação para produção e testes locais
 
-Atualizado em **2026-11-20**. **Estado: PROD-003 e P06 concluídos no backend; monitoramento P04 parcial e deploy pendente.**
+Atualizado em **2026-11-22**. **Estado: PROD-003 e P06 concluídos; pacote e persistência ensaiados localmente; monitoramento P04 parcial e deploy em nuvem pendente.**
 Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 ## Decisões registradas
@@ -11,7 +11,9 @@ Referência: [escopo, decisões confirmadas e questões em aberto](README.md).
 
 Os itens acima representam documentação. P04 possui implementação e ensaio local;
 PROD-003 e P06 simplificado têm código e testes concluídos. As demais frentes e as condições
-operacionais indicadas abaixo continuam pendentes.
+operacionais indicadas abaixo continuam pendentes. O
+[ensaio local de 2026-11-22](evidencias/ensaio-local-2026-11-22.md) comprovou o
+recorte local de PROD-001/004/006/007, sem encerrar a configuração da nuvem.
 
 ## Etapa 1 — Ambientes e controle dos testes pagos
 
@@ -84,15 +86,19 @@ Uma rodada real futura depende de solicitação explícita e orçamento definido
 
 - [ ] Escolher provedor/região, modalidade de execução, domínio e orçamento;
   configurar certificado HTTPS e os IPs/redes reais dos proxies na publicação.
-- [ ] Definir pacote de publicação e dependências de extração documental/exportação PDF.
+- [x] Definir e ensaiar pacote em containers com as dependências de extração
+  PDF/DOCX/TXT e exportação Word/PDF. Build limpo de API e frontend, HTTPS local,
+  configuração Production e correção do conversor headless em 2026-11-22.
+  Endereços, segredos e persistência da nuvem ainda exigem configuração própria.
 - [ ] Configurar PostgreSQL privado e credenciais próprias, com permissões adequadas.
 - [ ] Definir storage persistente e privado; verificar sua compatibilidade com
   `IFileStorage`, downloads, workers e exclusões.
 - [ ] Definir e injetar os segredos de produção durante a publicação, junto com
   seu armazenamento, permissões de execução e temporários (decisão de 2026-11-20).
 - [ ] Preparar homologação com dados fictícios e verificar que testes não alcancem produção.
-- [ ] Documentar a opção local e impedir o uso acidental do Compose local como
-  uma configuração pronta para exposição pública.
+- [x] Documentar opção de ensaio separada do Compose de desenvolvimento,
+  com porta somente em loopback, volumes exclusivos e API/banco/simulador em
+  rede interna sem internet. Ver [roteiro](../../../ops/rehearsal/README.md).
 
 ### PROD-005 — Verificar disponibilidade e acompanhar falhas
 
@@ -113,14 +119,18 @@ ensaio no ambiente de deploy continuam abertos. Ver
 ### PROD-006 — Proteger backup, restauração e exclusões
 
 - [ ] Definir retenção, perda tolerável de dados e tempo de recuperação.
-- [ ] Preparar backup consistente de banco e documentos e proteção das credenciais.
+- [x] Preparar e executar backup local consistente de banco e documentos com
+  API/web interrompidos, checksums e diretório privado. Destino independente,
+  retenção e credenciais da hospedagem continuam pendentes.
 - [ ] **P05 — Em espera, fora do MVP:** registro independente das exclusões e
   reaplicação após restauração. Código preservado em branch separada; retomar
   quando repriorizado.
 - [ ] Tratar arquivos órfãos em falhas de exclusão de documentos do Caso, com
   registro persistido, novas tentativas e auditoria.
-- [ ] Ensaiar backup/restauração básicos com dados fictícios, preservando Peças
-  e arquivos. A reaplicação automática de exclusões após backup pertence ao P05 adiado.
+- [x] Ensaiar backup/restauração básicos com dados fictícios em projeto e volumes
+  novos: Peça, versão, histórico, anexos por SHA-256 e exportações conferidos.
+  Repetir no ambiente escolhido. A reaplicação automática de exclusões após
+  backup pertence ao P05 adiado.
 
 ### PROD-007 — Ensaiar deploy e rollback
 
@@ -128,8 +138,16 @@ ensaio no ambiente de deploy continuam abertos. Ver
 - [ ] Definir drenagem de workers, retomada de jobs e tratamento de reservas financeiras.
 - [ ] Ensaiar atualização e rollback sem downgrade destrutivo, perda de arquivos
   ou reaparecimento de conversas em exclusão, em conjunto com P08.
-- [ ] Verificar que reinicialização e substituição da instância preservam dados.
-- [ ] Registrar versão/commit, verificações, critérios de interrupção e recuperação.
+- [x] Verificar localmente reinicialização dos serviços e substituição dos
+  containers de API/web preservando dados. Repetir na hospedagem escolhida.
+- [x] Registrar commits-base, hashes das fontes/imagens, verificações e recuperação
+  do ensaio local. Registrar novamente a versão candidata e o aceite da publicação.
+
+O comando `migrate-database` permite aplicar migrations antes de iniciar o runtime
+com `RunMigrations=false`. A recuperação comprovada recusa configuração insegura
+e volta à mesma imagem válida; não é downgrade de schema nem prova de
+compatibilidade com migrations futuras. Separação SQL de migrations/runtime
+e drenagem com jobs em andamento não foram implementadas neste recorte.
 
 ## Etapa 5 — Liberação do piloto
 

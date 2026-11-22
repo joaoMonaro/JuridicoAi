@@ -36,7 +36,9 @@ public sealed class LibreOfficePdfConverter(IOptions<PecaExportSettings> options
             foreach (var argument in new[] { "-env:UserInstallation=" + new Uri(Path.Combine(directory, "profile")).AbsoluteUri,
                 "--headless", "--nologo", "--nodefault", "--nofirststartwizard", "--convert-to", "pdf:writer_pdf_Export", "--outdir", directory, input })
                 process.StartInfo.ArgumentList.Add(argument);
-            process.StartInfo.Environment["SAL_USE_VCLPLUGIN"] = "gen";
+            // The generic plugin requires X11 even with --headless on some
+            // distributions. SVP renders without a display server.
+            process.StartInfo.Environment["SAL_USE_VCLPLUGIN"] = "svp";
             process.Start();
             // Drenar os pipes sem guardar conteúdo ou mensagens do conversor nos logs.
             var stdout = process.StandardOutput.BaseStream.CopyToAsync(Stream.Null);

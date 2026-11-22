@@ -1,7 +1,7 @@
 # Preparação para produção e testes locais
 
-> **Estado:** PROD-003 e P06 concluídos no backend; monitoramento P04 parcial e configuração do deploy pendente.
-> **Atualizado em:** 2026-11-20.
+> **Estado:** PROD-003 e P06 concluídos; pacote e persistência ensaiados localmente; monitoramento P04 parcial e deploy em nuvem pendente.
+> **Atualizado em:** 2026-11-22.
 > **Acompanhamento:** [tarefas e critérios de aceite](TODO.md).
 > **Escopo do produto:** [MVP de redação de peças jurídicas](../../../MVP.md).
 
@@ -19,8 +19,10 @@ O acesso P06 foi simplificado e implementado em 2026-11-20; ver
 PROD-003 tem transporte/origens/proxies implementados e a corrida refresh/logout
 da sessão principal corrigida, com compatibilidade e isolamento verificados;
 ver [evidência da sessão principal](evidencias/sessao-principal-2026-11-20.md).
-As demais frentes continuam em planejamento, sem contratação, deploy ou testes
-pagos realizados por estas entregas. Marcar tarefas somente após sua verificação.
+O pacote de publicação, integração dos serviços e backup/restauração foram
+[ensaiados localmente](evidencias/ensaio-local-2026-11-22.md) com IA simulada em
+2026-11-22. As configurações da nuvem continuam pendentes, sem contratação,
+deploy online ou testes pagos realizados por estas entregas.
 
 ## Decisões confirmadas
 
@@ -31,7 +33,7 @@ pagos realizados por estas entregas. Marcar tarefas somente após sua verificaç
   executadas quando explicitamente solicitadas pelo responsável pelo projeto.
 - A presença de uma chave, de um modelo configurado ou da habilitação de IA
   na aplicação não autoriza testes pagos.
-- A implementação inclui segurança PROD-003, monitoramento P04 e cadastro/acesso P06 simplificado;
+- A implementação inclui segurança PROD-003, monitoramento P04, cadastro/acesso P06 simplificado e ensaio local do pacote/persistência;
   a preparação do ambiente publicado permanece pendente.
 
 ## Política de testes com IA

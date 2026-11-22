@@ -1,0 +1,73 @@
+{
+  "status": "passed",
+  "realAiCalls": 0,
+  "originalProject": "juridicoai-rehearsal-6dcf5c87",
+  "restoredProject": "juridicoai-rehearsal-6dcf5c87-restored",
+  "backend": {
+    "commit": "6702603cc853d42eb9ec38d951c567c3b2565143",
+    "sourceSha256": "62849012a02c1c37d48c178750d699d69cbac8559df1a68fa8b3a2a75e029b56",
+    "dirty": true
+  },
+  "frontend": {
+    "commit": "bf2059aba748822153693a8d85118ed464153367",
+    "sourceSha256": "0c7884b932b022e7282f4525ca2cd9252b4c2be8bc2e2c7007289de0427edff6",
+    "dirty": false
+  },
+  "images": [
+    {
+      "id": "sha256:2e1616e0b1e96542bf92549c78068dfc9b04615ef15ca6a0d733c190a85823d8",
+      "tags": [
+        "juridicoai-rehearsal-api:62849012a02c"
+      ],
+      "digests": [
+        "juridicoai-rehearsal-api@sha256:2e1616e0b1e96542bf92549c78068dfc9b04615ef15ca6a0d733c190a85823d8"
+      ]
+    },
+    {
+      "id": "sha256:4c3828bc8221e1c03935cf3287bad5f25f8223636dd04f856ee6d1fa32bdf922",
+      "tags": [
+        "juridicoai-rehearsal-web:0c7884b932b0-49987"
+      ],
+      "digests": [
+        "juridicoai-rehearsal-web@sha256:4c3828bc8221e1c03935cf3287bad5f25f8223636dd04f856ee6d1fa32bdf922"
+      ]
+    },
+    {
+      "id": "sha256:ad31c7c29889088dddba13f9079160e0cfac5592aea24139598c44b36eef8f51",
+      "tags": [
+        "juridicoai-rehearsal-fake:6dcf5c87"
+      ],
+      "digests": [
+        "juridicoai-rehearsal-fake@sha256:ad31c7c29889088dddba13f9079160e0cfac5592aea24139598c44b36eef8f51"
+      ]
+    },
+    {
+      "id": "sha256:223efeb196329b55b3b9a13db144956411dbc18e727e59f681c3e0aede6475cf",
+      "tags": [
+        "postgres:17"
+      ],
+      "digests": [
+        "postgres@sha256:223efeb196329b55b3b9a13db144956411dbc18e727e59f681c3e0aede6475cf"
+      ]
+    }
+  ],
+  "checks": [
+    "clean_build",
+    "controlled_migrations",
+    "production_https",
+    "private_network",
+    "pdf_docx_txt_reading",
+    "synthetic_chat",
+    "explicit_approval",
+    "idempotent_approval",
+    "word_pdf_export",
+    "browser_cookie_refresh",
+    "restart",
+    "container_replacement",
+    "consistent_backup",
+    "restore_to_new_volumes",
+    "budget_block",
+    "active_deletion",
+    "failed_startup_recovery"
+  ]
+}

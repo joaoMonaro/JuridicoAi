@@ -1,6 +1,6 @@
 # TODO — Assistente conversacional
 
-Atualizado em **2026-11-20**. Referência completa:
+Atualizado em **2026-11-22**. Referência completa:
 [estado atual da implementação](estado-atual.md).
 O [plano E0–E5](especificacoes/05-entrega-e-validacao.md)
 foi reconciliado com o código e as evidências; os IDs abaixo têm critérios de
@@ -10,7 +10,8 @@ Este TODO acompanha exclusivamente esta feature. As entregas restantes do escopo
 as melhorias observadas na avaliação e os itens em espera estão separados abaixo.
 
 A preparação transversal do ambiente está em
-[produção e testes locais](../preparacao-producao/README.md), ainda em planejamento.
+[produção e testes locais](../preparacao-producao/README.md), com pacote e
+persistência ensaiados localmente e publicação em nuvem pendente.
 Esse plano relaciona P03–P08 sem encerrar as pendências daqui. Testes com IA real
 só devem ser executados quando explicitamente solicitados, com orçamento
 definido; possuir uma chave ou habilitar a IA da aplicação não autoriza testes pagos.
@@ -101,10 +102,15 @@ Os cenários pagos adiados de P01 ficam para a rodada ampliada com orçamento pr
   persistente, HTTPS/origens e permissões; aplicar migrations, drenar workers
   antigos e conferir temporários legados. Ensaiar deploy/rollback sem downgrade
   destrutivo, perda de histórico ou reexposição de conversas em exclusão.
+  **Parcial em 2026-11-22:** pacote Production em containers, HTTPS local,
+  migrations controladas, reinício/recriação, backup/restauração em volumes novos,
+  exclusão no ambiente ativo e recuperação de configuração inválida comprovados
+  com IA simulada. Ver [evidência](../preparacao-producao/evidencias/ensaio-local-2026-11-22.md).
+  Configuração e ensaio na hospedagem escolhida continuam pendentes.
 
 P03 exige configuração das tarifas e do ambiente; P04 tem
 implementação local e operação de deploy pendente; P07 exige validação e eventuais
-correções; P08 exige configuração e ensaio. Permanecem condições para o piloto;
+correções; P08 tem ensaio local concluído e configuração/ensaio na nuvem pendentes. Permanecem condições para o piloto;
 P05 está em espera fora desse recorte.
 
 ## Entregas concluídas

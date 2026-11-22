@@ -55,7 +55,6 @@ if (builder.Configuration.GetValue<bool>("AssistenteMonitoring:Enabled"))
 }
 
 
-builder.Services.Configure<PostgresSettings>(builder.Configuration.GetSection("Postgres"));
 builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
 builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
     .Validate(x => !x.AnalysisEnabled || x.RetrievalEnabled, "Análise extensa exige recuperação documental.")
@@ -253,6 +252,14 @@ app.UseAuthorization();
 app.MapGet("/", () => "Hello World!");
 app.MapGet("/health/live", () => Results.Ok(new { status = "alive" })).AllowAnonymous();
 app.MapControllers();
+if (args.Contains("migrate-database", StringComparer.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("Migrations aplicadas.");
+    return;
+}
 if (args.Contains("provision-organization", StringComparer.OrdinalIgnoreCase))
 {
     var request = new ProvisionOrganizationRequest(

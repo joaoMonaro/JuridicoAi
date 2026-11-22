@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-20**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-22**. Acompanhamento geral das prioridades do projeto.
 **Somente a seção “Essencial para publicar o MVP” reúne os bloqueios de lançamento,
 em ordem decrescente de prioridade.** As demais tarefas continuam acompanhadas
 abaixo, sem exigir a conclusão de todo o plano técnico para o primeiro piloto.
@@ -13,6 +13,11 @@ local e manter novas funcionalidades fora do lançamento.
 
 ### 1. Ambiente online e preservação dos dados — prioridade alta
 
+- [x] Preparar e executar o ensaio local isolado: imagens limpas, migrations
+  controladas, leitura/exportação, persistência após reinício/recriação,
+  backup/restauração em volumes novos e recuperação de configuração inválida.
+  Ver [evidência do ensaio](implementacoes/features/preparacao-producao/evidencias/ensaio-local-2026-11-22.md).
+  Repetir as verificações do ambiente ao configurar a hospedagem escolhida.
 - [ ] Escolher a hospedagem e publicar o MVP em nuvem, com PostgreSQL privado,
   documentos em storage persistente e privado e dados/credenciais separados dos testes locais.
   Na publicação, preencher domínio/certificado HTTPS, origem real do frontend,
@@ -34,9 +39,10 @@ Homologação pode ser temporária; não é exigido manter três ambientes perma
   e limite mensal da organização, reutilizando o controle financeiro **P03**.
 - [ ] Conferir o bloqueio por limite e acompanhar consumo e tempo de resposta
   para o uso inicial, sem aumentar cotas automaticamente.
-- [ ] Fazer os checks de publicação com IA simulada e banco descartável, sem
-  dados ou credenciais de produção. Testes reais exigem solicitação explícita e
-  orçamento próprio; uma chave configurada não autoriza consumo em testes.
+- [x] Executar o ensaio local com IA simulada e banco exclusivo, sem dados ou
+  credenciais de produção, incluindo bloqueio financeiro antes do provedor.
+  Repetir os checks na versão candidata. Testes reais exigem solicitação
+  explícita e orçamento próprio; uma chave configurada não autoriza consumo em testes.
 
 Detalhamento: **PROD-002/P03** no [TODO de produção](implementacoes/features/preparacao-producao/TODO.md)
 e na [evidência financeira](implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md).
@@ -76,8 +82,8 @@ A aprovação técnica não substitui a validação do advogado.
 ## Coordenação da preparação para produção
 
 - [ ] **PROJ-007 — Planejar a preparação para produção preservando os testes locais.**
-  **Estado: frentes restantes em planejamento, com monitoramento P04 parcialmente
-  implementado e ensaiado localmente.** Para este lançamento, acompanhar o recorte
+  **Estado: pacote e persistência ensaiados localmente; publicação em nuvem pendente,
+  com monitoramento P04 parcialmente implementado.** Para este lançamento, acompanhar o recorte
   essencial acima. Os planos detalhados também contêm melhorias posteriores;
   não é necessário encerrar todos os seus itens para concluir o MVP.
   Ver [escopo e decisões de produção](implementacoes/features/preparacao-producao/README.md).

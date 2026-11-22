@@ -49,6 +49,10 @@ pedido. Sucesso, falha, cancelamento e timeout encerram o processo e removem os
 arquivos temporários. Uma falha de remoção gera aviso sem registrar conteúdo.
 O diretório raiz deve ter permissões de escrita e espaço disponível.
 
+O processo usa `SAL_USE_VCLPLUGIN=svp` para renderizar sem servidor gráfico.
+Forçar o plugin `gen` pode exigir X11 mesmo com `--headless`, como identificado
+no ensaio em container. Não é necessário instalar um desktop ou Xvfb.
+
 ## Fontes e correspondência visual
 
 O DOCX mantém o nome da fonte configurada na peça. O renderizador de PDF usa
