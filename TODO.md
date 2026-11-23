@@ -1,6 +1,6 @@
 # TODO — Projeto JuridicoAI
 
-Atualizado em **2026-11-22**. Acompanhamento geral das prioridades do projeto.
+Atualizado em **2026-11-23**. Acompanhamento geral das prioridades do projeto.
 **Somente a seção “Essencial para publicar o MVP” reúne os bloqueios de lançamento,
 em ordem decrescente de prioridade.** As demais tarefas continuam acompanhadas
 abaixo, sem exigir a conclusão de todo o plano técnico para o primeiro piloto.
@@ -49,6 +49,11 @@ e na [evidência financeira](implementacoes/features/assistente-conversacional/e
 
 ### 3. Jornada completa validada com o advogado — prioridade alta
 
+- [x] **Ensaio ampliado local (2026-11-23).** Passaram 79 testes de navegador e
+  16 verificações com API real e IA simulada. Foram validados documentos longos,
+  exportação Word/PDF em dois layouts, aprovação parcial, rejeição, recuperação
+  do salvamento após reconexão, conflitos, troca de peça e avisos de anexos.
+  Quatro peças e cinco anexos foram preservados após recriar os containers.
 - [ ] **PROJ-003 — Validar a entrada e a redação pelo chat.** No MVP online e
   restrito, concluir um trabalho representativo: iniciar/retomar a Peça, fornecer
   fatos/anexos e obter uma minuta, sem cadastrar os dados jurídicos em outras telas.
