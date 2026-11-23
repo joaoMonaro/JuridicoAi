@@ -23,7 +23,7 @@ def decimal_value(value):
 
 def fingerprint(payload):
     normalized = {key: value for key, value in payload.items()
-                  if key not in {'include', 'stream', 'store', 'max_output_tokens', 'truncation'}}
+                  if key not in {'include', 'stream', 'store', 'max_output_tokens', 'truncation', 'prompt_cache_options'}}
     return hashlib.sha256(json.dumps(normalized, sort_keys=True, ensure_ascii=False,
                                      separators=(',', ':')).encode()).hexdigest()
 
@@ -33,10 +33,11 @@ def token_count(value):
     return value
 
 class RunBudget:
-    def __init__(self, maximum_usd, maximum_calls, input_price, cached_price, output_price, persist=None):
+    def __init__(self, maximum_usd, maximum_calls, input_price, cached_price, output_price, persist=None, *, cache_write_price=0):
         self.maximum = decimal_value(maximum_usd)
         self.input_price = decimal_value(input_price)
         self.cached_price = decimal_value(cached_price)
+        self.cache_write_price = decimal_value(cache_write_price)
         self.output_price = decimal_value(output_price)
         if self.maximum <= 0 or self.input_price <= 0 or self.output_price <= 0:
             raise ValueError('Explicit positive budget and verified prices are required')
@@ -63,7 +64,8 @@ class RunBudget:
         output = token_count(maximum_output_tokens)
         if output == 0:
             raise ValueError('Output reservation must be positive')
-        reserved = (counted * self.input_price + output * self.output_price) / Decimal(1_000_000)
+        worst_input_price = max(self.input_price, self.cached_price, self.cache_write_price)
+        reserved = (counted * worst_input_price + output * self.output_price) / Decimal(1_000_000)
         with self.lock:
             used = sum((Decimal(event['chargedUsd']) for event in self.events), Decimal(0))
             if len(self.events) >= self.maximum_calls or used + reserved > self.maximum:
@@ -83,19 +85,26 @@ class RunBudget:
         inputs = token_count(usage.get('input_tokens'))
         outputs = token_count(usage.get('output_tokens'))
         details = usage.get('input_tokens_details') or {}
-        cached = token_count(details.get('cached_tokens', 0))
-        if cached > inputs:
-            raise InvalidUsage('Cached input cannot exceed total input')
+        default = None if self.cache_write_price > 0 else 0
+        cached = token_count(details.get('cached_tokens', default))
+        written = token_count(details.get('cache_write_tokens', default))
+        if cached + written > inputs or (written > 0 and self.cache_write_price == 0):
+            raise InvalidUsage('Cache usage is inconsistent with input or configured pricing')
+        if 'cache_write_tokens_details' in details:
+            breakdown = details['cache_write_tokens_details']
+            if (not isinstance(breakdown, dict) or token_count(breakdown.get('ttl_12h_tokens')) != 0
+                    or token_count(breakdown.get('ttl_30m_tokens')) != written):
+                raise InvalidUsage('Only 30-minute cache writes are priced')
         with self.lock:
             event = self.events[ordinal - 1]
             if event['state'] == 'settled':
                 raise InvalidUsage('Call already settled')
             if inputs > event['reservedInputTokens'] or outputs > event['reservedOutputTokens']:
                 raise InvalidUsage('Usage exceeded its reservation; stop the run and audit pricing/counts')
-            cost = ((inputs - cached) * self.input_price + cached * self.cached_price +
-                    outputs * self.output_price) / Decimal(1_000_000)
+            cost = ((inputs - cached - written) * self.input_price + cached * self.cached_price +
+                    written * self.cache_write_price + outputs * self.output_price) / Decimal(1_000_000)
             previous = dict(event)
-            event.update(state='settled', inputTokens=inputs, cachedInputTokens=cached,
+            event.update(state='settled', inputTokens=inputs, cachedInputTokens=cached, cacheWriteTokens=written,
                          outputTokens=outputs, model=model, chargedUsd=str(cost))
             try:
                 self.persist(self._snapshot())

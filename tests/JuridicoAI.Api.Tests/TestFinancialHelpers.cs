@@ -30,7 +30,7 @@ internal sealed class SimulatedMonthlyLimitStub : IAssistenteMonthlyLimitService
         Task.FromResult(new AssistenteFinancialReservation(Guid.Empty, Guid.Empty, request.OrganizationId, 2026, 11,
             "OpenAI", "simulado", "simulado", 0m, 0m, 0m, 0m, IsBypassedSimulation: true));
 
-    public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken cancellationToken) =>
+    public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken cancellationToken, int? cacheWriteTokens = null) =>
         Task.FromResult(new AssistenteCallSettlementOutcome("Settled", null, reservation.PricingVersion));
 
     public Task LiberarAntesDoEnvioAsync(AssistenteFinancialReservation reservation, string errorCode, CancellationToken cancellationToken) =>
@@ -45,9 +45,9 @@ internal sealed class SimulatedMonthlyLimitStub : IAssistenteMonthlyLimitService
     public Task DefinirLimiteOrganizacaoAsync(Guid organizationId, decimal monthlyLimitUsd, Guid updatedById, string reason, CancellationToken cancellationToken) =>
         Task.CompletedTask;
 
-    public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken cancellationToken) =>
+    public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken cancellationToken, int? cacheWriteTokens = null) =>
         throw new NotSupportedException();
 
-    public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken cancellationToken) =>
+    public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken cancellationToken, int? cacheWriteTokens = null) =>
         throw new NotSupportedException();
 }

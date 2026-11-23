@@ -229,6 +229,7 @@ public sealed class AssistenteMonthlyLimitService(
                 PricingVersion = settings.PricingVersion,
                 InputCostPerMillionUsd = settings.InputCostPerMillionTokensUsd,
                 CachedInputCostPerMillionUsd = settings.CachedInputCostPerMillionTokensUsd,
+                CacheWriteCostPerMillionUsd = settings.CacheWriteCostPerMillionTokensUsd,
                 OutputCostPerMillionUsd = settings.OutputCostPerMillionTokensUsd,
                 EstimatedInputTokens = Math.Max(0, request.EstimatedInputTokens),
                 MaxOutputTokens = Math.Max(0, request.MaxOutputTokens),
@@ -301,15 +302,15 @@ public sealed class AssistenteMonthlyLimitService(
         int? cachedInputTokens,
         int outputTokens,
         string? errorCode,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null)
     {
         if (reservation.IsBypassedSimulation)
             return new("Settled", null, reservation.PricingVersion);
 
         var safeInput = Math.Max(0, inputTokens);
-        var safeCached = Math.Clamp(cachedInputTokens ?? 0, 0, safeInput);
+        var safeCached = cachedInputTokens ?? 0;
         var safeOutput = Math.Max(0, outputTokens);
-        var settledUsd = CalculateActualCostUsd(reservation, safeInput, safeCached, safeOutput);
         var now = _time.GetUtcNow().UtcDateTime;
 
         try
@@ -321,6 +322,19 @@ public sealed class AssistenteMonthlyLimitService(
                 await tx.CommitAsync(cancellationToken);
                 return new(row.Status, row.SettledUsd, row.PricingVersion);
             }
+
+            if (!AssistenteTokenCost.IsCacheUsageValid(safeInput, cachedInputTokens, cacheWriteTokens, row.CacheWriteCostPerMillionUsd))
+            {
+                await db.AiUsageReservations.Where(r => r.Id == row.Id).ExecuteUpdateAsync(s => s
+                    .SetProperty(r => r.Status, "Indeterminate")
+                    .SetProperty(r => r.ErrorCode, "AI_CACHE_USAGE_INVALID")
+                    .SetProperty(r => r.UpdatedAt, now), cancellationToken);
+                await tx.CommitAsync(cancellationToken);
+                return new("Indeterminate", null, row.PricingVersion);
+            }
+
+            var settledUsd = AssistenteTokenCost.Calculate(safeInput, safeCached, cacheWriteTokens ?? 0, safeOutput,
+                row.InputCostPerMillionUsd, row.CachedInputCostPerMillionUsd, row.CacheWriteCostPerMillionUsd, row.OutputCostPerMillionUsd);
 
             await db.Database.ExecuteSqlInterpolatedAsync($"""
                 UPDATE ai_monthly_accounts
@@ -337,6 +351,7 @@ public sealed class AssistenteMonthlyLimitService(
                     .SetProperty(r => r.SettledUsd, settledUsd)
                     .SetProperty(r => r.ActualInputTokens, safeInput)
                     .SetProperty(r => r.ActualCachedInputTokens, safeCached)
+                    .SetProperty(r => r.ActualCacheWriteTokens, cacheWriteTokens)
                     .SetProperty(r => r.ActualOutputTokens, safeOutput)
                     .SetProperty(r => r.ErrorCode, Truncate(errorCode, 80))
                     .SetProperty(r => r.SettledAt, now)
@@ -469,7 +484,8 @@ public sealed class AssistenteMonthlyLimitService(
                 call.CachedInputTokens,
                 call.OutputTokens.Value,
                 call.ErrorCode,
-                cancellationToken);
+                cancellationToken,
+                call.CacheWriteTokens);
         }
 
         if (!call.Dispatched || call.SafeToRelease)
@@ -576,7 +592,8 @@ public sealed class AssistenteMonthlyLimitService(
         int? outputTokens,
         Guid operatorUserId,
         string reason,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null) =>
         ReconcileCoreAsync(
             reservationId,
             confirmarConsumo ? AssistenteOrphanRecoveryAction.Settle : AssistenteOrphanRecoveryAction.Release,
@@ -588,7 +605,8 @@ public sealed class AssistenteMonthlyLimitService(
             outputTokens,
             operatorUserId,
             reason,
-            cancellationToken);
+            cancellationToken,
+            cacheWriteTokens);
 
     public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(
         Guid reservationId,
@@ -600,7 +618,8 @@ public sealed class AssistenteMonthlyLimitService(
         int? outputTokens,
         Guid operatorUserId,
         string reason,
-        CancellationToken cancellationToken) =>
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null) =>
         ReconcileCoreAsync(
             reservationId,
             action,
@@ -612,7 +631,8 @@ public sealed class AssistenteMonthlyLimitService(
             outputTokens,
             operatorUserId,
             reason,
-            cancellationToken);
+            cancellationToken,
+            cacheWriteTokens);
 
     private async Task<AssistenteReconciliationResult> ReconcileCoreAsync(
         Guid reservationId,
@@ -625,7 +645,8 @@ public sealed class AssistenteMonthlyLimitService(
         int? outputTokens,
         Guid operatorUserId,
         string reason,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens)
     {
         if (reservationId == Guid.Empty || operatorUserId == Guid.Empty || string.IsNullOrWhiteSpace(reason))
             throw new InvalidOperationException("Informe reservationId, operatorUserId e reason válidos.");
@@ -698,19 +719,17 @@ public sealed class AssistenteMonthlyLimitService(
 
         if (action == AssistenteOrphanRecoveryAction.Settle)
         {
-            if (inputTokens.HasValue || outputTokens.HasValue)
+            if (inputTokens.HasValue || outputTokens.HasValue || cacheWriteTokens.HasValue)
             {
                 if (!inputTokens.HasValue || !outputTokens.HasValue || inputTokens < 0 || outputTokens < 0 || (cachedInputTokens ?? 0) < 0)
                     throw new InvalidOperationException("Informe inputTokens e outputTokens válidos para liquidar pelo uso real.");
                 actualIn = inputTokens.Value;
-                actualCached = Math.Clamp(cachedInputTokens ?? 0, 0, actualIn.Value);
+                actualCached = cachedInputTokens ?? 0;
                 actualOut = outputTokens.Value;
-                var uncached = actualIn.Value - actualCached.Value;
-                settledUsd = Math.Round(
-                    (uncached * row.InputCostPerMillionUsd
-                     + actualCached.Value * row.CachedInputCostPerMillionUsd
-                     + actualOut.Value * row.OutputCostPerMillionUsd) / 1_000_000m,
-                    8, MidpointRounding.AwayFromZero);
+                if (!AssistenteTokenCost.IsCacheUsageValid(actualIn.Value, cachedInputTokens, cacheWriteTokens, row.CacheWriteCostPerMillionUsd))
+                    throw new InvalidOperationException("Informe contagens válidas de leitura e gravação no cache, inclusive zero quando não houve uso.");
+                settledUsd = AssistenteTokenCost.Calculate(actualIn.Value, actualCached.Value, cacheWriteTokens ?? 0, actualOut.Value,
+                    row.InputCostPerMillionUsd, row.CachedInputCostPerMillionUsd, row.CacheWriteCostPerMillionUsd, row.OutputCostPerMillionUsd);
             }
             else
             {
@@ -743,6 +762,7 @@ public sealed class AssistenteMonthlyLimitService(
                 .SetProperty(r => r.SettledUsd, settledUsd)
                 .SetProperty(r => r.ActualInputTokens, actualIn)
                 .SetProperty(r => r.ActualCachedInputTokens, actualCached)
+                .SetProperty(r => r.ActualCacheWriteTokens, actualIn.HasValue ? cacheWriteTokens : null)
                 .SetProperty(r => r.ActualOutputTokens, actualOut)
                 .SetProperty(r => r.ReconciledById, operatorUserId)
                 .SetProperty(r => r.ReconciliationReason, auditReason)
@@ -796,7 +816,8 @@ public sealed class AssistenteMonthlyLimitService(
         settings.DefaultMonthlyLimitUsd >= 0m &&
         settings.InputCostPerMillionTokensUsd > 0m &&
         settings.CachedInputCostPerMillionTokensUsd > 0m &&
-        settings.OutputCostPerMillionTokensUsd > 0m;
+        settings.OutputCostPerMillionTokensUsd > 0m &&
+        settings.HasValidCacheWritePricing();
 
     private static void EnsurePricingValidOrThrow(AssistenteIaSettings settings)
     {
@@ -813,22 +834,10 @@ public sealed class AssistenteMonthlyLimitService(
     {
         var safeInput = Math.Max(0, inputTokens);
         var safeOutput = Math.Max(0, maxOutputTokens);
-        var worstInputRate = Math.Max(settings.InputCostPerMillionTokensUsd, settings.CachedInputCostPerMillionTokensUsd);
+        var worstInputRate = Math.Max(settings.CacheWriteCostPerMillionTokensUsd,
+            Math.Max(settings.InputCostPerMillionTokensUsd, settings.CachedInputCostPerMillionTokensUsd));
         var raw = (safeInput * worstInputRate + safeOutput * settings.OutputCostPerMillionTokensUsd) / 1_000_000m;
         return Math.Ceiling(raw * 100_000_000m) / 100_000_000m;
-    }
-
-    private static decimal CalculateActualCostUsd(
-        AssistenteFinancialReservation reservation,
-        int inputTokens,
-        int cachedInputTokens,
-        int outputTokens)
-    {
-        var uncached = Math.Max(0, inputTokens - cachedInputTokens);
-        var raw = (uncached * reservation.InputCostPerMillionUsd
-                   + cachedInputTokens * reservation.CachedInputCostPerMillionUsd
-                   + outputTokens * reservation.OutputCostPerMillionUsd) / 1_000_000m;
-        return Math.Round(raw, 8, MidpointRounding.AwayFromZero);
     }
 
     private static decimal ClampPct(decimal value) =>

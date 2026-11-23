@@ -107,7 +107,12 @@ public sealed class OpenAiAssistenteIaProviderTests
                 usage = new
                 {
                     input_tokens = 42,
-                    input_tokens_details = new { cached_tokens = 12 },
+                    input_tokens_details = new
+                    {
+                        cached_tokens = 12,
+                        cache_write_tokens = 20,
+                        cache_write_tokens_details = new { ttl_30m_tokens = 20, ttl_12h_tokens = 0 }
+                    },
                     output_tokens = 17
                 }
             }
@@ -116,7 +121,7 @@ public sealed class OpenAiAssistenteIaProviderTests
         {
             Content = new StringContent($"data: {delta}\n\ndata: {completed}\n\n", Encoding.UTF8, "text/event-stream")
         });
-        var provider = CreateProvider(handler);
+        var provider = CreateProvider(handler, cacheWriteRate: 1.25m);
         var request = new AssistenteIaProviderRequest(
             "Instruções seguras",
             "Contexto",
@@ -130,12 +135,14 @@ public sealed class OpenAiAssistenteIaProviderTests
         Assert.Equal(AssistenteOperacao.ResponderNoPainel, result.OperacaoSugerida);
         Assert.Equal(42, result.EntradaTokens);
         Assert.Equal(12, result.EntradaTokensEmCache);
+        Assert.Equal(20, result.CacheWriteTokens);
         Assert.Equal(17, result.SaidaTokens);
         Assert.Equal("modelo-resolvido", result.Modelo);
         Assert.NotNull(handler.RequestBody);
         using var body = JsonDocument.Parse(handler.RequestBody);
         Assert.False(body.RootElement.GetProperty("store").GetBoolean());
         Assert.True(body.RootElement.GetProperty("stream").GetBoolean());
+        Assert.Equal("30m", body.RootElement.GetProperty("prompt_cache_options").GetProperty("ttl").GetString());
         Assert.Equal("json_schema", body.RootElement.GetProperty("text").GetProperty("format").GetProperty("type").GetString());
         Assert.Equal("Bearer", handler.AuthorizationScheme);
     }
@@ -163,13 +170,14 @@ public sealed class OpenAiAssistenteIaProviderTests
         Assert.DoesNotContain("sensível", exception.Message);
     }
 
-    private static OpenAiAssistenteIaProvider CreateProvider(StubHandler handler)
+    private static OpenAiAssistenteIaProvider CreateProvider(StubHandler handler, decimal cacheWriteRate = 0m)
     {
         var settings = new AssistenteIaSettings
         {
             Enabled = true,
             Model = "modelo-teste",
-            ApiKey = "segredo-teste"
+            ApiKey = "segredo-teste",
+            CacheWriteCostPerMillionTokensUsd = cacheWriteRate
         };
         var client = new HttpClient(handler) { BaseAddress = new Uri(settings.BaseUrl) };
         return new OpenAiAssistenteIaProvider(client, Options.Create(settings));

@@ -17,6 +17,7 @@ public sealed class AiUsageLedgerEntry
     public int AttemptCount { get; init; }
     public int? InputTokens { get; init; }
     public int? CachedInputTokens { get; init; }
+    public int? CacheWriteTokens { get; init; }
     public int? OutputTokens { get; init; }
     public decimal? EstimatedCostUsd { get; init; }
     public string PricingVersion { get; init; } = string.Empty;

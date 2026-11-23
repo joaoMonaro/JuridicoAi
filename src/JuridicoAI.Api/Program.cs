@@ -95,6 +95,9 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
                    x.InputCostPerMillionTokensUsd >= 0 && x.CachedInputCostPerMillionTokensUsd >= 0 &&
                    x.OutputCostPerMillionTokensUsd >= 0 && x.DefaultMonthlyLimitUsd >= 0 && !string.IsNullOrWhiteSpace(x.PricingVersion),
         "Os limites de AssistenteIa devem ser maiores que zero.")
+    .Validate(x => x.CacheWriteCostPerMillionTokensUsd >= 0m, "A tarifa de gravação no cache deve ser não negativa.")
+    .Validate(x => !x.Enabled || x.AllowSimulatedWithoutFinancialControl || x.HasValidCacheWritePricing(),
+        "AssistenteIa:CacheWriteCostPerMillionTokensUsd deve ser configurada para o gpt-6.1-terra.")
     .Validate(x => !(builder.Environment.IsProduction() && x.AllowSimulatedWithoutFinancialControl),
         "AssistenteIa:AllowSimulatedWithoutFinancialControl não pode ser habilitado em produção.")
     .Validate(x => !builder.Environment.IsProduction() || !x.Enabled ||
@@ -371,13 +374,14 @@ if (args.Contains("reconcile-ai-reservation", StringComparer.OrdinalIgnoreCase))
 
     int? inputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_INPUT_TOKENS"), out var inVal) ? inVal : null;
     int? cachedTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_CACHED_INPUT_TOKENS"), out var cachedVal) ? cachedVal : null;
+    int? cacheWriteTokens = ReadReconciliationCacheWriteTokens();
     int? outputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_OUTPUT_TOKENS"), out var outVal) ? outVal : null;
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
     await db.Database.MigrateAsync();
     var reconciled = await scope.ServiceProvider.GetRequiredService<IAssistenteMonthlyLimitService>()
-        .ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default);
+        .ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default, cacheWriteTokens);
     Console.WriteLine($"Reserva {reconciled.ReservationId} reconciliada para {reconciled.Status}.");
     return;
 }
@@ -409,15 +413,25 @@ if (args.Contains("recover-orphan-ai-reservation", StringComparer.OrdinalIgnoreC
 
     int? inputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_INPUT_TOKENS"), out var inVal) ? inVal : null;
     int? cachedTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_CACHED_INPUT_TOKENS"), out var cachedVal) ? cachedVal : null;
+    int? cacheWriteTokens = ReadReconciliationCacheWriteTokens();
     int? outputTokens = int.TryParse(Environment.GetEnvironmentVariable("AI_RECONCILE_OUTPUT_TOKENS"), out var outVal) ? outVal : null;
 
     await using var scope = app.Services.CreateAsyncScope();
     var db = scope.ServiceProvider.GetRequiredService<JuridicoAiDbContext>();
     await db.Database.MigrateAsync();
     var recovered = await scope.ServiceProvider.GetRequiredService<IAssistenteMonthlyLimitService>()
-        .RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default);
+        .RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedTokens, outputTokens, operatorUserId, reason, default, cacheWriteTokens);
     Console.WriteLine($"Reserva órfã {recovered.ReservationId} recuperada para {recovered.Status}.");
     return;
 }
 
 app.Run();
+
+static int? ReadReconciliationCacheWriteTokens()
+{
+    const string name = "AI_RECONCILE_CACHE_WRITE_TOKENS";
+    var value = Environment.GetEnvironmentVariable(name);
+    if (string.IsNullOrWhiteSpace(value)) return null;
+    if (int.TryParse(value, out var tokens) && tokens >= 0) return tokens;
+    throw new InvalidOperationException($"{name} deve ser um inteiro não negativo.");
+}

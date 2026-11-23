@@ -342,6 +342,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("attempt_count");
 
+                    b.Property<int?>("CacheWriteTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cache_write_tokens");
+
                     b.Property<int?>("CachedInputTokens")
                         .HasColumnType("integer")
                         .HasColumnName("cached_input_tokens");
@@ -472,6 +476,10 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
+                    b.Property<int?>("ActualCacheWriteTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("actual_cache_write_tokens");
+
                     b.Property<int?>("ActualCachedInputTokens")
                         .HasColumnType("integer")
                         .HasColumnName("actual_cached_input_tokens");
@@ -487,6 +495,11 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                     b.Property<int>("AttemptCount")
                         .HasColumnType("integer")
                         .HasColumnName("attempt_count");
+
+                    b.Property<decimal>("CacheWriteCostPerMillionUsd")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
+                        .HasColumnName("cache_write_cost_per_million_usd");
 
                     b.Property<decimal>("CachedInputCostPerMillionUsd")
                         .HasPrecision(18, 8)
@@ -629,7 +642,7 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
 
                             t.HasCheckConstraint("ck_ai_usage_reservations_month", "period_month >= 1 AND period_month <= 12");
 
-                            t.HasCheckConstraint("ck_ai_usage_reservations_prices", "input_cost_per_million_usd >= 0 AND cached_input_cost_per_million_usd >= 0 AND output_cost_per_million_usd >= 0");
+                            t.HasCheckConstraint("ck_ai_usage_reservations_prices", "input_cost_per_million_usd >= 0 AND cached_input_cost_per_million_usd >= 0 AND output_cost_per_million_usd >= 0 AND cache_write_cost_per_million_usd >= 0");
 
                             t.HasCheckConstraint("ck_ai_usage_reservations_reserved", "reserved_usd >= 0");
 

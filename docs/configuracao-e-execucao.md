@@ -103,7 +103,8 @@ com PostgreSQL e storage exclusivos, sem alterar o Compose de desenvolvimento.
 | `AssistenteIa:ConcurrentRequestsPerOrganization` | `6` | concorrência por Organization |
 | `AssistenteIa:DefaultMonthlyLimitUsd` | `5.0` | limite financeiro mensal inicial por organização; mês calendário UTC |
 | `AssistenteIa:InputCostPerMillionTokensUsd` | `0` | tarifa de entrada sem cache; informar preço real do modelo |
-| `AssistenteIa:CachedInputCostPerMillionTokensUsd` | `0` | tarifa de entrada em cache; informar preço real do modelo |
+| `AssistenteIa:CachedInputCostPerMillionTokensUsd` | `0` | tarifa de leitura do cache por milhão de tokens |
+| `AssistenteIa:CacheWriteCostPerMillionTokensUsd` | `0` | tarifa de gravação no cache de 30 minutos por milhão de tokens, obrigatória para o `gpt-6.1-terra` |
 | `AssistenteIa:OutputCostPerMillionTokensUsd` | `0` | tarifa de saída; informar preço real do modelo |
 | `AssistenteIa:PricingVersion` | `unconfigured` | identificação da tabela de preços usada nas reservas |
 | `AssistenteIa:AllowSimulatedWithoutFinancialControl` | `false` | opt-out explícito para testes simulados; proibido em produção |

@@ -91,7 +91,8 @@ public static class AssistenteFinancialMeter
                     call.DurationMs,
                     RequirePersistence: requireDurablePersistence || monthlyLimit.ControleFinanceiroAtivo,
                     FrozenEstimatedCostUsd: outcome?.SettledUsd,
-                    FrozenPricingVersion: outcome?.PricingVersion),
+                    FrozenPricingVersion: outcome?.PricingVersion,
+                    CacheWriteTokens: call.CacheWriteTokens),
                 CancellationToken.None);
     }
 }

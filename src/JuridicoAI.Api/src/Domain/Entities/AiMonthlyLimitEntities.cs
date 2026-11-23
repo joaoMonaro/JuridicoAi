@@ -40,6 +40,7 @@ public sealed class AiUsageReservation
     public string PricingVersion { get; init; } = string.Empty;
     public decimal InputCostPerMillionUsd { get; init; }
     public decimal CachedInputCostPerMillionUsd { get; init; }
+    public decimal CacheWriteCostPerMillionUsd { get; init; }
     public decimal OutputCostPerMillionUsd { get; init; }
     public int EstimatedInputTokens { get; init; }
     public int MaxOutputTokens { get; init; }
@@ -47,6 +48,7 @@ public sealed class AiUsageReservation
     public decimal? SettledUsd { get; set; }
     public int? ActualInputTokens { get; set; }
     public int? ActualCachedInputTokens { get; set; }
+    public int? ActualCacheWriteTokens { get; set; }
     public int? ActualOutputTokens { get; set; }
     public string Status { get; set; } = "Reserved";
     public string? ErrorCode { get; set; }

@@ -86,6 +86,9 @@ class EvaluationProxy:
                 count_request = self.path.endswith('/input_tokens')
                 ordinal = None
                 if not count_request:
+                    if payload.get('prompt_cache_options', {}).get('ttl', '30m') != '30m':
+                        state.stop_reason = 'unsupported_cache_ttl'
+                        raise ValueError('Only 30-minute cache writes are priced')
                     if payload.get('store') is not False or payload.get('truncation') != 'disabled':
                         state.stop_reason = 'privacy_or_coverage_policy_changed'
                         raise ValueError('Product privacy/coverage settings changed')

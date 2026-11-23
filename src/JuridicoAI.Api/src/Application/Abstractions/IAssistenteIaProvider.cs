@@ -27,7 +27,8 @@ public sealed record AssistenteIaProviderResult(
     int? SaidaTokens,
     string Modelo,
     AssistenteRascunhoAutomatico? RascunhoAutomatico = null,
-    string? CoberturaPretendida = null);
+    string? CoberturaPretendida = null,
+    int? CacheWriteTokens = null);
 
 public interface IAssistenteIaProvider
 {
@@ -58,5 +59,6 @@ public sealed class AssistenteIaProviderException(
     public string? ResolvedModel { get; init; }
     public int? InputTokens { get; init; }
     public int? CachedInputTokens { get; init; }
+    public int? CacheWriteTokens { get; init; }
     public int? OutputTokens { get; init; }
 }

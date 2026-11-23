@@ -40,10 +40,17 @@ public sealed class AssistenteIaSettings
     public int ConcurrentRequestsPerOrganization { get; set; } = 6;
     public decimal InputCostPerMillionTokensUsd { get; set; }
     public decimal CachedInputCostPerMillionTokensUsd { get; set; }
+    public decimal CacheWriteCostPerMillionTokensUsd { get; set; }
     public decimal OutputCostPerMillionTokensUsd { get; set; }
     public string PricingVersion { get; set; } = "unconfigured";
     public decimal DefaultMonthlyLimitUsd { get; set; } = 5.00m;
     public bool AllowSimulatedWithoutFinancialControl { get; set; }
     public string TransparencyNoticeVersion { get; set; } = "ai-transparency-v1";
     public string? PrivacyPolicyUrl { get; set; }
+
+    // The pilot model can bill cache writes even on the first request.
+    public bool HasValidCacheWritePricing() =>
+        CacheWriteCostPerMillionTokensUsd >= 0m &&
+        (!string.Equals(Model, "gpt-6.1-terra", StringComparison.OrdinalIgnoreCase) ||
+         CacheWriteCostPerMillionTokensUsd > 0m);
 }

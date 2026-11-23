@@ -37,6 +37,7 @@ public sealed class AssistenteUsageRecorder(
             AttemptCount = record.AttemptCount,
             InputTokens = record.InputTokens,
             CachedInputTokens = record.CachedInputTokens,
+            CacheWriteTokens = record.CacheWriteTokens,
             OutputTokens = record.OutputTokens,
             EstimatedCostUsd = estimatedCost,
             PricingVersion = pricingVersion,
@@ -65,12 +66,15 @@ public sealed class AssistenteUsageRecorder(
         if (record.InputTokens is null && record.OutputTokens is null) return null;
         if (settings.InputCostPerMillionTokensUsd == 0 &&
             settings.CachedInputCostPerMillionTokensUsd == 0 &&
+            settings.CacheWriteCostPerMillionTokensUsd == 0 &&
             settings.OutputCostPerMillionTokensUsd == 0)
             return null;
-        var cached = Math.Min(record.CachedInputTokens ?? 0, record.InputTokens ?? 0);
-        var uncached = Math.Max(0, (record.InputTokens ?? 0) - cached);
-        return (uncached * settings.InputCostPerMillionTokensUsd
-                + cached * settings.CachedInputCostPerMillionTokensUsd
-                + (record.OutputTokens ?? 0) * settings.OutputCostPerMillionTokensUsd) / 1_000_000m;
+        var input = Math.Max(0, record.InputTokens ?? 0);
+        var cached = record.CachedInputTokens ?? 0;
+        if (!AssistenteTokenCost.IsCacheUsageValid(input, record.CachedInputTokens, record.CacheWriteTokens, settings.CacheWriteCostPerMillionTokensUsd))
+            return null;
+        return AssistenteTokenCost.Calculate(input, cached, record.CacheWriteTokens ?? 0, record.OutputTokens ?? 0,
+            settings.InputCostPerMillionTokensUsd, settings.CachedInputCostPerMillionTokensUsd,
+            settings.CacheWriteCostPerMillionTokensUsd, settings.OutputCostPerMillionTokensUsd);
     }
 }

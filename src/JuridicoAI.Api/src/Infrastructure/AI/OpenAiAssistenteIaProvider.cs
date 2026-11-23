@@ -85,6 +85,7 @@ public sealed class OpenAiAssistenteIaProvider(
         using var observed = AssistenteTelemetry.MeasureProvider(AssistenteProviderOperation.Generation);
         int? inputTokens = null;
         int? cachedInputTokens = null;
+        int? cacheWriteTokens = null;
         int? outputTokens = null;
         tracker?.MarkPreSend();
         EnsureModelMatchesSnapshot(request, tracker);
@@ -93,6 +94,8 @@ public sealed class OpenAiAssistenteIaProvider(
         message.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
         payload["stream"] = true;
         payload["store"] = false;
+        if (_settings.CacheWriteCostPerMillionTokensUsd > 0m)
+            payload["prompt_cache_options"] = new { ttl = "30m" };
         payload["max_output_tokens"] = request.MaxOutputTokens;
         payload["truncation"] = "disabled";
         message.Content = JsonContent.Create(payload);
@@ -147,7 +150,7 @@ public sealed class OpenAiAssistenteIaProvider(
                         completed = true;
                         if (root.TryGetProperty("response", out var responseElement))
                         {
-                            ExtractResponseTelemetry(responseElement, ref model, ref inputTokens, ref cachedInputTokens, ref outputTokens, tracker);
+                            ExtractResponseTelemetry(responseElement, ref model, ref inputTokens, ref cachedInputTokens, ref outputTokens, ref cacheWriteTokens, tracker);
                             if (responseElement.TryGetProperty("status", out var status) && status.GetString() != "completed")
                                 throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", false), tracker);
                             if (responseElement.TryGetProperty("output", out var items))
@@ -165,7 +168,7 @@ public sealed class OpenAiAssistenteIaProvider(
                     case "response.failed":
                     case "response.incomplete":
                         if (root.TryGetProperty("response", out var failedResponseElement))
-                            ExtractResponseTelemetry(failedResponseElement, ref model, ref inputTokens, ref cachedInputTokens, ref outputTokens, tracker);
+                            ExtractResponseTelemetry(failedResponseElement, ref model, ref inputTokens, ref cachedInputTokens, ref outputTokens, ref cacheWriteTokens, tracker);
                         throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: type != "response.incomplete"), tracker);
                     case "error":
                         throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: true), tracker);
@@ -178,7 +181,7 @@ public sealed class OpenAiAssistenteIaProvider(
             if (request.FerramentasDocumentais is not null && outputItems.Any(x => x.GetProperty("type").GetString() == "function_call"))
             {
                 observed.Succeeded();
-                return new(null, outputItems, model, inputTokens, cachedInputTokens, outputTokens);
+                return new(null, outputItems, model, inputTokens, cachedInputTokens, outputTokens, cacheWriteTokens);
             }
             if (output.Length == 0) throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", true), tracker);
 
@@ -194,9 +197,9 @@ public sealed class OpenAiAssistenteIaProvider(
                 var result = new AssistenteIaProviderResult(automatic.Titulo, automatic.Texto, automatic.Resumo,
                     automatic.Intencao == AssistenteIntencao.Responder ? AssistenteOperacao.ResponderNoPainel : AssistenteOperacao.ProporAlteracoes,
                     automatic.Alertas, [], inputTokens, cachedInputTokens, outputTokens, model,
-                    new(automatic.Intencao, automatic.Grupos, automatic.SubstituirPropostaReferenciada), automatic.CoberturaPretendida);
+                    new(automatic.Intencao, automatic.Grupos, automatic.SubstituirPropostaReferenciada), automatic.CoberturaPretendida, cacheWriteTokens);
                 observed.Succeeded();
-                return new(result, outputItems, model, inputTokens, cachedInputTokens, outputTokens);
+                return new(result, outputItems, model, inputTokens, cachedInputTokens, outputTokens, cacheWriteTokens);
             }
             var structured = JsonSerializer.Deserialize<OpenAiStructuredOutput>(output.ToString(), JsonOptions)
                 ?? throw WithTracker(new AssistenteIaProviderException("AI_PROVIDER_ERROR", retryable: false), tracker);
@@ -211,7 +214,7 @@ public sealed class OpenAiAssistenteIaProvider(
                 inputTokens,
                 cachedInputTokens,
                 outputTokens,
-                model), outputItems, model, inputTokens, cachedInputTokens, outputTokens);
+                model, CacheWriteTokens: cacheWriteTokens), outputItems, model, inputTokens, cachedInputTokens, outputTokens, cacheWriteTokens);
         }
         catch (AssistenteIaProviderException)
         {
@@ -237,7 +240,7 @@ public sealed class OpenAiAssistenteIaProvider(
     }
 
     private sealed record ProviderTurn(AssistenteIaProviderResult? Result, IReadOnlyList<JsonElement> Output,
-        string Model, int? InputTokens, int? CachedInputTokens, int? OutputTokens);
+        string Model, int? InputTokens, int? CachedInputTokens, int? OutputTokens, int? CacheWriteTokens);
 
     private async Task<AssistenteIaProviderResult> GerarComFerramentasAsync(AssistenteIaProviderRequest request, CancellationToken ct)
     {
@@ -268,12 +271,12 @@ public sealed class OpenAiAssistenteIaProvider(
             {
                 var code = ex is AssistenteIaProviderException providerError ? providerError.Code : ex is OperationCanceledException ? "AI_CANCELLED_OR_TIMEOUT" : "AI_PROVIDER_ERROR";
                 await tools.RecordAsync(new(round + 1, turnTracker.Model ?? model, turnTracker.InputTokens, turnTracker.CachedInputTokens, turnTracker.OutputTokens, "failed", code,
-                    (long)TimeProvider.System.GetElapsedTime(started).TotalMilliseconds, turnTracker.Dispatched, turnTracker.SafeToRelease));
+                    (long)TimeProvider.System.GetElapsedTime(started).TotalMilliseconds, turnTracker.Dispatched, turnTracker.SafeToRelease, turnTracker.CacheWriteTokens));
                 throw;
             }
             model = turn.Model;
             var call = new AssistenteProviderCall(round + 1, model, turn.InputTokens, turn.CachedInputTokens, turn.OutputTokens,
-                "succeeded", null, (long)TimeProvider.System.GetElapsedTime(started).TotalMilliseconds, Dispatched: true, SafeToRelease: false);
+                "succeeded", null, (long)TimeProvider.System.GetElapsedTime(started).TotalMilliseconds, Dispatched: true, SafeToRelease: false, CacheWriteTokens: turn.CacheWriteTokens);
             calls.Add(call); await tools.RecordAsync(call);
             spent += (long)Math.Max(counted, turn.InputTokens ?? counted) + (turn.OutputTokens ?? request.MaxOutputTokens);
             if (turn.Result is { } result)
@@ -304,6 +307,7 @@ public sealed class OpenAiAssistenteIaProvider(
         {
             EntradaTokens = calls.All(c => c.InputTokens.HasValue) ? calls.Sum(c => c.InputTokens!.Value) : null,
             EntradaTokensEmCache = calls.All(c => c.CachedInputTokens.HasValue) ? calls.Sum(c => c.CachedInputTokens!.Value) : null,
+            CacheWriteTokens = calls.All(c => c.CacheWriteTokens.HasValue) ? calls.Sum(c => c.CacheWriteTokens!.Value) : null,
             SaidaTokens = calls.All(c => c.OutputTokens.HasValue) ? calls.Sum(c => c.OutputTokens!.Value) : null
         };
         async Task<AssistenteIaProviderResult> LimitedAsync()
@@ -374,6 +378,7 @@ public sealed class OpenAiAssistenteIaProvider(
                 ResolvedModel = tracker.Model ?? _settings.Model,
                 InputTokens = tracker.InputTokens,
                 CachedInputTokens = tracker.CachedInputTokens,
+                CacheWriteTokens = tracker.CacheWriteTokens,
                 OutputTokens = tracker.OutputTokens
             };
 
@@ -383,6 +388,7 @@ public sealed class OpenAiAssistenteIaProvider(
         ref int? inputTokens,
         ref int? cachedInputTokens,
         ref int? outputTokens,
+        ref int? cacheWriteTokens,
         AssistenteProviderTurnTracker? tracker)
     {
         if (responseElement.TryGetProperty("model", out var modelElement))
@@ -390,11 +396,26 @@ public sealed class OpenAiAssistenteIaProvider(
         if (responseElement.TryGetProperty("usage", out var usage))
         {
             inputTokens = ReadNullableInt(usage, "input_tokens");
-            if (usage.TryGetProperty("input_tokens_details", out var inputDetails))
+            if (usage.TryGetProperty("input_tokens_details", out var inputDetails) && inputDetails.ValueKind == JsonValueKind.Object)
+            {
                 cachedInputTokens = ReadNullableInt(inputDetails, "cached_tokens");
+                cacheWriteTokens = ReadCacheWriteTokens(inputDetails);
+            }
             outputTokens = ReadNullableInt(usage, "output_tokens");
         }
-        tracker?.ObserveUsage(model, inputTokens, cachedInputTokens, outputTokens);
+        tracker?.ObserveUsage(model, inputTokens, cachedInputTokens, outputTokens, cacheWriteTokens);
+    }
+
+    private static int? ReadCacheWriteTokens(JsonElement inputDetails)
+    {
+        var total = ReadNullableInt(inputDetails, "cache_write_tokens");
+        if (total is null && inputDetails.TryGetProperty("cache_write_tokens", out _))
+            throw new JsonException("Contagem de gravação no cache inválida.");
+        if (inputDetails.TryGetProperty("cache_write_tokens_details", out var breakdown) &&
+            (breakdown.ValueKind != JsonValueKind.Object || ReadNullableInt(breakdown, "ttl_12h_tokens") != 0 ||
+             ReadNullableInt(breakdown, "ttl_30m_tokens") != total || total is null))
+            throw new JsonException("A tarifação do cache suporta somente gravações de 30 minutos.");
+        return total;
     }
 
     private static AssistenteIaProviderException CreateHttpException(HttpStatusCode statusCode) => statusCode switch
@@ -407,7 +428,7 @@ public sealed class OpenAiAssistenteIaProvider(
     };
 
     private static int? ReadNullableInt(JsonElement element, string propertyName) =>
-        element.TryGetProperty(propertyName, out var value) && value.TryGetInt32(out var result) && result >= 0
+        element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var result) && result >= 0
             ? result
             : null;
 

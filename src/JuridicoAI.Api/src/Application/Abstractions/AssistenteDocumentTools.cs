@@ -59,9 +59,13 @@ public sealed class AssistenteDocumentTools(JsonElement definitions,
     {
         AttemptedCalls++;
         AssistenteCallSettlementOutcome? outcome = null;
+        var unknownSuccessfulUsage = false;
         try
         {
             if (SettleFinancialCall is not null) outcome = await SettleFinancialCall(call);
+            unknownSuccessfulUsage = outcome?.Status == "Indeterminate" && call.Status == "succeeded";
+            if (unknownSuccessfulUsage)
+                call = call with { Status = "failed", ErrorCode = "AI_USAGE_INDETERMINATE" };
             if (RecordCallWithOutcome is not null) await RecordCallWithOutcome(call, outcome);
             else if (RecordCall is not null) await RecordCall(call);
         }
@@ -80,9 +84,14 @@ public sealed class AssistenteDocumentTools(JsonElement definitions,
         }
         RecordedCalls++;
         if (AfterCall is not null) await AfterCall(call);
+        if (unknownSuccessfulUsage)
+            throw new Exceptions.AssistenteIaException(
+                StatusCodes.Status502BadGateway,
+                "AI_USAGE_INDETERMINATE",
+                "Não foi possível confirmar o consumo informado pelo provedor de IA.");
     }
 }
 
 public sealed record AssistenteProviderCall(int Ordinal, string Model, int? InputTokens, int? CachedInputTokens,
     int? OutputTokens, string Status, string? ErrorCode, long DurationMs,
-    bool Dispatched = true, bool SafeToRelease = false);
+    bool Dispatched = true, bool SafeToRelease = false, int? CacheWriteTokens = null);

@@ -52,9 +52,9 @@ aplicação ou chamadas ao provedor. `validate` não carrega credenciais.
   `AssistenteIa__ApiKey`/`OPENAI_API_KEY`, fora do Git e do chat.
 - Informar o modelo explicitamente (`--model` ou configuração local) e o teto
   total em US$. Não substituir silenciosamente um modelo por outro.
-- Conferir os preços atuais do modelo na documentação oficial antes de passar os
-  valores de entrada, entrada em cache e saída. A URL da fonte é gravada; o script
-  não declara os valores corretos apenas por receber uma URL oficial.
+- Conferir na documentação oficial as tarifas de entrada, leitura do cache,
+  gravação no cache de 30 minutos e saída. Informe zero para gravação quando
+  o modelo não cobrar pelo recurso. A URL da fonte fica no registro da rodada.
 - Ter Docker com contexto `default`, imagem PostgreSQL 17 e .NET 10 disponíveis.
 
 A configuração local do avaliador dá precedência às variáveis de ambiente sobre
@@ -69,6 +69,7 @@ e preços:
 python3 tools/conversation-evals/run.py run --confirm-real-run \
   --model <modelo-escolhido> --max-cost-usd <teto-total> --max-calls 80 \
   --input-usd-per-million <preco> --cached-usd-per-million <preco> \
+  --cache-write-usd-per-million <preco-30m> \
   --output-usd-per-million <preco> \
   --pricing-source <url-oficial-conferida>
 ```

@@ -38,8 +38,9 @@ sudo apt-get install poppler-utils
 
 **Substitua todos os campos `PREENCHA_...` antes de executar.** Use a mesma senha
 do banco acima. O segredo JWT deve ter ao menos 32 caracteres; pode ser gerado
-com `openssl rand -base64 48`. Informe os três preços reais do modelo, em USD
-por milhão de tokens, usando ponto decimal e valores positivos.
+com `openssl rand -base64 48`. Informe as tarifas do modelo em USD por milhão
+de tokens, usando ponto decimal. Use zero para a tarifa de gravação apenas
+quando o modelo não cobrar pelo recurso.
 
 Este comando salva os valores nos user-secrets do projeto, fora do Git:
 
@@ -61,6 +62,7 @@ dotnet user-secrets --project src/JuridicoAI.Api set <<'JSON'
     "Model": "PREENCHA_ID_DO_MODELO",
     "InputCostPerMillionTokensUsd": "PREENCHA_PRECO_ENTRADA",
     "CachedInputCostPerMillionTokensUsd": "PREENCHA_PRECO_ENTRADA_CACHE",
+    "CacheWriteCostPerMillionTokensUsd": "PREENCHA_PRECO_GRAVACAO_CACHE_30M",
     "OutputCostPerMillionTokensUsd": "PREENCHA_PRECO_SAIDA",
     "PricingVersion": "tabela-2026-11-19",
     "DefaultMonthlyLimitUsd": 5.00,
@@ -166,10 +168,23 @@ configuração pelo deploy; user-secrets são para desenvolvimento.
 
 ### Custos e permissões
 
-Os três preços configurados no início precisam acompanhar o modelo escolhido.
+As tarifas configuradas no início precisam acompanhar o modelo escolhido.
 Atualize `AssistenteIa:PricingVersion` ao mudar a tabela. O projeto não consulta
 preços automaticamente. Mantenha `AllowSimulatedWithoutFinancialControl=false`;
 a exceção é exclusiva de testes simulados e é proibida em produção.
+
+Para o `gpt-6.1-terra` no processamento Standard, as tarifas consultadas em
+2026-11-23 são US$ 1 de entrada comum, US$ 0,05 de leitura do cache, US$ 1,25 de
+gravação no cache de 30 minutos e US$ 5 de saída por milhão de tokens. Confira os
+valores antes de configurar o ambiente. [Tarifas oficiais](https://developers.openai.com/api/docs/models/gpt-6.1-terra)
+
+A API reserva o maior preço de entrada aplicável a cada chamada. O cálculo final
+separa entrada comum, leitura e gravação do cache. Quando a tarifa de gravação
+está configurada, o provedor recebe a duração de 30 minutos. Dados de consumo
+ausentes ou inconsistentes deixam a reserva pendente para conferência. Ao
+reconciliar uma reserva pelo uso informado pelo provedor, inclua
+`AI_RECONCILE_CACHED_INPUT_TOKENS` e `AI_RECONCILE_CACHE_WRITE_TOKENS` com as
+contagens do provedor. Use `0` quando o provedor confirmar ausência de uso.
 
 Para alterar o limite mensal de uma organização:
 
@@ -358,7 +373,7 @@ retry pago automático. O fluxo atual não exige embeddings nem banco vetorial.
 | API não inicia | JWT, placeholders não substituídos, limites e dependências das flags |
 | Painel sem envio | `Enabled`, revisão/conversa v2 e `AI_ASSISTANT` |
 | `AI_FEATURE_NOT_ENABLED` | Permissões da organização no passo 3 |
-| `AI_LIMIT_CONFIGURATION_INVALID` | Três tarifas positivas, modelo e versão de preços |
+| `AI_LIMIT_CONFIGURATION_INVALID` | Tarifas positivas de entrada, leitura do cache e saída, tarifa de gravação para o Terra, modelo e versão de preços |
 | `AI_MONTHLY_LIMIT_REACHED` / `AI_MONTHLY_LIMIT_INSUFFICIENT` | Limite da organização, consumo e reservas |
 | `AI_TRANSPARENCY_ACK_REQUIRED` | Aceite do aviso atual |
 | `AI_PROVIDER_ERROR` / `AI_UNAVAILABLE` | Credencial, acesso ao modelo, contrato do endpoint, rede e chave global |

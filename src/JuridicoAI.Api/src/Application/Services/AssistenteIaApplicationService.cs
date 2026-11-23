@@ -356,7 +356,8 @@ public sealed class AssistenteIaApplicationService(
                         result.EntradaTokensEmCache,
                         result.SaidaTokens.Value,
                         null,
-                        CancellationToken.None);
+                        CancellationToken.None,
+                        result.CacheWriteTokens);
                 }
                 else if (tracker.HasKnownUsage)
                 {
@@ -366,7 +367,8 @@ public sealed class AssistenteIaApplicationService(
                         tracker.CachedInputTokens,
                         tracker.OutputTokens!.Value,
                         null,
-                        CancellationToken.None);
+                        CancellationToken.None,
+                        tracker.CacheWriteTokens);
                 }
                 else if (!singleReservation.IsBypassedSimulation)
                 {
@@ -374,6 +376,8 @@ public sealed class AssistenteIaApplicationService(
                     settlementOutcome = new("Indeterminate", null, singleReservation.PricingVersion);
                     throw ProviderOutputInvalid("O provedor de IA não informou o consumo desta chamada.");
                 }
+                if (settlementOutcome?.Status == "Indeterminate")
+                    throw ProviderOutputInvalid("Não foi possível confirmar o consumo de cache informado pelo provedor de IA.");
             }
             else if (!isSingleCall &&
                      execution.ProviderRequest.FerramentasDocumentais is { AttemptedCalls: 0, StoppedBeforeProviderCall: false } &&
@@ -446,7 +450,8 @@ public sealed class AssistenteIaApplicationService(
                 ElapsedMilliseconds(startedAt),
                 monthlyLimit.ControleFinanceiroAtivo,
                 settlementOutcome?.SettledUsd,
-                settlementOutcome?.PricingVersion);
+                settlementOutcome?.PricingVersion,
+                result.CacheWriteTokens);
 
             return new AssistenteSolicitacaoConcluidaDto(
                 suggestion,
@@ -469,7 +474,7 @@ public sealed class AssistenteIaApplicationService(
                 null, tracker.Model ?? Settings.Model,
                 tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
                 tracker.CachedInputTokens, tracker.OutputTokens,
-                "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt));
+                "cancelled", "AI_CANCELLED", ElapsedMilliseconds(startedAt), tracker.CacheWriteTokens);
             throw;
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
@@ -485,7 +490,7 @@ public sealed class AssistenteIaApplicationService(
                 null, tracker.Model ?? Settings.Model,
                 tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
                 tracker.CachedInputTokens, tracker.OutputTokens,
-                "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt));
+                "failed", "AI_PROVIDER_TIMEOUT", ElapsedMilliseconds(startedAt), tracker.CacheWriteTokens);
             throw new AssistenteIaException(
                 StatusCodes.Status504GatewayTimeout,
                 "AI_PROVIDER_TIMEOUT",
@@ -508,7 +513,7 @@ public sealed class AssistenteIaApplicationService(
                 ex.InputTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
                 ex.CachedInputTokens ?? tracker.CachedInputTokens,
                 ex.OutputTokens ?? tracker.OutputTokens,
-                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+                "failed", ex.Code, ElapsedMilliseconds(startedAt), ex.CacheWriteTokens ?? tracker.CacheWriteTokens);
             throw MapProviderException(ex);
         }
         catch (AssistenteIaException ex)
@@ -528,7 +533,7 @@ public sealed class AssistenteIaApplicationService(
                 providerResult?.EntradaTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
                 providerResult?.EntradaTokensEmCache ?? tracker.CachedInputTokens,
                 providerResult?.SaidaTokens ?? tracker.OutputTokens,
-                "failed", ex.Code, ElapsedMilliseconds(startedAt));
+                "failed", ex.Code, ElapsedMilliseconds(startedAt), providerResult?.CacheWriteTokens ?? tracker.CacheWriteTokens);
             throw;
         }
         catch (Exception ex)
@@ -546,7 +551,7 @@ public sealed class AssistenteIaApplicationService(
                 providerResult?.EntradaTokens ?? tracker.InputTokens ?? SimulatedInputFallback(singleReservation, execution),
                 providerResult?.EntradaTokensEmCache ?? tracker.CachedInputTokens,
                 providerResult?.SaidaTokens ?? tracker.OutputTokens,
-                "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt));
+                "failed", "AI_PROVIDER_ERROR", ElapsedMilliseconds(startedAt), providerResult?.CacheWriteTokens ?? tracker.CacheWriteTokens);
             throw;
         }
     }
@@ -561,7 +566,8 @@ public sealed class AssistenteIaApplicationService(
         var cached = providerException?.CachedInputTokens ?? tracker.CachedInputTokens;
         var output = providerException?.OutputTokens ?? tracker.OutputTokens;
         if (input.HasValue && output.HasValue)
-            return await monthlyLimit.LiquidarAsync(reservation, input.Value, cached, output.Value, errorCode, CancellationToken.None);
+            return await monthlyLimit.LiquidarAsync(reservation, input.Value, cached, output.Value, errorCode, CancellationToken.None,
+                providerException?.CacheWriteTokens ?? tracker.CacheWriteTokens);
 
         var safePreSend = tracker.ProvenBeforeSend || tracker.SafeToRelease ||
                           providerException is { Dispatched: false } or { SafeToRelease: true };
@@ -769,7 +775,8 @@ public sealed class AssistenteIaApplicationService(
         int? outputTokens,
         string status,
         string errorCode,
-        long durationMs)
+        long durationMs,
+        int? cacheWriteTokens)
     {
         if (isSingleCall)
         {
@@ -793,7 +800,8 @@ public sealed class AssistenteIaApplicationService(
             durationMs,
             monthlyLimit.ControleFinanceiroAtivo,
             settlementOutcome?.SettledUsd,
-            settlementOutcome?.PricingVersion);
+            settlementOutcome?.PricingVersion,
+            cacheWriteTokens);
     }
 
     private async Task RecordUsageAsync(
@@ -808,7 +816,8 @@ public sealed class AssistenteIaApplicationService(
         long durationMs,
         bool requirePersistence = false,
         decimal? frozenCostUsd = null,
-        string? frozenPricingVersion = null)
+        string? frozenPricingVersion = null,
+        int? cacheWriteTokens = null)
     {
         if (execution.ProviderRequest.FerramentasDocumentais is { } tools &&
             (monthlyLimit.ControleFinanceiroAtivo || tools.AttemptedCalls > 0 || tools.StoppedBeforeProviderCall))
@@ -837,7 +846,8 @@ public sealed class AssistenteIaApplicationService(
                     durationMs,
                     requirePersistence,
                     frozenCostUsd,
-                    frozenPricingVersion),
+                    frozenPricingVersion,
+                    cacheWriteTokens),
                 CancellationToken.None);
         }
         catch (Exception ex) when (requirePersistence && ex is not OperationCanceledException and not AssistenteIaException)

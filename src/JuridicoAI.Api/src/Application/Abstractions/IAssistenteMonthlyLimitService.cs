@@ -26,7 +26,8 @@ public interface IAssistenteMonthlyLimitService
         int? cachedInputTokens,
         int outputTokens,
         string? errorCode,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null);
 
     Task LiberarAntesDoEnvioAsync(
         AssistenteFinancialReservation reservation,
@@ -58,7 +59,8 @@ public interface IAssistenteMonthlyLimitService
         int? outputTokens,
         Guid operatorUserId,
         string reason,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null);
 
     Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(
         Guid reservationId,
@@ -70,7 +72,8 @@ public interface IAssistenteMonthlyLimitService
         int? outputTokens,
         Guid operatorUserId,
         string reason,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken,
+        int? cacheWriteTokens = null);
 }
 
 public enum AssistenteOrphanRecoveryAction
@@ -129,6 +132,7 @@ public sealed class AssistenteProviderTurnTracker
     public string? Model { get; private set; }
     public int? InputTokens { get; private set; }
     public int? CachedInputTokens { get; private set; }
+    public int? CacheWriteTokens { get; private set; }
     public int? OutputTokens { get; private set; }
 
     public bool HasKnownUsage => InputTokens.HasValue && OutputTokens.HasValue;
@@ -150,11 +154,12 @@ public sealed class AssistenteProviderTurnTracker
         SafeToRelease = true;
     }
 
-    public void ObserveUsage(string? model, int? inputTokens, int? cachedInputTokens, int? outputTokens)
+    public void ObserveUsage(string? model, int? inputTokens, int? cachedInputTokens, int? outputTokens, int? cacheWriteTokens = null)
     {
         if (!string.IsNullOrWhiteSpace(model)) Model = model;
         if (inputTokens.HasValue) InputTokens = inputTokens.Value;
         if (cachedInputTokens.HasValue) CachedInputTokens = cachedInputTokens.Value;
+        if (cacheWriteTokens.HasValue) CacheWriteTokens = cacheWriteTokens.Value;
         if (outputTokens.HasValue) OutputTokens = outputTokens.Value;
     }
 }

@@ -35,6 +35,9 @@ Homologação pode ser temporária; não é exigido manter três ambientes perma
 
 ### 2. IA configurada e consumo controlado — prioridade alta
 
+- [x] Manter cache e contabilizar gravações de 30 minutos na reserva e no
+  consumo. Registrar os tokens gravados por chamada e manter a reserva pendente
+  quando faltar a contagem necessária para conferir o custo.
 - [ ] Configurar modelo, chave, flags/permissões, tarifas reais, versão de preços
   e limite mensal da organização, reutilizando o controle financeiro **P03**.
 - [ ] Conferir o bloqueio por limite e acompanhar consumo e tempo de resposta

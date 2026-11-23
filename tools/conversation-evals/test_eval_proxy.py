@@ -7,7 +7,7 @@ from eval_budget import RunBudget
 from eval_proxy import EvaluationProxy
 
 class ProxyTests(unittest.TestCase):
-    def start(self, budget=None, malformed=False):
+    def start(self, budget=None, malformed=False, input_details=None):
         self.calls = []
         def transport(request, timeout):
             body = json.loads(request.data)
@@ -16,7 +16,8 @@ class ProxyTests(unittest.TestCase):
                 return io.BytesIO(json.dumps({'input_tokens': 100}).encode())
             self.assertEqual('reserved', self.proxy.budget.snapshot()['events'][-1]['state'])
             self.assertEqual('Bearer synthetic-key', request.get_header('Authorization'))
-            usage = {} if malformed else {'input_tokens': 100, 'output_tokens': 20, 'input_tokens_details': {'cached_tokens': 0}}
+            usage = {} if malformed else {'input_tokens': 100, 'output_tokens': 20,
+                'input_tokens_details': input_details if input_details is not None else {'cached_tokens': 0}}
             event = {'type': 'response.completed', 'response': {'status': 'completed', 'model': 'fixture', 'usage': usage,
                      'output': [{'type': 'function_call', 'name': 'planejar_minuta', 'arguments': '{"private":"must not persist"}'},
                                 {'type': 'reasoning', 'encrypted_content': 'never-persist-this'}]}}
@@ -51,6 +52,19 @@ class ProxyTests(unittest.TestCase):
         self.assertEqual(502, self.post('responses', {**payload, 'store': False, 'truncation': 'disabled', 'max_output_tokens': 100})[0])
         self.assertEqual([], self.calls)
         self.assertEqual(0, self.proxy.budget.snapshot()['calls'])
+
+    def test_cache_write_tariff_preserves_count_lookup_and_charges_only_written_tokens(self):
+        budget = RunBudget('.001', 1, 1, '0.05', 5, cache_write_price='1.25')
+        payload = self.start(budget=budget, input_details={'cached_tokens': 30, 'cache_write_tokens': 50,
+            'cache_write_tokens_details': {'ttl_30m_tokens': 50, 'ttl_12h_tokens': 0}})
+        self.assertEqual(200, self.post('responses/input_tokens', payload)[0])
+        code, _ = self.post('responses', {**payload, 'store': False, 'truncation': 'disabled',
+            'max_output_tokens': 20, 'prompt_cache_options': {'ttl': '30m'}})
+        self.assertEqual(200, code)
+        event = budget.snapshot()['events'][0]
+        self.assertEqual('settled', event['state'])
+        self.assertEqual(50, event['cacheWriteTokens'])
+        self.assertEqual('0.000184', event['chargedUsd'])
 
     def test_missing_usage_retains_reservation_and_stops_further_generation(self):
         payload = self.start(malformed=True)

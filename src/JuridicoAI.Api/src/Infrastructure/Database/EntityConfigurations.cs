@@ -402,6 +402,7 @@ internal sealed class AiUsageLedgerEntryConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.AttemptCount).HasColumnName("attempt_count");
         builder.Property(x => x.InputTokens).HasColumnName("input_tokens");
         builder.Property(x => x.CachedInputTokens).HasColumnName("cached_input_tokens");
+        builder.Property(x => x.CacheWriteTokens).HasColumnName("cache_write_tokens");
         builder.Property(x => x.OutputTokens).HasColumnName("output_tokens");
         builder.Property(x => x.EstimatedCostUsd).HasColumnName("estimated_cost_usd").HasPrecision(18, 8);
         builder.Property(x => x.PricingVersion).HasColumnName("pricing_version").HasMaxLength(40).IsRequired();

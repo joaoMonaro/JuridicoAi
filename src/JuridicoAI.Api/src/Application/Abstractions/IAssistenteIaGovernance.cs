@@ -104,7 +104,8 @@ public sealed record AssistenteUsageRecord(
     long DurationMs,
     bool RequirePersistence = false,
     decimal? FrozenEstimatedCostUsd = null,
-    string? FrozenPricingVersion = null);
+    string? FrozenPricingVersion = null,
+    int? CacheWriteTokens = null);
 
 public interface IAssistenteUsageRecorder
 {

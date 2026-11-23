@@ -134,6 +134,7 @@ class Product:
                     'AssistenteIa__InputCostPerMillionTokensUsd': str(self.prices[0]),
                     'AssistenteIa__CachedInputCostPerMillionTokensUsd': str(self.prices[1]),
                     'AssistenteIa__OutputCostPerMillionTokensUsd': str(self.prices[2]),
+                    'AssistenteIa__CacheWriteCostPerMillionTokensUsd': str(self.prices[3]),
                     'AssistenteIa__PricingVersion': 'evaluation-explicit-provided-prices',
                     'AssistenteDocumentos__Enabled': 'true', 'AssistenteDocumentos__RetrievalEnabled': 'true',
                     'AssistenteDocumentos__AnalysisEnabled': 'true', 'AssistenteDocumentos__OcrEnabled': 'false',
@@ -336,6 +337,7 @@ def main():
     parser.add_argument('--max-calls', type=int, default=80)
     parser.add_argument('--input-usd-per-million')
     parser.add_argument('--cached-usd-per-million')
+    parser.add_argument('--cache-write-usd-per-million', help='Verified 30-minute write price, or zero for models without a write charge')
     parser.add_argument('--output-usd-per-million')
     parser.add_argument('--pricing-source')
     parser.add_argument('--turn-deadline-seconds', type=int, default=1200)
@@ -359,7 +361,8 @@ def main():
         missing.append('AssistenteIa:ApiKey (configure locally, never paste into chat)')
     if not model:
         missing.append('model')
-    for field in ['max_cost_usd', 'input_usd_per_million', 'cached_usd_per_million', 'output_usd_per_million', 'pricing_source']:
+    for field in ['max_cost_usd', 'input_usd_per_million', 'cached_usd_per_million',
+                  'cache_write_usd_per_million', 'output_usd_per_million', 'pricing_source']:
         if getattr(arguments, field) is None:
             missing.append(field)
     if missing:
@@ -369,8 +372,11 @@ def main():
         parser.error('Invalid model ID')
     if not re.match(r'^https://(developers|platform)\.openai\.com/', arguments.pricing_source):
         parser.error('Pricing must cite a verified official documentation URL')
-    prices = [decimal_value(arguments.input_usd_per_million), decimal_value(arguments.cached_usd_per_million), decimal_value(arguments.output_usd_per_million)]
-    budget = RunBudget(arguments.max_cost_usd, arguments.max_calls, *prices)
+    prices = [decimal_value(getattr(arguments, name)) for name in ('input_usd_per_million',
+        'cached_usd_per_million', 'output_usd_per_million', 'cache_write_usd_per_million')]
+    if model.lower() == 'gpt-6.1-terra' and prices[3] <= 0:
+        parser.error('Specify the positive 30-minute cache write price for gpt-6.1-terra')
+    budget = RunBudget(arguments.max_cost_usd, arguments.max_calls, *prices[:3], cache_write_price=prices[3])
     if arguments.command == 'preflight':
         print(json.dumps({'status': 'ready', 'model': model, 'maximumUsd': str(budget.maximum), 'cases': len(cases), 'realCalls': 0}))
         return 0
@@ -399,7 +405,8 @@ def main():
                 'suiteSha256': hashlib.sha256(arguments.suite.read_bytes()).hexdigest(),
                 'model': model, 'executedAtUtc': datetime.now(timezone.utc).isoformat(),
                 'status': 'running', 'selectedCases': [case['id'] for case in cases],
-                'pricingSource': arguments.pricing_source, 'pricesUsdPerMillion': list(map(str, prices)),
+                'pricingSource': arguments.pricing_source, 'pricesUsdPerMillion': list(map(str, prices[:3])),
+                'cacheWriteUsdPerMillion': str(prices[3]),
                 'maximumUsd': str(budget.maximum), 'maximumCalls': arguments.max_calls,
                 'dataPolicy': 'synthetic_only', 'manualLegalReview': 'pending',
                 'defaultsPreserved': {'generationCalls': 12, 'generationTokens': 180000, 'inputTokens': 60000,

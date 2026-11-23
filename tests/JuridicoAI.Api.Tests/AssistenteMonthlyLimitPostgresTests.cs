@@ -443,13 +443,13 @@ public sealed class AssistenteMonthlyLimitPostgresTests
             cts.Cancel();
             return res;
         }
-        public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken ct) => inner.LiquidarAsync(reservation, inputTokens, cachedInputTokens, outputTokens, errorCode, ct);
+        public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken ct, int? cacheWriteTokens = null) => inner.LiquidarAsync(reservation, inputTokens, cachedInputTokens, outputTokens, errorCode, ct, cacheWriteTokens);
         public Task LiberarAntesDoEnvioAsync(AssistenteFinancialReservation reservation, string errorCode, CancellationToken ct) => inner.LiberarAntesDoEnvioAsync(reservation, errorCode, ct);
         public Task MarcarIndeterminadaAsync(AssistenteFinancialReservation reservation, string errorCode, CancellationToken ct) => inner.MarcarIndeterminadaAsync(reservation, errorCode, ct);
         public Task<AssistenteCallSettlementOutcome> FinalizarChamadaAsync(AssistenteFinancialReservation reservation, AssistenteProviderCall call, CancellationToken ct) => inner.FinalizarChamadaAsync(reservation, call, ct);
         public Task DefinirLimiteOrganizacaoAsync(Guid organizationId, decimal monthlyLimitUsd, Guid updatedById, string reason, CancellationToken ct) => inner.DefinirLimiteOrganizacaoAsync(organizationId, monthlyLimitUsd, updatedById, reason, ct);
-        public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct) => inner.ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct);
-        public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct) => inner.RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct);
+        public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct, int? cacheWriteTokens = null) => inner.ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct, cacheWriteTokens);
+        public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct, int? cacheWriteTokens = null) => inner.RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct, cacheWriteTokens);
     }
 
     private sealed class FailSettlementDecorator(IAssistenteMonthlyLimitService inner) : IAssistenteMonthlyLimitService
@@ -459,15 +459,15 @@ public sealed class AssistenteMonthlyLimitPostgresTests
         public Task ValidarPreCondicaoSolicitacaoAsync(Guid organizationId, CancellationToken ct) => inner.ValidarPreCondicaoSolicitacaoAsync(organizationId, ct);
         public Task ValidarDisponibilidadeAsync(Guid organizationId, int estimatedInputTokens, int maxOutputTokens, CancellationToken ct) => inner.ValidarDisponibilidadeAsync(organizationId, estimatedInputTokens, maxOutputTokens, ct);
         public Task<AssistenteFinancialReservation> ReservarAsync(AssistenteFinancialReserveRequest request, CancellationToken ct) => inner.ReservarAsync(request, ct);
-        public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken ct) =>
+        public Task<AssistenteCallSettlementOutcome> LiquidarAsync(AssistenteFinancialReservation reservation, int inputTokens, int? cachedInputTokens, int outputTokens, string? errorCode, CancellationToken ct, int? cacheWriteTokens = null) =>
             throw new AssistenteIaException(503, "AI_USAGE_PERSISTENCE_FAILED", "Falha sintética de persistência.", retryable: true);
         public Task LiberarAntesDoEnvioAsync(AssistenteFinancialReservation reservation, string errorCode, CancellationToken ct) => inner.LiberarAntesDoEnvioAsync(reservation, errorCode, ct);
         public Task MarcarIndeterminadaAsync(AssistenteFinancialReservation reservation, string errorCode, CancellationToken ct) => inner.MarcarIndeterminadaAsync(reservation, errorCode, ct);
         public Task<AssistenteCallSettlementOutcome> FinalizarChamadaAsync(AssistenteFinancialReservation reservation, AssistenteProviderCall call, CancellationToken ct) =>
             throw new AssistenteIaException(503, "AI_USAGE_PERSISTENCE_FAILED", "Falha sintética de persistência.", retryable: true);
         public Task DefinirLimiteOrganizacaoAsync(Guid organizationId, decimal monthlyLimitUsd, Guid updatedById, string reason, CancellationToken ct) => inner.DefinirLimiteOrganizacaoAsync(organizationId, monthlyLimitUsd, updatedById, reason, ct);
-        public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct) => inner.ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct);
-        public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct) => inner.RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct);
+        public Task<AssistenteReconciliationResult> ReconciliarIndeterminadaAsync(Guid reservationId, bool confirmarConsumo, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct, int? cacheWriteTokens = null) => inner.ReconciliarIndeterminadaAsync(reservationId, confirmarConsumo, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct, cacheWriteTokens);
+        public Task<AssistenteReconciliationResult> RecuperarReservaOrfaAsync(Guid reservationId, AssistenteOrphanRecoveryAction action, bool confirmWorkersDrained, string drainEvidence, int? inputTokens, int? cachedInputTokens, int? outputTokens, Guid operatorUserId, string reason, CancellationToken ct, int? cacheWriteTokens = null) => inner.RecuperarReservaOrfaAsync(reservationId, action, confirmWorkersDrained, drainEvidence, inputTokens, cachedInputTokens, outputTokens, operatorUserId, reason, ct, cacheWriteTokens);
     }
 
     [ReviewPostgresFact]
@@ -510,13 +510,14 @@ public sealed class AssistenteMonthlyLimitPostgresTests
     {
         await using var db = await P03Database.CreateAsync();
         var settings = PricedSettings(monthlyLimitUsd: 5.00m);
+        settings.CacheWriteCostPerMillionTokensUsd = 2.50m;
 
         var handler = new MemoryHandler(req =>
         {
             if (req.RequestUri!.AbsolutePath.EndsWith("input_tokens"))
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"input_tokens":1000}""") });
             // Invalid JSON text output, BUT response.completed returned valid usage!
-            return Task.FromResult(MemoryStream("{not-valid-json", 1_000, 400, 250));
+            return Task.FromResult(MemoryStream("{not-valid-json", 1_000, 400, 250, cacheWriteTokens: 500));
         });
 
         await using (var ctx = db.Context())
@@ -536,13 +537,15 @@ public sealed class AssistenteMonthlyLimitPostgresTests
         await using var verify = db.Context();
         var res = await verify.AiUsageReservations.SingleAsync();
         Assert.Equal("Settled", res.Status);
-        // uncached = 600 * 2 / 1e6 = 0.0012; cached = 400 * 0.5 / 1e6 = 0.0002; output = 250 * 8 / 1e6 = 0.002 => 0.0034
-        Assert.Equal(0.0034m, res.SettledUsd);
+        // 100 ordinary, 400 cache reads, 500 cache writes and 250 output tokens.
+        Assert.Equal(0.00365m, res.SettledUsd);
+        Assert.Equal(500, res.ActualCacheWriteTokens);
         var account = await verify.AiMonthlyAccounts.SingleAsync(a => a.OrganizationId == db.OrgId);
-        Assert.Equal(0.0034m, account.ConsumedUsd);
+        Assert.Equal(0.00365m, account.ConsumedUsd);
         Assert.Equal(0m, account.ReservedUsd);
         var ledger = await verify.AiUsageLedger.SingleAsync();
-        Assert.Equal(0.0034m, ledger.EstimatedCostUsd);
+        Assert.Equal(0.00365m, ledger.EstimatedCostUsd);
+        Assert.Equal(500, ledger.CacheWriteTokens);
         Assert.Equal("failed", ledger.Status);
     }
 
@@ -551,6 +554,7 @@ public sealed class AssistenteMonthlyLimitPostgresTests
     {
         await using var db = await P03Database.CreateAsync();
         var settings = PricedSettings(monthlyLimitUsd: 5.00m);
+        settings.CacheWriteCostPerMillionTokensUsd = 2.50m;
         var turn = 0;
 
         var handler = new MemoryHandler(req =>
@@ -561,10 +565,10 @@ public sealed class AssistenteMonthlyLimitPostgresTests
             if (turn == 1)
             {
                 var callJson = JsonSerializer.Serialize(new { type = "function_call", call_id = "call-1", name = "listar_fontes", arguments = """{"aposIndice":0,"limite":5,"coberturaPretendida":"Relevantes"}""" });
-                return Task.FromResult(MemoryStreamTool(callJson, 500, 0, 100));
+                return Task.FromResult(MemoryStreamTool(callJson, 500, 0, 100, cacheWriteTokens: 500));
             }
             var finalJson = """{"titulo":"Ok","texto":"Concluído.","resumo":"","intencao":"Responder","alertas":[],"grupos":[],"substituirPropostaReferenciada":false,"coberturaPretendida":"Relevantes"}""";
-            return Task.FromResult(MemoryStream(finalJson, 700, 200, 150));
+            return Task.FromResult(MemoryStream(finalJson, 700, 200, 150, cacheWriteTokens: 300));
         });
 
         await using (var ctx = db.Context())
@@ -597,17 +601,58 @@ public sealed class AssistenteMonthlyLimitPostgresTests
         Assert.Equal(2, reservations.Length);
         Assert.Equal(new[] { 1, 2 }, reservations.Select(r => r.AttemptCount).ToArray());
 
-        // Turn 1: 500*2 + 100*8 = 1800 / 1e6 = 0.0018
-        // Turn 2: (500*2 + 200*0.5 + 150*8) = (1000 + 100 + 1200) / 1e6 = 0.0023
-        // Total = 0.0041
+        Assert.Equal(new int?[] { 500, 300 }, reservations.Select(r => r.ActualCacheWriteTokens));
+        // Turn 1 writes 500 tokens. Turn 2 mixes 200 ordinary, 200 read and 300 written.
         var ledger = await verify.AiUsageLedger.OrderBy(l => l.AttemptCount).ToArrayAsync();
         Assert.Equal(2, ledger.Length);
-        Assert.Equal(0.0018m, ledger[0].EstimatedCostUsd);
-        Assert.Equal(0.0023m, ledger[1].EstimatedCostUsd);
+        Assert.Equal(0.00205m, ledger[0].EstimatedCostUsd);
+        Assert.Equal(0.00245m, ledger[1].EstimatedCostUsd);
 
         var account = await verify.AiMonthlyAccounts.SingleAsync(a => a.OrganizationId == db.OrgId);
-        Assert.Equal(0.0041m, account.ConsumedUsd);
+        Assert.Equal(0.00450m, account.ConsumedUsd);
         Assert.Equal(0m, account.ReservedUsd);
+    }
+
+    [ReviewPostgresFact]
+    public async Task GravacaoCache_ReservaTarifaMaiorEReconciliacaoUsaTarifaCongelada()
+    {
+        await using var db = await P03Database.CreateAsync();
+        var settings = PricedSettings(monthlyLimitUsd: 0.01025m);
+        settings.CacheWriteCostPerMillionTokensUsd = 2.50m;
+        await using var context = db.Context();
+        var service = db.LimitService(context, settings);
+        var request = new AssistenteFinancialReserveRequest(
+            db.OrgId, db.UserId, Guid.NewGuid(), 1, Guid.NewGuid(), Guid.NewGuid(), "CacheWrite", 1_000, 1_000);
+
+        var blocked = await Assert.ThrowsAsync<AssistenteIaException>(() => service.ReservarAsync(request, default));
+        Assert.Equal("AI_MONTHLY_LIMIT_INSUFFICIENT", blocked.Code);
+
+        await service.DefinirLimiteOrganizacaoAsync(db.OrgId, 0.011m, db.UserId, "Teste de tarifa de gravação", default);
+        var reservation = await service.ReservarAsync(request, default);
+        Assert.Equal(0.0105m, reservation.ReservedUsd);
+        settings.CacheWriteCostPerMillionTokensUsd = 9m;
+
+        var pending = await service.LiquidarAsync(reservation, 1_000, 200, 500, null, default);
+        Assert.Equal("Indeterminate", pending.Status);
+        Assert.Null(pending.SettledUsd);
+        var stillReserved = await context.AiMonthlyAccounts.AsNoTracking().SingleAsync();
+        Assert.Equal(0.0105m, stillReserved.ReservedUsd);
+        Assert.Equal(0m, stillReserved.ConsumedUsd);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ReconciliarIndeterminadaAsync(
+            reservation.ReservationId, true, 1_000, 200, 500, db.UserId, "Uso incompleto", default));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.ReconciliarIndeterminadaAsync(
+            reservation.ReservationId, true, 1_000, 200, 500, db.UserId, "Contagem impossível", default, cacheWriteTokens: 900));
+
+        var reconciled = await service.ReconciliarIndeterminadaAsync(
+            reservation.ReservationId, true, 1_000, 200, 500, db.UserId, "Uso confirmado", default, cacheWriteTokens: 300);
+        Assert.Equal(0.00585m, reconciled.SettledUsd);
+        var row = await context.AiUsageReservations.AsNoTracking().SingleAsync();
+        Assert.Equal(2.50m, row.CacheWriteCostPerMillionUsd);
+        Assert.Equal(300, row.ActualCacheWriteTokens);
+        var account = await context.AiMonthlyAccounts.AsNoTracking().SingleAsync();
+        Assert.Equal(0m, account.ReservedUsd);
+        Assert.Equal(0.00585m, account.ConsumedUsd);
     }
 
     [ReviewPostgresFact]
@@ -1453,7 +1498,7 @@ public sealed class AssistenteMonthlyLimitPostgresTests
         public Task DeleteAsync(string storageId, CancellationToken cancellationToken) { _files.Remove(storageId); return Task.CompletedTask; }
     }
 
-    private static HttpResponseMessage MemoryStream(string output, int inputTokens, int cachedTokens, int outputTokens)
+    private static HttpResponseMessage MemoryStream(string output, int inputTokens, int cachedTokens, int outputTokens, int? cacheWriteTokens = null)
     {
         var delta = JsonSerializer.Serialize(new { type = "response.output_text.delta", delta = output });
         var completed = JsonSerializer.Serialize(new
@@ -1463,13 +1508,13 @@ public sealed class AssistenteMonthlyLimitPostgresTests
             {
                 status = "completed",
                 model = "gpt-test-p03",
-                usage = new { input_tokens = inputTokens, input_tokens_details = new { cached_tokens = cachedTokens }, output_tokens = outputTokens }
+                usage = new { input_tokens = inputTokens, input_tokens_details = InputTokenDetails(cachedTokens, cacheWriteTokens), output_tokens = outputTokens }
             }
         });
         return new(HttpStatusCode.OK) { Content = new StringContent($"data: {delta}\n\ndata: {completed}\n\n", Encoding.UTF8, "text/event-stream") };
     }
 
-    private static HttpResponseMessage MemoryStreamTool(string outputItemJson, int inputTokens, int cachedTokens, int outputTokens)
+    private static HttpResponseMessage MemoryStreamTool(string outputItemJson, int inputTokens, int cachedTokens, int outputTokens, int? cacheWriteTokens = null)
     {
         var item = JsonDocument.Parse(outputItemJson).RootElement;
         var completed = JsonSerializer.Serialize(new
@@ -1480,10 +1525,21 @@ public sealed class AssistenteMonthlyLimitPostgresTests
                 status = "completed",
                 model = "gpt-test-p03",
                 output = new[] { item },
-                usage = new { input_tokens = inputTokens, input_tokens_details = new { cached_tokens = cachedTokens }, output_tokens = outputTokens }
+                usage = new { input_tokens = inputTokens, input_tokens_details = InputTokenDetails(cachedTokens, cacheWriteTokens), output_tokens = outputTokens }
             }
         });
         return new(HttpStatusCode.OK) { Content = new StringContent($"data: {completed}\n\n", Encoding.UTF8, "text/event-stream") };
+    }
+
+    private static Dictionary<string, object> InputTokenDetails(int cachedTokens, int? cacheWriteTokens)
+    {
+        var details = new Dictionary<string, object> { ["cached_tokens"] = cachedTokens };
+        if (cacheWriteTokens is { } written)
+        {
+            details["cache_write_tokens"] = written;
+            details["cache_write_tokens_details"] = new { ttl_30m_tokens = written, ttl_12h_tokens = 0 };
+        }
+        return details;
     }
 
     private sealed class MemoryHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> send) : HttpMessageHandler
