@@ -110,20 +110,17 @@ com PostgreSQL e storage exclusivos, sem alterar o Compose de desenvolvimento.
 | `AssistenteIa:AllowSimulatedWithoutFinancialControl` | `false` | opt-out explícito para testes simulados; proibido em produção |
 | `Cors:AllowedOrigins` | lista vazia | origens exatas do frontend, compartilhadas com a sessão pessoal; produção exige lista não vazia, HTTPS e host não local |
 
-Não versione chaves, senhas ou connection strings reais. Para desenvolvimento,
-o projeto da API possui `UserSecretsId` e carrega automaticamente o Secret
-Manager do .NET quando o ambiente é `Development`.
-
-O guia completo, incluindo chave da OpenAI, flags por Organization e kill
-switch, está em [User Secrets no desenvolvimento](user-secrets.md).
+Não versione chaves, senhas ou connection strings reais. Em `Development`, o
+projeto da API carrega automaticamente o Secret Manager do .NET (`UserSecretsId`).
+Para chaves de IA, kill switch (`set-ai-enabled`), permissões (`set-ai-feature`)
+e reconciliação financeira (`set-ai-monthly-limit`, `reconcile-ai-reservation`,
+`recover-orphan-ai-reservation`), consulte [Configurar a IA](operacao/configuracao-ia.md).
 
 Chamadas reais à IA exigem tarifas válidas e versão de preços configuradas,
-além de modelo, chave e permissões. Os zeros versionados indicam configuração
-pendente e não habilitam chamadas gratuitas. O limite de US$ 5,00 é a configuração
-inicial do piloto; a interface apresenta somente percentuais. As migrations
-financeiras precisam ser aplicadas junto às demais migrations da aplicação.
-A alteração do limite por organização e a reconciliação de reservas usam
-[operações CLI auditadas](../implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md#operação-reconciliação-e-recuperação-de-reservas-órfãs).
+além de modelo e chave. Os zeros versionados indicam configuração pendente e
+não habilitam chamadas gratuitas. O limite de US$ 5,00 é a configuração inicial
+do piloto; a interface apresenta somente percentuais. As migrations financeiras
+precisam ser aplicadas junto às demais migrations da aplicação.
 
 Configure a connection string com o mesmo usuário e senha definidos no `.env`:
 
@@ -225,29 +222,21 @@ frontend e API pertençam ao mesmo site.
    começar a atender requisições.
 7. Valide `GET http://localhost:5299/`.
 
-Para usar a IA, configure separadamente o provider e libere apenas a
-Organization desejada conforme [User Secrets](user-secrets.md). A configuração
-local não substitui o aviso de transparência apresentado no primeiro uso.
-
+Para usar a IA, configure separadamente o provider conforme
+[Configurar a IA](operacao/configuracao-ia.md). As quatro permissões de IA já
+nascem habilitadas para organizações ativas; o primeiro uso exige confirmação do
+aviso de transparência.
 
 ## Ativação do assistente conversacional
 
 Siga [Configurar a IA](operacao/configuracao-ia.md) para ativar o fluxo completo
-em desenvolvimento. O guia começa pelos comandos de configuração e termina
-com os ajustes opcionais.
+em desenvolvimento. Configurar chave/modelo e a flag geral não ativa todos os
+recortes v2 — veja as flags, limites e comportamento em
+[Assistente de IA](backend/assistente-ia.md) e as rotas em [API HTTP](backend/api.md).
+Histórico pessoal e exclusões aceitas continuam disponíveis sem geração habilitada.
 
-Configurar chave/modelo e a flag geral não ativa todos os recortes v2. Capacidades
-combinam flags técnicas, kill switch e permissões da organização. Dependências,
-limites atuais e rotas estão em
-[contratos implementados](../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
-Histórico pessoal e exclusões aceitas continuam disponíveis sem geração habilitada;
-exigem as migrations correspondentes e conta/sessão pessoal válidas.
-
-GPT-6.1 Terra foi usado na avaliação reduzida, sem configurar um modelo default no
-produto. A chave de avaliação foi temporária e não foi persistida. OCR continua em
-espera. Não confundir ativação local com a liberação do piloto, cujas pendências
-financeiras, de acesso, backup e operação estão no
-[TODO da feature](../implementacoes/features/assistente-conversacional/TODO.md).
+OCR continua desativado e em espera. Pendências para o piloto e nuvem estão em
+[TODO geral](../TODO.md) e [Preparação para produção e pendências](../implementacoes/producao-e-pendencias.md).
 
 ## Monitoramento do assistente
 

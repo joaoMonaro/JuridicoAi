@@ -38,7 +38,7 @@ desenvolvimento pronta para produção. Antes de expor a aplicação:
   transferência internacional.
 
 O roteiro detalhado do assistente está em
-[Segurança operacional](../../implementacoes/standBy/assistente-ia/evidencias/seguranca-operacional-producao.md).
+[Segurança operacional em produção](../../implementacoes/checklists/seguranca-producao.md).
 
 ## O assistente não aparece ou informa indisponibilidade
 
@@ -53,7 +53,8 @@ Verifique, nesta ordem:
 
 As quatro permissões atuais são habilitadas por padrão para Organizations ativas;
 registros explícitos `false` bloqueiam o recurso. Os comandos administrativos estão
-em [User Secrets](../user-secrets.md). Não envie a saída de `user-secrets list`
+em [Configuração e execução](../configuracao-e-execucao.md) e
+[Configurar a IA](configuracao-ia.md). Não envie a saída de `user-secrets list`
 para logs ou suporte, pois ela contém valores completos.
 
 ## Diagnóstico recomendado

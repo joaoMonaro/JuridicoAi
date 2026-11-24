@@ -23,7 +23,7 @@ etapa operacional separada, acompanhada nos TODOs do projeto.
   continua pelo novo fluxo, sem acrescentar trabalho à antiga branch de feature.
 - A primeira promoção deve cumprir os critérios do [MVP](../MVP.md), incluindo
   as condições do [TODO geral](../TODO.md) e do
-  [TODO do assistente](../implementacoes/features/assistente-conversacional/TODO.md).
+  [Preparação para produção e pendências](../implementacoes/producao-e-pendencias.md).
 
 ## Desenvolvimento
 

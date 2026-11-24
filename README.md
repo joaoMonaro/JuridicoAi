@@ -38,7 +38,7 @@ dotnet run --project src/JuridicoAI.Api
 ```
 
 A chave e o modelo da OpenAI são necessários somente para executar o
-assistente. Não versione segredos; consulte [User Secrets](docs/user-secrets.md).
+assistente. Não versione segredos; consulte [Configuração e execução](docs/configuracao-e-execucao.md).
 
 As migrations do Entity Framework Core são aplicadas na inicialização quando
 `Postgres:RunMigrations=true`.
@@ -78,22 +78,20 @@ docker compose -p juridicoai-monitoring -f ops/monitoring/compose.yaml down
 
 ## Documentação
 
-- [Versionamento — produção, homologação e fluxo de mudanças](docs/versionamento.md)
+- [Índice da documentação](docs/README.md) — visão geral do que está implementado
+- [Escopo e critérios do MVP](MVP.md)
 - [TODO geral do projeto](TODO.md)
-- [Preparação para produção e testes locais — planejamento](implementacoes/features/preparacao-producao/README.md)
-- [Índice da documentação atual](docs/README.md)
-- [Configuração e execução](docs/configuracao-e-execucao.md)
-- [Monitoramento operacional do assistente](docs/operacao/monitoramento-assistente.md)
+- [Arquitetura e fluxos](docs/arquitetura.md)
+- [Configuração, segredos e execução](docs/configuracao-e-execucao.md)
 - [API HTTP](docs/backend/api.md)
-- [Assistente de IA](docs/backend/assistente-ia.md)
-- [Estado atual do assistente conversacional](implementacoes/features/assistente-conversacional/estado-atual.md)
-- [TODO da feature](implementacoes/features/assistente-conversacional/TODO.md)
 - [Autenticação e multitenancy](docs/backend/autenticacao-e-multitenancy.md)
-- [Peças e templates](docs/backend/pecas.md)
-- [Implementações em andamento](implementacoes/README.md)
-- [Geração de minutas — plano anterior incorporado](implementacoes/features/geracao-minutas-ia/README.md)
+- [Peças, templates e exportação](docs/backend/pecas.md)
+- [Assistente de IA](docs/backend/assistente-ia.md)
+- [Configurar a IA](docs/operacao/configuracao-ia.md)
+- [Monitoramento do assistente](docs/operacao/monitoramento-assistente.md)
+- [Versionamento e branches](docs/versionamento.md)
+- [Preparação para produção e pendências abertas](implementacoes/producao-e-pendencias.md)
 
-A documentação de `docs/` descreve o comportamento atual. Especificações,
-decisões e pendências ficam em `implementacoes/`, separadas entre a feature
-ativa em `features/`, entregas registradas em `alreadyDone/` e trabalho em espera
-em `standBy/`. As suítes de avaliação da IA ficam em `avaliacoes/`.
+`docs/` descreve o comportamento atual; `implementacoes/` reúne pendências de
+produção e checklists manuais; `avaliacoes/` guarda as suítes de avaliação da IA;
+`ops/` contém monitoramento local e ensaio de publicação.

@@ -113,4 +113,4 @@ a rubrica, registrar falhas impeditivas e aprovar ou reprovar cada nova
 configuração. Antes da comercialização, um profissional juridicamente
 qualificado ainda deve homologar os critérios e a qualidade conforme `PA-17`.
 Consulte [rubric.md](rubric.md) e o
-[Tópico 9](../../implementacoes/alreadyDone/assistente-ia/decisoes/pa-09-avaliacao-qualidade-juridica.md).
+PA-09 (baseline técnica do fluxo v1; homologação jurídica formal pendente em [Preparação para produção e pendências](../../implementacoes/producao-e-pendencias.md)).

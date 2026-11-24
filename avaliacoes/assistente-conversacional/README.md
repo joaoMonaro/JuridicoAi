@@ -22,14 +22,14 @@ Para a primeira rodada, o responsável definiu **GPT-6.1 Terra e teto total de
 US$ 1,00**, com [seleção reduzida de quatro cenários/seis interações](rodada-1usd.md).
 A rodada reduzida foi **executada**: seis interações passaram nos checks técnicos,
 com 18 chamadas e custo calculado de **US$ 0,04549805**. Ver
-[resultados e limitações](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+[relatório da rodada reduzida](execucoes/20261112-192112-1ccd01/report.md) e [complemento CONV-007](execucoes/20261112-192505-7a0a8a/report.md).
 A avaliação ampla e a homologação jurídica continuam pendentes. A chave foi usada
 apenas temporariamente e o responsável foi avisado de que pode revogá-la. A suíte
 completa permanece disponível para uma avaliação posterior com orçamento próprio.
 Em **2026-11-14**, somente CONV-001 foi repetido com a instrumentação 1.1.0 e
 correções de M01: três interações aprovadas, 11 chamadas, custo de US$ 0,03260130.
 A consulta passou de 63,941 s para 22,697 s nessa comparação. Ver
-[resultado e divisão dos tempos](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-real-2026-11-14.md).
+[relatório da repetição M01](execucoes/20261114-151516-803d4c/report.md).
 Essa execução não amplia a cobertura aos cenários extensos adiados.
 OCR permanece desligado; nenhum caso depende da calibração em espera.
 
@@ -132,7 +132,7 @@ python3 tools/smoke-tests/assistant-latency-http.py
 
 Ela inicia API/PostgreSQL descartáveis e usa transporte de IA em memória com
 atrasos conhecidos; não mede a velocidade do GPT-6.1 Terra. Ver
-[diagnóstico local M01](../../implementacoes/features/assistente-conversacional/evidencias/m01-latencia-local-2026-11-14.md).
+[relatório da repetição M01](execucoes/20261114-151516-803d4c/report.md).
 
 Não são gravados chaves, cookies, JWTs, sessões hospedadas ou raciocínio interno.
 Uma saída gerada pode conter referência inventada: revisar os artefatos antes de

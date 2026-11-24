@@ -83,7 +83,7 @@ esse setup, o cenário restante foi executado com teto igual ao saldo de
 US$ 0,95592110, sem repetir chamadas anteriores. Os dois registros foram
 preservados; a primeira execução continua identificada como interrompida.
 
-Ver [evidência consolidada](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md) para resultados, tempos, custo, correção da
+Ver [relatório da execução](execucoes/20261112-192112-1ccd01/report.md) para resultados, tempos, custo, correção da
 fixture e artefatos locais. A consulta após aprovação levou 63,941 s e merece
 investigação de latência. A homologação jurídica formal e os três cenários adiados
 continuam pendentes.

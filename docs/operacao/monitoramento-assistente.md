@@ -187,7 +187,7 @@ reativar a conversa. Resolver quando o expurgo ativo terminar; backups seguem P0
 ### Reservas pendentes
 
 Conferir estado, período de origem, execução e registros do provedor. Usar os
-comandos auditados do [P03](../../implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md).
+comandos auditados do P03 em [Configurar a IA](configuracao-ia.md).
 Reserva `Reserved` antiga não deve ser liberada só pela idade; recuperação de órfã
 exige workers drenados e evidência. Resolver após reconciliação comprovada.
 

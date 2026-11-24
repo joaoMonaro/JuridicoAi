@@ -53,6 +53,6 @@ Depois deste preflight, o responsável forneceu uma chave temporária e autorizo
 execução. A rodada reduzida terminou com seis interações tecnicamente aprovadas,
 18 chamadas e custo calculado de US$ 0,04549805, somando execução inicial e
 complemento de isolamento. A chave não foi persistida na configuração e seu uso
-foi encerrado. Ver [evidência consolidada](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+foi encerrado. Ver [relatório da execução](execucoes/20261112-192112-1ccd01/report.md).
 A ausência de credenciais registrada acima descreve a preparação, não um bloqueio
 atual da rodada já concluída. Avaliação ampla e revisão jurídica seguem pendentes.

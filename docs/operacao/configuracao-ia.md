@@ -101,22 +101,25 @@ PROVISION_OWNER_PASSWORD="PREENCHA_SENHA_DO_USUARIO" \
 dotnet run --project src/JuridicoAI.Api --launch-profile http -- provision-organization
 ```
 
-Se já existe, use seus IDs. O usuário informado precisa ser um **Owner ativo**
-da organização. Preencha as variáveis e execute:
+Se já existe, use seus IDs. As quatro permissões de IA (`AI_ASSISTANT`, `AI_EDIT`,
+`AI_REVIEW` e `AI_DOCUMENT_GENERATION`) já são **habilitadas por padrão** em
+organizações ativas (ausência de registro equivale a habilitado; `false` bloqueia).
+Use os comandos abaixo apenas se precisar reativar o kill switch global ou
+alterar/bloquear uma permissão específica para um **Owner ativo**:
 
 ```bash
 export IA_ORGANIZACAO_ID="PREENCHA_UUID_DA_ORGANIZACAO"
 export IA_OWNER_ID="PREENCHA_UUID_DO_OWNER"
 
-for ia_feature in AI_ASSISTANT AI_EDIT AI_REVIEW AI_DOCUMENT_GENERATION; do
-  AI_FEATURE_ORGANIZATION_ID="$IA_ORGANIZACAO_ID" \
-  AI_FEATURE_NAME="$ia_feature" \
-  AI_FEATURE_ENABLED=true \
-  AI_OPERATION_UPDATED_BY_ID="$IA_OWNER_ID" \
-  AI_OPERATION_REASON="Ativacao do ambiente de desenvolvimento" \
-  dotnet run --project src/JuridicoAI.Api --launch-profile http -- set-ai-feature
-done
+# Opcional: bloquear (false) ou restaurar (true) uma permissão específica
+AI_FEATURE_ORGANIZATION_ID="$IA_ORGANIZACAO_ID" \
+AI_FEATURE_NAME="AI_ASSISTANT" \
+AI_FEATURE_ENABLED=true \
+AI_OPERATION_UPDATED_BY_ID="$IA_OWNER_ID" \
+AI_OPERATION_REASON="Ajuste administrativo do ambiente de desenvolvimento" \
+dotnet run --project src/JuridicoAI.Api --launch-profile http -- set-ai-feature
 
+# Opcional: garantir que o kill switch global está ligado
 AI_ENABLED=true \
 AI_OPERATION_UPDATED_BY_ID="$IA_OWNER_ID" \
 AI_OPERATION_REASON="Ativacao do ambiente de desenvolvimento" \
@@ -207,8 +210,10 @@ para a reserva; consumo incerto mantém a reserva até conferência operacional.
 | `AI_REVIEW` | Modo legado de revisão |
 
 `AssistenteIa:Enabled=false` desliga a IA pela configuração. O comando
-`set-ai-enabled` controla a chave global no banco, sem reiniciar. Uma permissão
-ausente bloqueia a organização; a chave global ausente é considerada ligada.
+`set-ai-enabled` controla a chave global no banco, sem reiniciar. As quatro
+permissões acima são habilitadas por padrão em organizações ativas (ausência de
+registro equivale a habilitado; `false` bloqueia); a chave global ausente
+também é considerada ligada.
 
 ### Tamanho das respostas, prazo e volume de uso
 
@@ -326,9 +331,8 @@ precisa confirmar novamente. A API retorna a versão atual em
 ### Monitoramento
 
 É opcional para geração. Usa o prefixo `AssistenteMonitoring:` e precisa de um
-collector OTLP HTTP/protobuf. Requer a entrega P04 de monitoramento, presente
-nas alterações locais do workspace e ainda não incluída neste commit de
-documentação.
+collector OTLP HTTP/protobuf. Consulte [Monitoramento do assistente](monitoramento-assistente.md)
+para subir a stack local (`ops/monitoring/`).
 
 | Chave | Padrão | Controla/regra |
 |---|---|---|
@@ -384,12 +388,12 @@ completo é a interação e a análise documental do passo 4.
 
 Para reservas incertas, use `reconcile-ai-reservation` com `AI_RECONCILE_ACTION`.
 Para órfãs, use `recover-orphan-ai-reservation` com **`AI_ORPHAN_ACTION`** e
-confirmação de workers drenados. O [procedimento financeiro](../../implementacoes/features/assistente-conversacional/evidencias/p03-limite-mensal-2026-11-18.md)
+confirmação de workers drenados (`AI_CONFIRM_WORKERS_DRAINED=true`). Detalhes em [Assistente de IA](../backend/assistente-ia.md#3-controles-de-acesso-segurança-e-limites).
 detalha a reconciliação; os exemplos antigos de órfãs usam o nome incorreto da
 variável. Alterações administrativas exigem operador e justificativa auditados.
 
 Referência: [validações e comandos](../../src/JuridicoAI.Api/Program.cs),
 [configuração base](../../src/JuridicoAI.Api/appsettings.json) e
-[contratos HTTP](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md).
+[contratos HTTP](../backend/api.md#assistente-de-ia).
 Levantamento do código local em 19/11/2026; valores efetivos de segredos/banco e
 chamadas ao provedor não foram verificados.

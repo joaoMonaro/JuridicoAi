@@ -93,8 +93,6 @@ frontend acompanha por polling e recupera resultados no histórico. Aprovar uma
 proposta chama a transação de Peça/decisões/recibo, sem PATCH duplicado de autosave.
 Histórico pessoal e exclusão usam sessão separada e worker de expurgo autorizado.
 
-Consulte [Assistente de IA](backend/assistente-ia.md),
-[contratos implementados](../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
-e [estado atual](../implementacoes/features/assistente-conversacional/estado-atual.md).
-O dossiê anterior e o plano de geração de minutas preservam contexto histórico;
-não são inventário de pendências técnicas atuais.
+Consulte [Assistente de IA](backend/assistente-ia.md) e [API HTTP](backend/api.md)
+para os contratos vigentes, e [Preparação para produção e pendências](../implementacoes/producao-e-pendencias.md)
+para os itens ainda em aberto.

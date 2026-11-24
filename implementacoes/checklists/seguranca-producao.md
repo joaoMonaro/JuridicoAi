@@ -1,13 +1,8 @@
 # Segurança operacional da IA em produção
 
-> **Organização em 2026-10-23:** planejamento em espera (`standBy`).
-> Consulte o [índice de pendências](../../README.md) para a prioridade atual.
-
-> **Escopo:** critérios de homologação de logs, proxy, APM e hospedagem
->
-> **Estado:** configuração da API revisada; infraestrutura real pendente
->
-> **Ponto relacionado:** `PA-11`
+> **Escopo:** critérios de homologação de logs, proxy, APM e hospedagem (`PA-11`).
+> **Estado:** configuração da API revisada; infraestrutura real pendente.
+> Consulte [Preparação para produção e pendências](../producao-e-pendencias.md) para o contexto atual.
 
 Este roteiro existe porque o repositório ainda não contém proxy reverso, APM
 nem definição da hospedagem de produção. A ausência desses componentes no

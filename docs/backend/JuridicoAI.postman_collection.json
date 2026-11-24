@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "e9bcfef9-449e-4e18-a493-715257fe4c51",
     "name": "JuridicoAI - API principal (sem assistente SSE)",
-    "description": "Coleção da API principal do JuridicoAI. O fluxo SSE do assistente de IA não está representado aqui e deve seguir o contrato versionado em implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md. Register, login e refresh salvam o JWT automaticamente; o Postman mantém o refresh token no cookie HttpOnly.",
+    "description": "Colecao principal da API HTTP do JuridicoAI (autenticacao, casos, pecas e templates). Consulte docs/backend/api.md para a lista completa de endpoints, incluindo o assistente conversacional v2.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -68,7 +68,7 @@
     },
     {
       "key": "arquivoPath",
-      "value": "/home/jao/Desktop/exemplo.pdf",
+      "value": "/caminho/para/exemplo.pdf",
       "type": "string"
     },
     {
@@ -819,73 +819,6 @@
               }
             },
             "url": "{{baseUrl}}/pecas/{{pecaId}}"
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "09 - Jurisprudências públicas",
-      "item": [
-        {
-          "name": "Ingerir jurisprudências",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"termo\": \"negativação indevida dano moral\",\n  \"maxResultados\": 30\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": "{{baseUrl}}/api/jurisprudencias/ingest"
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar jurisprudências processadas",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/jurisprudencias?tema=negativacao_indevida&subtema=debito_inexistente&resultado=provavelmente_favoravel_consumidor&danoMoral=true&fonte=TJSP&limite=50"
-          },
-          "response": []
-        },
-        {
-          "name": "Consultar registros brutos",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "url": "{{baseUrl}}/api/jurisprudencias/raw?limite=20"
-          },
-          "response": []
-        },
-        {
-          "name": "Reprocessar registros brutos",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "url": "{{baseUrl}}/api/jurisprudencias/reprocess?termo=negativação%20indevida%20dano%20moral&limite=500"
           },
           "response": []
         }

@@ -180,8 +180,7 @@ Formato/documento/configuração não suportados retornam 400; versão diferente
 indisponível/ocupada retorna 503; timeout, 504. Erros seguem `application/problem+json`.
 Arquivos temporários são privados e removidos após a execução.
 
-Detalhes: [escopo e aceite](../features/exportacao-word-pdf.md) e
-[configuração do conversor e fontes](../operacao/exportacao-word-pdf.md).
+Configuração do conversor e fontes: [Exportação Word e PDF](../operacao/exportacao-word-pdf.md).
 
 ## Endpoints de templates
 

@@ -1,11 +1,7 @@
 # Checklist manual — teclado e tecnologias assistivas
 
-> **Organização em 2026-10-23:** planejamento em espera (`standBy`).
-> Consulte o [índice de pendências](../../README.md) para a prioridade atual.
-
-> **Estado:** pendente de execução manual
->
-> **Relacionado:** [Tópico 12 — Testes e acessibilidade](../decisoes/pa-12-testes-acessibilidade.md)
+> **Estado:** pendente de execução manual (`PA-12`).
+> Consulte [Preparação para produção e pendências](../producao-e-pendencias.md) para o contexto atual.
 
 Este checklist registra somente verificações que a suíte automatizada não
 comprova integralmente. Os testes Playwright já cobrem atalhos simulados, foco

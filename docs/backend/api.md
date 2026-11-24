@@ -2,76 +2,103 @@
 
 Base local padrão: `http://localhost:5299`.
 
-A API usa JWT nas rotas privadas. Login e ciclo de sessão são descritos em
-[Autenticação e multitenancy](autenticacao-e-multitenancy.md). Em ambiente de
-desenvolvimento, a interface Swagger está disponível em
-`http://localhost:5299/swagger` e o documento OpenAPI em
-`http://localhost:5299/swagger/v1/swagger.json`.
+A API usa JWT nas rotas privadas (detalhes em
+[Autenticação e multitenancy](autenticacao-e-multitenancy.md)). Em `Development`,
+o Swagger fica em `/swagger` e o OpenAPI em `/swagger/v1/swagger.json`.
 
-## Resumo dos endpoints
+## Infraestrutura e autenticação
 
 | Método | Rota | Função |
-|---|---|---|
+| :--- | :--- | :--- |
 | `GET` | `/` | verificação básica da aplicação |
-| `POST` | `/auth/register` | cria Organization, Owner e Session inicial |
+| `GET` | `/health/live` | liveness HTTP (processo ativo) |
+| `POST` | `/auth/register` | cria Organization, Owner e Session inicial (desabilitado quando `Auth:RegistrationEnabled=false`) |
 | `POST` | `/auth/login` | autentica e cria uma Session |
-| `POST` | `/auth/refresh` | rotaciona o refresh token |
+| `POST` | `/auth/refresh` | rotaciona o refresh token (`juridicoai_refresh`) |
 | `POST` | `/auth/logout` | revoga a Session atual |
 | `GET` | `/auth/me` | retorna User, Organization e role atuais |
-| `POST` | `/casos` | cria um Caso |
-| `GET` | `/casos` | lista Casos, com filtro opcional de status |
-| `GET` | `/casos/{id}` | obtém um Caso |
-| `PUT` | `/casos/{id}` | atualiza um Caso |
-| `DELETE` | `/casos/{id}` | arquiva um Caso |
-| `POST` | `/casos/{casoId}/envolvidos` | adiciona envolvido ao Caso |
-| `GET` | `/casos/{casoId}/envolvidos` | lista envolvidos do Caso |
-| `GET` | `/casos/{casoId}/envolvidos/{id}` | obtém um envolvido |
-| `PUT` | `/casos/{casoId}/envolvidos/{id}` | atualiza um envolvido |
-| `DELETE` | `/casos/{casoId}/envolvidos/{id}` | remove um envolvido |
-| `POST` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` | adiciona endereço ao envolvido |
-| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` | lista endereços do envolvido |
-| `GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | obtém um endereço |
-| `PATCH` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | substitui os dados de um endereço |
-| `DELETE` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | remove um endereço |
-| `POST` | `/casos/{casoId}/contextos` | cria um contexto textual |
-| `GET` | `/casos/{casoId}/contextos` | lista contextos |
-| `GET` | `/casos/{casoId}/contextos/{id}` | obtém um contexto |
-| `PUT` | `/casos/{casoId}/contextos/{id}` | atualiza um contexto |
-| `DELETE` | `/casos/{casoId}/contextos/{id}` | remove um contexto |
-| `POST` | `/casos/{casoId}/documentos` | envia um documento |
-| `GET` | `/casos/{casoId}/documentos` | lista metadados de documentos |
-| `GET` | `/casos/{casoId}/documentos/{id}` | obtém metadados de um documento |
-| `GET` | `/casos/{casoId}/documentos/{id}/arquivo` | baixa o arquivo |
-| `DELETE` | `/casos/{casoId}/documentos/{id}` | remove documento e arquivo |
+| `POST` | `/auth/pessoal/login` | autentica sessão pessoal isolada (histórico do assistente) |
+| `POST` | `/auth/pessoal/refresh` | rotaciona refresh token da sessão pessoal |
+| `POST` | `/auth/pessoal/logout` | revoga a sessão pessoal |
+
+## Casos, Peças e Templates
+
+| Método | Rota | Função |
+| :--- | :--- | :--- |
+| `POST/GET` | `/casos` | cria ou lista Casos (`?status=Ativo`) |
+| `GET/PUT/DELETE` | `/casos/{id}` | obtém, atualiza ou arquiva um Caso |
+| `POST/GET` | `/casos/{casoId}/envolvidos` | adiciona ou lista envolvidos |
+| `GET/PUT/DELETE` | `/casos/{casoId}/envolvidos/{id}` | obtém, atualiza ou remove envolvido |
+| `POST/GET` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos` | adiciona ou lista endereços |
+| `GET/PATCH/DELETE` | `/casos/{casoId}/envolvidos/{envolvidoId}/enderecos/{id}` | obtém, substitui ou remove endereço |
+| `POST/GET` | `/casos/{casoId}/contextos` | cria ou lista contextos textuais |
+| `GET/PUT/DELETE` | `/casos/{casoId}/contextos/{id}` | obtém, atualiza ou remove contexto |
+| `POST/GET` | `/casos/{casoId}/documentos` | upload (`multipart/form-data`) ou lista metadados |
+| `GET/DELETE` | `/casos/{casoId}/documentos/{id}` | obtém metadados ou remove documento/arquivo |
+| `GET` | `/casos/{casoId}/documentos/{id}/arquivo` | baixa o arquivo binário |
 | `GET` | `/casos/{id}/contexto-completo` | agrega Caso, envolvidos, contextos e metadados |
-| `POST` | `/casos/{casoId}/pecas` | cria uma Peça jurídica |
-| `GET` | `/casos/{casoId}/pecas` | lista Peças sem os documentos completos |
-| `GET` | `/pecas/{pecaId}` | obtém uma Peça completa |
-| `PATCH` | `/pecas/{pecaId}` | atualiza uma Peça com concorrência otimista |
-| `DELETE` | `/pecas/{pecaId}?versao={versao}` | exclui logicamente uma Peça |
-| `POST` | `/pecas/{pecaId}/exportar` | baixa Word ou PDF da versão solicitada |
-| `GET` | `/assistente/capacidades` | informa disponibilidade, modos e limites do assistente |
-| `GET` | `/assistente/transparencia` | retorna aviso atual e estado de confirmação |
-| `POST` | `/assistente/transparencia/confirmacoes` | confirma a versão atual do aviso |
-| `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | gera sugestão por IA em stream SSE, sem alterar a Peça |
-| `POST` | `/templates-peca` | cria um template de Peça |
-| `GET` | `/templates-peca` | lista templates de Peça |
-| `GET` | `/templates-peca/{id}` | obtém um template de Peça |
-| `PATCH` | `/templates-peca/{id}` | atualiza um template de Peça |
-| `DELETE` | `/templates-peca/{id}` | exclui logicamente um template de Peça |
+| `POST/GET` | `/casos/{casoId}/pecas` | cria ou lista metadados das Peças do Caso |
+| `GET/PATCH/DELETE` | `/pecas/{pecaId}` | obtém, atualiza ou exclui logicamente (`?versao=`) com concorrência otimista |
+| `POST` | `/pecas/{pecaId}/exportar` | gera e baixa `.docx` ou `.pdf` da versão salva |
+| `POST/GET` | `/templates-peca` | cria ou lista templates de Peça |
+| `GET/PATCH/DELETE` | `/templates-peca/{id}` | obtém, atualiza ou exclui logicamente template |
 
-Os contratos, exemplos, regras de cópia de template e controle de concorrência
-estão documentados em [Peças e templates](pecas.md).
-A tabela acima lista as rotas legadas/compartilhadas do assistente. A API também
-implementa conversa/propostas/documentos, jobs duráveis e histórico pessoal. O
-[inventário atual](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
-lista essas rotas e diferencia JWT organizacional de sessão pessoal. A
-[especificação v1](../../implementacoes/standBy/assistente-ia/especificacoes/contrato-api.md)
-continua como referência do endpoint legado.
-Para uma visão operacional do comportamento implementado, consulte também
-[Assistente de IA](assistente-ia.md).
+Detalhes de contratos e validação em [Casos](casos.md) e [Peças e templates](pecas.md).
 
-## Registrar uma conta
+## Assistente de IA
+
+### Rotas compartilhadas e legado
+
+| Método | Rota | Função |
+| :--- | :--- | :--- |
+| `GET` | `/assistente/capacidades` | disponibilidade, flags e limites visíveis ao usuário |
+| `GET` | `/assistente/limite-mensal` | período UTC e percentuais usado/reservado/disponível da organização |
+| `GET` | `/assistente/transparencia` | aviso versionado atual e estado de aceite |
+| `POST` | `/assistente/transparencia/confirmacoes` | registra aceite da versão atual do aviso |
+| `POST` | `/pecas/{pecaId}/assistente/solicitacoes` | fluxo legado v1 em SSE (sem alterar a Peça) |
+
+### Conversa, propostas, jobs e anexos (`/assistente/v2`, JWT organizacional)
+
+| Método | Rota | Função |
+| :--- | :--- | :--- |
+| `POST` | `/assistente/v2/pecas/{pecaId}/conversa` | cria ou recupera a conversa privada do usuário na Peça |
+| `GET` | `/assistente/v2/conversas/{id}/mensagens?antes={seq}&limite=50` | lista mensagens com cursor exclusivo |
+| `POST` | `/assistente/v2/conversas/{id}/interacoes` | envia mensagem livre (SSE 200; com `DurableGenerationEnabled`, enfileira job) |
+| `POST` | `/assistente/v2/conversas/{id}/mensagens` | adaptador legado com modo/contexto explícitos (SSE 200) |
+| `POST` | `/assistente/v2/conversas/{id}/mensagens/{mensagemId}/rejeicao` | rejeita resposta (204) |
+| `GET/POST` | `/assistente/v2/conversas/{id}/propostas` | lista propostas ou registra ponte legada |
+| `GET` | `/assistente/v2/propostas/{id}` | obtém proposta completa e documento-base para revisão |
+| `POST` | `/assistente/v2/propostas/{id}/aplicacoes` | aplica grupos aprovados em transação idempotente e retorna recibo |
+| `GET` | `/assistente/v2/conversas/{id}/aplicacoes/{requestId}` | reconciliação de recibo por `requestId` |
+| `POST` | `/assistente/v2/propostas/{id}/rejeicoes` | rejeita grupos da proposta |
+| `GET` | `/assistente/v2/conversas/{id}/geracoes/{geracaoId}` | acompanha estado/seções do job de geração durável |
+| `POST` | `/assistente/v2/conversas/{id}/geracoes/{geracaoId}/cancelamento` | cancela geração (204) |
+| `POST` | `/assistente/v2/conversas/{id}/geracoes/{geracaoId}/retomada` | solicita retomada explícita (202) |
+| `GET` | `/assistente/v2/conversas/{id}/analises/{analiseId}` | acompanha estado/lotes/cobertura da análise documental |
+| `POST` | `/assistente/v2/conversas/{id}/analises/{analiseId}/cancelamento` | cancela análise (204) |
+| `POST` | `/assistente/v2/conversas/{id}/analises/{analiseId}/retomada` | solicita retomada da análise (202) |
+| `POST/GET` | `/assistente/v2/conversas/{id}/anexos` | envia anexo privado (`202`) ou lista estados/qualidade |
+| `GET` | `/assistente/v2/conversas/{id}/anexos/{anexoId}` | estado, progresso e problemas de leitura do anexo |
+| `GET` | `/assistente/v2/conversas/{id}/anexos/{anexoId}/arquivo` | download privado autenticado |
+| `POST` | `/assistente/v2/conversas/{id}/anexos/{anexoId}/reprocessar` | solicita reprocessamento autorizado (`202`) |
+| `GET` | `/assistente/v2/conversas/{id}/fontes/busca?consulta=...&limite=12` | busca filtrada nos trechos elegíveis |
+
+### Histórico pessoal e exclusão (`/assistente/v2/pessoal`, sessão `PersonalHistory`)
+
+| Método | Rota | Função |
+| :--- | :--- | :--- |
+| `GET` | `/assistente/v2/pessoal/conversas?antes=...&limite=30` | lista conversas do titular |
+| `GET` | `/assistente/v2/pessoal/conversas/{id}` | detalhes da conversa |
+| `GET` | `/assistente/v2/pessoal/conversas/{id}/mensagens?antes=...&limite=50` | mensagens da conversa |
+| `GET` | `/assistente/v2/pessoal/conversas/{id}/anexos` | anexos privados da conversa |
+| `GET` | `/assistente/v2/pessoal/conversas/{id}/anexos/{anexoId}/arquivo` | download privado do anexo |
+| `GET` | `/assistente/v2/pessoal/propostas/{id}` | consulta proposta histórica |
+| `DELETE` | `/assistente/v2/pessoal/conversas/{id}` | solicita expurgo (`requestId` + `confirmarExclusao:true`, retorna `202`) |
+| `GET` | `/assistente/v2/pessoal/exclusoes` e `/exclusoes/{requestId}` | acompanha protocolos de exclusão |
+
+Detalhes de regras e comportamento em [Assistente de IA](assistente-ia.md).
+
+## Exemplo de registro (`POST /auth/register`)
 
 ```http
 POST /auth/register
@@ -85,13 +112,7 @@ Content-Type: application/json
 }
 ```
 
-O registro cria atomicamente a Organization, seu primeiro User com role
-`Owner` e a Session autenticada. Retorna HTTP 201 com o mesmo corpo público do
-login e define o refresh token no cookie `juridicoai_refresh`. O token de
-refresh não é incluído no JSON. E-mail duplicado retorna HTTP 409 com o código
-`EMAIL_ALREADY_EXISTS`.
+Cria atomicamente Organization, User (`Owner`) e Session inicial (`201`), definindo
+o cookie `juridicoai_refresh`. E-mail duplicado retorna `409` (`EMAIL_ALREADY_EXISTS`).
 
-## Exemplos executáveis
-
-O arquivo `src/JuridicoAI.Api/JuridicoAI.http` contém exemplos para clientes
-compatíveis com arquivos `.http`.
+Exemplos executáveis também estão em `src/JuridicoAI.Api/JuridicoAI.http`.

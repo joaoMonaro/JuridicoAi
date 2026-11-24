@@ -15,7 +15,7 @@ O endpoint efetivo de conversa livre é `POST /conversas/{id}/interacoes`, com
 `EnviarInteracaoLivreRequest` e SSE 200. A geração durável já está implementada:
 persistência do job, evento `solicitacao.enfileirada`, acompanhamento por polling
 e resultado no histórico. Ela não usa `MensagemAceita` HTTP 202 nem o journal
-`Evento` deste desenho. Ver [contratos implementados](../especificacoes/07-contratos-implementados.md).
+`Evento` deste desenho. Ver [API HTTP](../../../../docs/backend/api.md#assistente-de-ia) e [Assistente de IA](../../../../docs/backend/assistente-ia.md).
 
 O catálogo mistura exemplos usados na compilação/revisão com projeções originais.
 `EnviarMensagem`, `MensagemAceita`, `Evento` e seus payloads propostos não são um

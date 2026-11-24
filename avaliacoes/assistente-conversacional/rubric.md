@@ -1,7 +1,7 @@
 # Rubrica da rodada conversacional
 
 Preencher para cada saída real após executar a suíte. A primeira rodada reduzida
-tem [resultados e leitura técnica registrados](../../implementacoes/features/assistente-conversacional/evidencias/avaliacao-reduzida-gpt-6.1-terra-2026-11-12.md).
+tem [relatório registrado](execucoes/20261112-192112-1ccd01/report.md).
 **Pontuação e homologação por responsável jurídico ainda não preenchidas.**
 Preflight/testes simulados não fornecem evidência de qualidade do modelo real.
 

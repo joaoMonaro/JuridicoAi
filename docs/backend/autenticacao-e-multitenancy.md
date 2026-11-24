@@ -197,7 +197,7 @@ O downgrade é bloqueado enquanto houver sessões ativas, não expiradas, com
 tokens compostos, para preservar sua credencial de revogação. A migration foi
 verificada somente em PostgreSQL descartável; nenhum banco existente foi alterado.
 
-Ver [evidência de concorrência, revogação e isolamento](../../implementacoes/features/preparacao-producao/evidencias/sessao-principal-2026-11-20.md).
+Testes automatizados cobrem a corrida refresh/logout, revogação por sessão e isolamento entre organizações.
 
 ### Usuário atual
 
@@ -282,5 +282,5 @@ fontes compartilhadas, geração ou aplicação. Token organizacional não subst
 a sessão pessoal. O usuário pode perder Membership e continuar lendo o histórico,
 mas conta desabilitada ou sessão revogada continuam sem acesso.
 
-Ver [contratos efetivos](../../implementacoes/features/assistente-conversacional/especificacoes/07-contratos-implementados.md)
-e [evidência de autorização e exclusão](../../implementacoes/features/assistente-conversacional/evidencias/e1-historico-pessoal-exclusao-2026-11-12.md).
+Ver [API HTTP](api.md#histórico-pessoal-e-exclusão-assistentev2pessoal-sessão-personalhistory)
+e [Assistente de IA](assistente-ia.md#2-histórico-pessoal-e-exclusão-autorizada).

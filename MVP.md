@@ -53,5 +53,5 @@ Até cumprir os critérios acima, o trabalho se limita a testar, corrigir falhas
 simplificar a jornada e preparar a operação desse escopo. Novas funcionalidades
 ficam para depois do lançamento. Cumpridos os critérios, o MVP está concluído.
 
-As tarefas de execução ficam no [TODO geral](TODO.md) e no
-[TODO do assistente](implementacoes/features/assistente-conversacional/TODO.md).
+As tarefas de execução ficam no [TODO geral](TODO.md) e em
+[Preparação para produção e pendências](implementacoes/producao-e-pendencias.md).

@@ -18,11 +18,14 @@ Peças, templates e governança da IA. Nomes de tabelas e colunas, tamanhos, con
 índices, relacionamentos e checks são definidos explicitamente pela Fluent API
 em `Infrastructure/Database/EntityConfigurations.cs`.
 
-Na inicialização, a API executa `Database.MigrateAsync()` e registra as
-migrations aplicadas na tabela padrão `__EFMigrationsHistory`. Se
-`Postgres:ConnectionString` estiver vazio, a API continua disponível para os
-fluxos que não dependem de PostgreSQL, registra um aviso e não aplica
-migrations. Os endpoints de casos continuam exigindo uma conexão configurada.
+Na inicialização, a API executa `Database.MigrateAsync()` quando
+`Postgres:RunMigrations=true` e registra as migrations aplicadas na tabela
+`__EFMigrationsHistory`. Para aplicar migrations como etapa separada (recomendado
+em produção com `Postgres:RunMigrations=false`), execute:
+
+```bash
+dotnet run --project src/JuridicoAI.Api -- migrate-database
+```
 
 Configuração por variável de ambiente:
 
