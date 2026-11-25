@@ -113,6 +113,29 @@ public sealed partial class AssistenteWorkspacePostgresTests
     }
 
     [ReviewPostgresFact]
+    public async Task Documentos_RemoverDocumentoCasoTambemExpurgaAiDocumentsETrechos()
+    {
+        await using var db = await Database.Create(); await using var context = db.Context();
+        var storage = new DocumentMemoryStorage(); var docs = Documents(db, context, storage);
+        var conversation = await db.Service(context).ObterOuCriarAsync(db.PecaId, default); var piece = await context.Pecas.SingleAsync();
+        var id = Guid.NewGuid(); var key = "case/lgpd-expurgo.txt"; storage.Files[key] = Encoding.UTF8.GetBytes("CPF 529.982.247-25 em documento do caso.");
+        context.Add(new DocumentoCaso { Id = id, CasoId = piece.CasoId, NomeOriginal = "sigilo.txt", NomeArmazenado = "sigilo.txt",
+            StorageId = key, TamanhoBytes = storage.Files[key].Length, MimeType = "text/plain", Tipo = "Outro", DataUpload = DateTime.UtcNow }); await context.SaveChangesAsync();
+        await docs.ListAsync(conversation.Id, default, incluirFontesCaso: true);
+        await using (var processing = db.Context()) Assert.True(await Processor(processing, storage).ProcessNextAsync(default));
+        context.ChangeTracker.Clear();
+        Assert.Single(await context.AssistenteDocumentos.Where(d => d.DocumentoCasoId == id).ToArrayAsync());
+        Assert.NotEmpty(await context.AssistenteDocumentoTrechos.ToArrayAsync());
+
+        var casoRepo = new CasoRepository(context);
+        Assert.True(await casoRepo.RemoverDocumentoAsync(piece.CasoId, id, db.OrgId, default));
+
+        Assert.Empty(await context.DocumentosCaso.Where(d => d.Id == id).ToArrayAsync());
+        Assert.Empty(await context.AssistenteDocumentos.Where(d => d.DocumentoCasoId == id).ToArrayAsync());
+        Assert.Empty(await context.AssistenteDocumentoTrechos.ToArrayAsync());
+    }
+
+    [ReviewPostgresFact]
     public async Task Documentos_ReprocessamentoInvalidaManifestoMesmoComMesmoArquivo()
     {
         await using var db = await Database.Create(); await using var context = db.Context();

@@ -55,7 +55,19 @@ if (builder.Configuration.GetValue<bool>("AssistenteMonitoring:Enabled"))
 }
 
 
-builder.Services.Configure<DocumentStorageSettings>(builder.Configuration.GetSection("DocumentStorage"));
+builder.Services.AddOptions<DocumentStorageSettings>().Bind(builder.Configuration.GetSection("DocumentStorage"))
+    .Validate(x => x.TryGetEncryptionKey(out _),
+        "DocumentStorage:EncryptionKeyBase64 deve ser uma chave Base64 válida de 32 bytes (256 bits).")
+    .Validate(x => !builder.Environment.IsProduction() || !string.IsNullOrWhiteSpace(x.EncryptionKeyBase64),
+        "Produção exige DocumentStorage:EncryptionKeyBase64 configurada para criptografia em repouso.")
+    .ValidateOnStart();
+builder.Services.AddOptions<DataRetentionSettings>().Bind(builder.Configuration.GetSection("DataRetention"))
+    .Validate(x => x.IntervalHours is >= 1 and <= 168 &&
+                   x.SoftDeleteRetentionDays is >= 1 and <= 3650 &&
+                   x.ExpiredSessionRetentionDays is >= 1 and <= 3650 &&
+                   x.AuditLogRetentionDays is >= 30 and <= 3650,
+        "Limites de DataRetention inválidos.")
+    .ValidateOnStart();
 builder.Services.AddOptions<AssistenteDocumentSettings>().Bind(builder.Configuration.GetSection("AssistenteDocumentos"))
     .Validate(x => !x.AnalysisEnabled || x.RetrievalEnabled, "Análise extensa exige recuperação documental.")
     .Validate(x => !x.AnalysisEnabled || x.MaxAnalysisCalls is >= 3 and <= 30 && x.MaxAnalysisTotalTokens > 0 &&
@@ -121,6 +133,9 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
     .Validate(x => string.IsNullOrWhiteSpace(x.PrivacyPolicyUrl) ||
                    Uri.TryCreate(x.PrivacyPolicyUrl, UriKind.Absolute, out _),
         "AssistenteIa:PrivacyPolicyUrl deve ser uma URL absoluta quando informada.")
+    .Validate(x => !builder.Environment.IsProduction() || !x.Enabled ||
+                   !string.IsNullOrWhiteSpace(x.PrivacyPolicyUrl),
+        "Produção com IA habilitada exige AssistenteIa:PrivacyPolicyUrl configurada.")
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<AuthSettings>, AuthSettingsValidator>();
 builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
@@ -169,6 +184,9 @@ builder.Services.AddScoped<PersonalHistoryAuthService>();
 builder.Services.AddScoped<PersonalHistoryService>();
 builder.Services.AddScoped<AssistenteDeletionProcessor>();
 builder.Services.AddHostedService<AssistenteDeletionWorker>();
+builder.Services.AddScoped<DataRetentionProcessor>();
+builder.Services.AddHostedService<DataRetentionWorker>();
+builder.Services.AddScoped<IDataAccessAuditService, DataAccessAuditService>();
 builder.Services.AddAuthorization();
 builder.Services.AddRateLimiter(AuthRateLimitPolicy.Configure);
 builder.Services.AddHttpContextAccessor();
@@ -220,17 +238,28 @@ builder.Services.AddScoped<IAuthContext, AssistenteExecutionAuthContext>();
 builder.Services.AddScoped<ICorrelationContext, HttpCorrelationContext>();
 builder.Services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
-builder.Services.AddSingleton<IFileStorage, LocalFileStorage>();
+builder.Services.AddSingleton<LocalFileStorage>();
+builder.Services.AddSingleton<IFileStorage>(services => new EncryptedFileStorage(
+    services.GetRequiredService<LocalFileStorage>(),
+    services.GetRequiredService<IOptions<DocumentStorageSettings>>()));
 builder.Services.AddHttpClient<OpenAiAssistenteIaProvider>((services, client) =>
 {
     var settings = services.GetRequiredService<Microsoft.Extensions.Options.IOptions<AssistenteIaSettings>>().Value;
     client.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
     client.Timeout = Timeout.InfiniteTimeSpan;
 }).RemoveAllLoggers();
+builder.Services.AddScoped<PseudonymizingAssistenteIaProvider>(services =>
+{
+    var inner = services.GetRequiredService<OpenAiAssistenteIaProvider>();
+    return new PseudonymizingAssistenteIaProvider(
+        inner,
+        inner,
+        services.GetRequiredService<IOptionsMonitor<AssistenteIaSettings>>());
+});
 builder.Services.AddScoped<IAssistenteIaProvider>(services =>
-    services.GetRequiredService<OpenAiAssistenteIaProvider>());
+    services.GetRequiredService<PseudonymizingAssistenteIaProvider>());
 builder.Services.AddScoped<IAssistenteTokenCounter>(services =>
-    services.GetRequiredService<OpenAiAssistenteIaProvider>());
+    services.GetRequiredService<PseudonymizingAssistenteIaProvider>());
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

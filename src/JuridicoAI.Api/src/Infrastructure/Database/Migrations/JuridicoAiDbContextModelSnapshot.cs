@@ -1859,6 +1859,60 @@ namespace JuridicoAI.Api.Infrastructure.Database.Migrations
                         });
                 });
 
+            modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.DataAccessAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("organization_id");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)")
+                        .HasColumnName("resource_type");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("ix_data_access_audit_logs_occurred_at");
+
+                    b.HasIndex("OrganizationId", "OccurredAt")
+                        .HasDatabaseName("ix_data_access_audit_logs_org_occurred_at");
+
+                    b.HasIndex("ResourceType", "ResourceId")
+                        .HasDatabaseName("ix_data_access_audit_logs_resource");
+
+                    b.ToTable("data_access_audit_logs", (string)null);
+                });
+
             modelBuilder.Entity("JuridicoAI.Api.Domain.Entities.DocumentoCaso", b =>
                 {
                     b.Property<Guid>("Id")

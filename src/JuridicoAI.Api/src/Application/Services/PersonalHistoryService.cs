@@ -13,7 +13,10 @@ namespace JuridicoAI.Api.Application.Services;
 // No IAuthContext, Peça/Case repository, feature checks or provider: this surface only reads persisted user-owned content.
 public sealed class PersonalHistoryService(JuridicoAiDbContext db, IPersonalHistoryContext identity, IFileStorage storage)
 {
-    private IQueryable<AssistenteConversa> Conversations => db.AssistenteConversas.AsNoTracking().Where(c => c.UserId == identity.UserId);
+    private IQueryable<AssistenteConversa> Conversations => db.AssistenteConversas.AsNoTracking().Where(c =>
+        c.UserId == identity.UserId &&
+        db.Memberships.Any(m => m.UserId == identity.UserId && m.OrganizationId == c.OrganizationId) &&
+        db.Organizations.Any(o => o.Id == c.OrganizationId && o.Status == OrganizationStatusEnum.Active));
     public async Task<PersonalConversationPage> ListAsync(string? before, int limit, CancellationToken ct)
     {
         if (limit is < 1 or > 50 || before?.Length > 500) throw BadPage();

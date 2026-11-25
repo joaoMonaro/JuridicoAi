@@ -83,6 +83,12 @@ com PostgreSQL e storage exclusivos, sem alterar o Compose de desenvolvimento.
 | `ReverseProxy:ForwardLimit` | `1` | máximo de saltos processados da direita para a esquerda; deve ser maior que zero |
 | `DocumentStorage:RootPath` | `data/documentos` | diretório do storage local |
 | `DocumentStorage:MaxFileSizeBytes` | `20971520` | limite por upload |
+| `DocumentStorage:EncryptionKeyBase64` | vazio | chave AES-256-GCM em Base64 (32 bytes) para criptografia em repouso; **obrigatória em Production** |
+| `DataRetention:Enabled` | `true` | ativa o expurgo automático periódico (sessões, soft-deletes e auditoria) |
+| `DataRetention:IntervalHours` | `6` | intervalo em horas entre execuções do worker de retenção (`1` a `168`) |
+| `DataRetention:SoftDeleteRetentionDays` | `30` | prazo em dias antes do expurgo físico de Peças e Templates excluídos |
+| `DataRetention:ExpiredSessionRetentionDays` | `30` | prazo em dias antes do expurgo de sessões expiradas/revogadas |
+| `DataRetention:AuditLogRetentionDays` | `365` | prazo em dias de retenção dos registros em `data_access_audit_logs` |
 | `AssistenteIa:Enabled` | `false` | trava de configuração superior do assistente |
 | `AssistenteIa:ReviewV2Enabled` | `false` | revisão persistida e aprovação transacional |
 | `AssistenteIa:ConversationV2Enabled` | `false` | histórico persistido no contexto |
@@ -108,7 +114,26 @@ com PostgreSQL e storage exclusivos, sem alterar o Compose de desenvolvimento.
 | `AssistenteIa:OutputCostPerMillionTokensUsd` | `0` | tarifa de saída; informar preço real do modelo |
 | `AssistenteIa:PricingVersion` | `unconfigured` | identificação da tabela de preços usada nas reservas |
 | `AssistenteIa:AllowSimulatedWithoutFinancialControl` | `false` | opt-out explícito para testes simulados; proibido em produção |
+| `AssistenteIa:PrivacyPolicyUrl` | vazio | URL absoluta da Política de Privacidade exibida no aviso de transparência; **obrigatória em Production** quando `AssistenteIa:Enabled=true` |
+| `AssistenteIa:PiiPseudonymizationEnabled` | `true` | ativa pseudonimização reversível de CPF, CNPJ, RG, e-mail, telefone e CEP antes do envio à IA |
 | `Cors:AllowedOrigins` | lista vazia | origens exatas do frontend, compartilhadas com a sessão pessoal; produção exige lista não vazia, HTTPS e host não local |
+
+### Configuração mínima LGPD em Produção (VPS)
+
+Em `ASPNETCORE_ENVIRONMENT=Production`, a API bloqueia a inicialização se as duas variáveis abaixo não estiverem definidas:
+
+```bash
+# 1. Gere a chave AES-256-GCM (32 bytes em Base64) e guarde fora da pasta de backup de data/documentos
+openssl rand -base64 32
+
+# 2. Exporte no serviço/ambiente da VPS
+export DocumentStorage__EncryptionKeyBase64="<SAIDA_DO_OPENSSL>"
+export AssistenteIa__PrivacyPolicyUrl="https://seu-dominio.com.br/privacidade"
+```
+
+- `AssistenteIa__PiiPseudonymizationEnabled=true` e `DataRetention__Enabled=true` já vêm ativos por padrão.
+- Aplique as migrations (`migrate-database`) para criar a tabela `data_access_audit_logs`.
+- Em `Development`, `DocumentStorage:EncryptionKeyBase64` e `AssistenteIa:PrivacyPolicyUrl` são opcionais.
 
 Não versione chaves, senhas ou connection strings reais. Em `Development`, o
 projeto da API carrega automaticamente o Secret Manager do .NET (`UserSecretsId`).

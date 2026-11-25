@@ -19,15 +19,16 @@ public sealed partial class AssistenteWorkspacePostgresTests
     private sealed record PersonalIdentity(Guid UserId) : IPersonalHistoryContext;
     private static PersonalHistoryService Personal(Database db, JuridicoAiDbContext ctx, IFileStorage storage, Guid? userId = null) => new(ctx, new PersonalIdentity(userId ?? db.UserId), storage);
     [ReviewPostgresFact]
-    public async Task Pessoal_LeConteudoPersistidoSemMembershipOuPecaAtualENaoExpoeInternos()
+    public async Task Pessoal_LeConteudoPersistidoComMembershipAtivaEBloqueiaLeituraAposSaidaDaOrganizacao()
     {
         await using var db = await Database.Create(); var proposal = await db.Prepare(); await using var context = db.Context();
+        context.Add(new Membership { Id = Guid.NewGuid(), OrganizationId = db.OrgId, UserId = db.UserId, Role = MembershipRoleEnum.Member, DataCriacao = DateTime.UtcNow, DataAtualizacao = DateTime.UtcNow });
+        await context.SaveChangesAsync();
         var storage = new DocumentMemoryStorage(); var service = Personal(db, context, storage);
         var doc = await Upload(Documents(db, context, storage), proposal.ConversaId, "privado.txt", "Anexo histórico do titular.");
         await context.Pecas.ExecuteUpdateAsync(s => s.SetProperty(p => p.Titulo, "TITULO_ATUAL_SECRETO").SetProperty(p => p.Versao, 9).SetProperty(p => p.DataExclusao, DateTime.UtcNow));
-        await context.Organizations.ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrganizationStatusEnum.Inactive));
-        await context.Memberships.Where(m => m.UserId == db.UserId).ExecuteDeleteAsync();
-        Assert.Empty(await context.Memberships.Where(m => m.UserId == db.UserId).ToArrayAsync());
+
+        // Com Membership e Organization ativas, lê conteúdo persistido sem expor internos nem Peça atual
         var page = await service.ListAsync(null, 30, default); Assert.Single(page.Conversas); Assert.DoesNotContain("SECRETO", page.Conversas[0].Titulo);
         Assert.Equal(proposal.ConversaId, (await service.GetAsync(proposal.ConversaId, default)).Id);
         var messages = await service.MessagesAsync(proposal.ConversaId, null, 50, default); Assert.Equal(2, messages.Count);
@@ -36,6 +37,23 @@ public sealed partial class AssistenteWorkspacePostgresTests
         Assert.Equal(2, (await service.ProposalAsync(proposal.Id, default)).Grupos.Count);
         Assert.Single(await service.AttachmentsAsync(proposal.ConversaId, default));
         var file = await service.DownloadAsync(proposal.ConversaId, doc.Id, default); using var reader = new StreamReader(file.Stream); Assert.Equal("Anexo histórico do titular.", await reader.ReadToEndAsync());
+
+        // Após desligamento (remoção de Membership / Organization inativa), bloqueia listagem, leitura e download (LGPD Art. 46)
+        await context.Organizations.ExecuteUpdateAsync(s => s.SetProperty(o => o.Status, OrganizationStatusEnum.Inactive));
+        await context.Memberships.Where(m => m.UserId == db.UserId).ExecuteDeleteAsync();
+        Assert.Empty(await context.Memberships.Where(m => m.UserId == db.UserId).ToArrayAsync());
+        Assert.Empty((await service.ListAsync(null, 30, default)).Conversas);
+        foreach (var call in new Func<Task>[] {
+            async () => { await service.GetAsync(proposal.ConversaId, default); },
+            async () => { await service.MessagesAsync(proposal.ConversaId, null, 50, default); },
+            async () => { await service.ProposalAsync(proposal.Id, default); },
+            async () => { await service.AttachmentsAsync(proposal.ConversaId, default); },
+            async () => { await service.DownloadAsync(proposal.ConversaId, doc.Id, default); } })
+            Assert.Equal(404, (await Assert.ThrowsAsync<AssistenteIaException>(call)).StatusCode);
+
+        // Titular ainda pode solicitar o expurgo da própria conversa
+        var deletion = await service.DeleteAsync(proposal.ConversaId, new(Guid.NewGuid(), true), default);
+        Assert.Equal(proposal.ConversaId, deletion.ConversaId);
     }
 
     [ReviewPostgresFact]
@@ -148,6 +166,7 @@ public sealed partial class AssistenteWorkspacePostgresTests
     public async Task Pessoal_PaginacaoEstavelEmpatadaENaoConsultaTitulosAtuais()
     {
         await using var db = await Database.Create(); await using var ctx = db.Context(); var source = await ctx.Pecas.AsNoTracking().SingleAsync(); var now = DateTime.UtcNow;
+        ctx.Add(new Membership { Id = Guid.NewGuid(), OrganizationId = db.OrgId, UserId = db.UserId, Role = MembershipRoleEnum.Member, DataCriacao = now, DataAtualizacao = now });
         for (var i = 0; i < 5; i++)
         {
             var piece = new Peca { Id = Guid.NewGuid(), OrganizationId = db.OrgId, CasoId = source.CasoId, CreatedById = db.UserId, UpdatedById = db.UserId, Titulo = "ATUAL", ConteudoJson = JsonDocument.Parse("{}"), PageConfig = JsonDocument.Parse("{}"), Styles = JsonDocument.Parse("{}"), DataCriacao = now, DataAtualizacao = now };

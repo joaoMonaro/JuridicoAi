@@ -16,7 +16,8 @@ namespace JuridicoAI.Api.Application.Services;
 
 public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistenteWorkspaceRepository workspace,
     IPecaRepository pecas, IFileStorage storage, IAuthContext auth, IAssistenteFeatureAccess features,
-    IAssistenteTransparencyService transparency, IOptions<AssistenteDocumentSettings> options)
+    IAssistenteTransparencyService transparency, IOptions<AssistenteDocumentSettings> options,
+    IDataAccessAuditService? audit = null)
 {
     private AssistenteDocumentSettings Settings => options.Value;
     public bool Enabled => Settings.Enabled;
@@ -116,7 +117,9 @@ public sealed class AssistenteDocumentService(JuridicoAiDbContext db, IAssistent
     {
         var (_, piece) = await AuthorizeAsync(conversaId, false, ct);
         var source = await EligibleSources(conversaId, piece.CasoId).SingleOrDefaultAsync(d => d.Id == id, ct) ?? throw Missing();
-        return (await storage.GetAsync(source.StorageId, ct), source.Nome, source.Formato switch
+        var stream = await storage.GetAsync(source.StorageId, ct);
+        if (audit is not null) await audit.RecordAsync("DownloadAssistenteDocumento", "AssistenteDocumento", id, ct);
+        return (stream, source.Nome, source.Formato switch
         { "pdf" => "application/pdf", "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "txt" => "text/plain", "png" => "image/png", "jpg" or "jpeg" => "image/jpeg", _ => "application/octet-stream" });
     }
     public async Task<AssistenteDocumentoDto> GetAsync(Guid conversaId, Guid id, CancellationToken ct)
