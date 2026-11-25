@@ -13,18 +13,27 @@ public sealed class AssistenteTransparencyService(
     IOptionsMonitor<AssistenteIaSettings> options, IOptions<AssistenteDocumentSettings>? documentOptions = null) : IAssistenteTransparencyService
 {
     private const string Title = "Uso de inteligência artificial";
-    private const string Message =
+    private const string MessageWithPseudonymization =
         "Algumas informações do caso poderão ser processadas por provedores de inteligência artificial " +
         "para gerar, revisar ou analisar conteúdo jurídico. A plataforma procura enviar apenas as " +
-        "informações necessárias à execução da solicitação e pode aplicar técnicas de minimização e " +
-        "pseudonimização de dados.";
+        "informações necessárias à execução da solicitação e aplica pseudonimização reversível automática " +
+        "de identificadores estruturados (como CPF, CNPJ, RG, e-mail, telefone e CEP) antes do envio ao provedor, " +
+        "restaurando-os localmente na resposta. Textos livres e documentos ainda podem conter outros dados pessoais " +
+        "ou sensíveis sob responsabilidade do profissional.";
+    private const string MessageWithoutPseudonymization =
+        "Algumas informações do caso poderão ser processadas por provedores de inteligência artificial " +
+        "para gerar, revisar ou analisar conteúdo jurídico. A plataforma procura enviar apenas as " +
+        "informações necessárias à execução da solicitação, sem pseudonimização automática de identificadores " +
+        "no texto enviado.";
     private const string ReviewNotice =
         "As respostas geradas por inteligência artificial podem conter erros e devem ser revisadas " +
         "pelo profissional responsável.";
 
     private AssistenteIaSettings Settings => options.CurrentValue;
-    private string CurrentVersion => Settings.TransparencyNoticeVersion + (Settings.ConversationV2Enabled ? "-conversation-v2" : Settings.ReviewV2Enabled ? "-review-v2" : string.Empty)
-        + (documentOptions?.Value.Enabled == true ? "-documents-v1" : "");
+    private string CurrentVersion => Settings.TransparencyNoticeVersion
+        + (Settings.ConversationV2Enabled ? "-conversation-v2" : Settings.ReviewV2Enabled ? "-review-v2" : string.Empty)
+        + (documentOptions?.Value.Enabled == true ? "-documents-v1" : string.Empty)
+        + (Settings.PiiPseudonymizationEnabled ? string.Empty : "-no-pii-v1");
 
     public async Task<AssistenteTransparenciaDto> ObterAsync(CancellationToken cancellationToken)
     {
@@ -84,7 +93,7 @@ public sealed class AssistenteTransparencyService(
         acknowledgement is not null,
         acknowledgement?.AcknowledgedAt,
         Title,
-        Message + (Settings.ConversationV2Enabled
+        (Settings.PiiPseudonymizationEnabled ? MessageWithPseudonymization : MessageWithoutPseudonymization) + (Settings.ConversationV2Enabled
             ? " Mensagens, respostas e propostas serão salvas em uma conversa individual vinculada à Peça. O histórico dessa conversa será utilizado como contexto em novos pedidos."
             : Settings.ReviewV2Enabled
             ? " Propostas de alteração e pedidos associados serão salvos em uma conversa individual vinculada à Peça."

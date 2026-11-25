@@ -11,6 +11,23 @@ namespace JuridicoAI.Api.Tests;
 public sealed class AssistenteTransparencyServiceTests
 {
     [Fact]
+    public async Task PseudonimizacaoDesabilitada_ExigeNovoAceiteEAlinhaMensagem()
+    {
+        var setup = Create();
+        var enabled = await setup.Service.ObterAsync(default);
+        Assert.Contains("pseudonimização reversível automática", enabled.Mensagem);
+
+        await setup.Service.ConfirmarAsync(new("ai-transparency-v1"), default);
+        setup.Options.Current.PiiPseudonymizationEnabled = false;
+
+        var disabled = await setup.Service.ObterAsync(default);
+        Assert.False(disabled.Confirmado);
+        Assert.Equal("ai-transparency-v1-no-pii-v1", disabled.Versao);
+        Assert.Contains("sem pseudonimização automática", disabled.Mensagem);
+        Assert.Equal("AI_TRANSPARENCY_ACK_REQUIRED", (await Assert.ThrowsAsync<AssistenteIaException>(() => setup.Service.ExigirConfirmacaoAsync(default))).Code);
+    }
+
+    [Fact]
     public async Task Documentos_ExigemNovoAceiteComFinalidadeExplicita()
     {
         var setup = Create();

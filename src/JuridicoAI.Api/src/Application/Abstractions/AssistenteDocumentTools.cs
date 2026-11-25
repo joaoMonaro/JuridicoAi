@@ -36,8 +36,23 @@ public sealed class AssistenteDocumentTools(JsonElement definitions,
     public Action<string>? SetScope { get; set; }
     public Func<CancellationToken, Task>? OnLimit { get; set; }
     public Func<CancellationToken, Task>? BeforeCall { get; set; }
+    private Func<Func<string, string, CancellationToken, Task<string>>, string, string, CancellationToken, Task<string>>? _executionInterceptor;
     public AssistenteCoberturaDocumentalDto Coverage => coverage();
-    public Task<string> ExecuteAsync(string name, string arguments, CancellationToken ct) => execute(name, arguments, ct);
+    public Task<string> ExecuteAsync(string name, string arguments, CancellationToken ct) =>
+        _executionInterceptor is null ? execute(name, arguments, ct) : _executionInterceptor(execute, name, arguments, ct);
+    public IDisposable UseExecutionInterceptor(
+        Func<Func<string, string, CancellationToken, Task<string>>, string, string, CancellationToken, Task<string>> interceptor)
+    {
+        var previous = _executionInterceptor;
+        _executionInterceptor = interceptor;
+        return new InterceptorScope(this, previous);
+    }
+    private sealed class InterceptorScope(
+        AssistenteDocumentTools owner,
+        Func<Func<string, string, CancellationToken, Task<string>>, string, string, CancellationToken, Task<string>>? previous) : IDisposable
+    {
+        public void Dispose() => owner._executionInterceptor = previous;
+    }
     public void MarkStoppedBeforeProviderCall() => StoppedBeforeProviderCall = true;
 
     public async Task ReserveRoundAsync(int inputTokens, int maxOutputTokens, CancellationToken ct)

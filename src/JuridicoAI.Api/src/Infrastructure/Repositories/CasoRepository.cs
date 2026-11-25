@@ -197,8 +197,31 @@ public sealed class CasoRepository(JuridicoAiDbContext context) : ICasoRepositor
     public Task<DocumentoCaso?> ObterDocumentoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
         context.DocumentosCaso.AsNoTracking().SingleOrDefaultAsync(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId), cancellationToken);
 
-    public Task<bool> RemoverDocumentoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken) =>
-        DeleteAsync(context.DocumentosCaso.Where(x => x.CasoId == casoId && x.Id == id && context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId)), cancellationToken);
+    public async Task<bool> RemoverDocumentoAsync(Guid casoId, Guid id, Guid organizationId, CancellationToken cancellationToken)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var removed = await DeleteAsync(
+            context.DocumentosCaso.Where(x => x.CasoId == casoId && x.Id == id &&
+                context.Casos.Any(c => c.Id == casoId && c.OrganizationId == organizationId)),
+            cancellationToken);
+        if (!removed)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return false;
+        }
+
+        await context.AssistenteDocumentoTrechos
+            .Where(c => context.AssistenteDocumentos.Any(d =>
+                d.Id == c.DocumentoId && d.OrganizationId == organizationId && d.DocumentoCasoId == id))
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await context.AssistenteDocumentos
+            .Where(d => d.OrganizationId == organizationId && d.DocumentoCasoId == id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
 
     private IQueryable<EnderecoEnvolvidoCaso> EnderecosEscopados(Guid casoId, Guid envolvidoId, Guid organizationId) =>
         context.EnderecosEnvolvidosCaso.AsNoTracking().Where(x => x.EnvolvidoCasoId == envolvidoId &&

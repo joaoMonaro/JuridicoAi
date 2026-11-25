@@ -121,6 +121,9 @@ builder.Services.AddOptions<AssistenteIaSettings>().Bind(builder.Configuration.G
     .Validate(x => string.IsNullOrWhiteSpace(x.PrivacyPolicyUrl) ||
                    Uri.TryCreate(x.PrivacyPolicyUrl, UriKind.Absolute, out _),
         "AssistenteIa:PrivacyPolicyUrl deve ser uma URL absoluta quando informada.")
+    .Validate(x => !builder.Environment.IsProduction() || !x.Enabled ||
+                   !string.IsNullOrWhiteSpace(x.PrivacyPolicyUrl),
+        "Produção com IA habilitada exige AssistenteIa:PrivacyPolicyUrl configurada.")
     .ValidateOnStart();
 builder.Services.AddSingleton<IValidateOptions<AuthSettings>, AuthSettingsValidator>();
 builder.Services.AddOptions<AuthSettings>().Bind(builder.Configuration.GetSection("Auth"))
@@ -227,10 +230,18 @@ builder.Services.AddHttpClient<OpenAiAssistenteIaProvider>((services, client) =>
     client.BaseAddress = new Uri(settings.BaseUrl.TrimEnd('/') + "/");
     client.Timeout = Timeout.InfiniteTimeSpan;
 }).RemoveAllLoggers();
+builder.Services.AddScoped<PseudonymizingAssistenteIaProvider>(services =>
+{
+    var inner = services.GetRequiredService<OpenAiAssistenteIaProvider>();
+    return new PseudonymizingAssistenteIaProvider(
+        inner,
+        inner,
+        services.GetRequiredService<IOptionsMonitor<AssistenteIaSettings>>());
+});
 builder.Services.AddScoped<IAssistenteIaProvider>(services =>
-    services.GetRequiredService<OpenAiAssistenteIaProvider>());
+    services.GetRequiredService<PseudonymizingAssistenteIaProvider>());
 builder.Services.AddScoped<IAssistenteTokenCounter>(services =>
-    services.GetRequiredService<OpenAiAssistenteIaProvider>());
+    services.GetRequiredService<PseudonymizingAssistenteIaProvider>());
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())

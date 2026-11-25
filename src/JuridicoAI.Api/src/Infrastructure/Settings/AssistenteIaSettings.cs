@@ -47,6 +47,7 @@ public sealed class AssistenteIaSettings
     public bool AllowSimulatedWithoutFinancialControl { get; set; }
     public string TransparencyNoticeVersion { get; set; } = "ai-transparency-v1";
     public string? PrivacyPolicyUrl { get; set; }
+    public bool PiiPseudonymizationEnabled { get; set; } = true;
 
     // The pilot model can bill cache writes even on the first request.
     public bool HasValidCacheWritePricing() =>
