@@ -6,7 +6,12 @@ namespace JuridicoAI.Api.Application.Services;
 public sealed record ExportarPecaRequest(string Formato, int Versao);
 public sealed record PecaExportFile(byte[] Content, string ContentType, string FileName);
 
-public sealed class PecaExportApplicationService(IPecaRepository repository, IAuthContext auth, PecaDocxGenerator generator, IPecaPdfConverter converter)
+public sealed class PecaExportApplicationService(
+    IPecaRepository repository,
+    IAuthContext auth,
+    PecaDocxGenerator generator,
+    IPecaPdfConverter converter,
+    IDataAccessAuditService? audit = null)
 {
     public async Task<PecaExportFile> ExportarAsync(Guid id, ExportarPecaRequest request, CancellationToken ct)
     {
@@ -18,6 +23,8 @@ public sealed class PecaExportApplicationService(IPecaRepository repository, IAu
         if (peca.Versao != request.Versao) throw new ConflitoDeVersaoException("A peça foi alterada. Recarregue a versão mais recente antes de exportar.");
         var docx = generator.Generate(peca, ct);
         var content = request.Formato == "pdf" ? await converter.ConvertAsync(docx, ct) : docx;
+        if (audit is not null)
+            await audit.RecordAsync(request.Formato == "pdf" ? "ExportPecaPdf" : "ExportPecaDocx", "Peca", id, ct);
         return new(content, request.Formato == "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             FileName(peca.Titulo) + "." + request.Formato);
     }

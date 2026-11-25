@@ -14,7 +14,8 @@ public sealed class CasoApplicationService(
     IFileStorage fileStorage,
     IAuthContext auth,
     IOptions<DocumentStorageSettings> storageOptions,
-    ILogger<CasoApplicationService> logger)
+    ILogger<CasoApplicationService> logger,
+    IDataAccessAuditService? audit = null)
 {
     private readonly DocumentStorageSettings _storageSettings = storageOptions.Value;
 
@@ -104,6 +105,7 @@ public sealed class CasoApplicationService(
     {
         var envolvido = await ObterEnvolvidoEntidadeAsync(casoId, id, cancellationToken);
         var enderecos = await repository.ListarEnderecosAsync(casoId, id, auth.OrganizationId, cancellationToken);
+        if (audit is not null) await audit.RecordAsync("ViewEnvolvido", "EnvolvidoCaso", id, cancellationToken);
         return Detalhe(envolvido, enderecos);
     }
 
@@ -309,6 +311,7 @@ public sealed class CasoApplicationService(
     {
         var documento = await ObterDocumentoAsync(casoId, id, cancellationToken);
         var conteudo = await fileStorage.GetAsync(documento.StorageId, cancellationToken);
+        if (audit is not null) await audit.RecordAsync("DownloadDocumentoCaso", "DocumentoCaso", id, cancellationToken);
         return new DocumentoArquivo(documento, conteudo);
     }
 
@@ -317,6 +320,7 @@ public sealed class CasoApplicationService(
         var documento = await ObterDocumentoAsync(casoId, id, cancellationToken);
         if (!await repository.RemoverDocumentoAsync(casoId, id, auth.OrganizationId, cancellationToken))
             throw NaoEncontrado("Documento", id);
+        if (audit is not null) await audit.RecordAsync("DeleteDocumentoCaso", "DocumentoCaso", id, cancellationToken);
         try
         {
             await fileStorage.DeleteAsync(documento.StorageId, cancellationToken);
@@ -335,6 +339,7 @@ public sealed class CasoApplicationService(
         var enderecos = await repository.ListarEnderecosCasoAsync(casoId, auth.OrganizationId, cancellationToken);
         var contextos = await repository.ListarContextosAsync(casoId, auth.OrganizationId, cancellationToken);
         var documentos = await repository.ListarDocumentosAsync(casoId, auth.OrganizationId, cancellationToken);
+        if (audit is not null) await audit.RecordAsync("ViewCasoContextoCompleto", "Caso", casoId, cancellationToken);
         var enderecosPorEnvolvido = enderecos.GroupBy(x => x.EnvolvidoCasoId)
             .ToDictionary(x => x.Key, x => (IReadOnlyList<EnderecoEnvolvidoCaso>)x.ToList());
         return new CasoContextoCompletoDto(
